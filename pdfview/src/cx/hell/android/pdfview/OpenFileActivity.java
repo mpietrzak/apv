@@ -270,6 +270,12 @@ public class OpenFileActivity extends Activity {
      * Set handlers on zoom level buttons
      */
     private void setZoomButtonHandlers() {
+    	this.zoomDownButton.setOnLongClickListener(new View.OnLongClickListener() {
+			public boolean onLongClick(View v) {
+				pagesView.zoomDownBig();
+				return true;
+			}
+    	});
     	this.zoomDownButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				pagesView.zoomDown();
@@ -280,9 +286,21 @@ public class OpenFileActivity extends Activity {
 				pagesView.zoomWidth();
 			}
     	});
+    	this.zoomWidthButton.setOnLongClickListener(new View.OnLongClickListener() {
+			public boolean onLongClick(View v) {
+				pagesView.zoomFit();
+				return true;
+			}
+    	});
     	this.zoomUpButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				pagesView.zoomUp();
+			}
+    	});
+    	this.zoomUpButton.setOnLongClickListener(new View.OnLongClickListener() {
+			public boolean onLongClick(View v) {
+				pagesView.zoomUpBig();
+				return true;
 			}
     	});
     }
