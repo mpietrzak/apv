@@ -186,6 +186,10 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Construct this view.
 	 * @param activity parent activity
 	 */
+	
+	private boolean volumeUpIsDown = false;
+	private boolean volumeDownIsDown = false;
+	
 	public PagesView(Activity activity) {
 		super(activity);
 		this.activity = activity;
@@ -623,16 +627,11 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		if (this.pageWithVolume && event.getAction() == KeyEvent.ACTION_UP) {
 			/* repeat is a little too fast sometimes, so trap these on up */
 			switch(keyCode) {
-				case KeyEvent.KEYCODE_VOLUME_UP:					
-					this.top -= this.getHeight() - 16;
-					if (this.top < 0) {
-						this.top = 0;
-					}
-					this.invalidate();
+				case KeyEvent.KEYCODE_VOLUME_UP:
+					volumeUpIsDown = false;
 					return true;
 				case KeyEvent.KEYCODE_VOLUME_DOWN:
-					this.top += this.getHeight() - 16;
-					this.invalidate();
+					volumeDownIsDown = false;
 					return true;
 			}
 		}
@@ -643,9 +642,27 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				((cx.hell.android.pdfview.OpenFileActivity)activity).showFindDialog();
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
-				return this.pageWithVolume;
+				if (!this.pageWithVolume)
+					return false;
+				if (!volumeDownIsDown) {
+					/* Disable key repeat as on some devices the keys are a little too
+					 * sticky for key repeat to work well.  TODO: Maybe key repeat disabling
+					 * should be an option?  
+					 */
+					this.top += this.getHeight() - 16;
+					this.invalidate();
+				}
+				volumeDownIsDown = true;
+				return true;
 			case KeyEvent.KEYCODE_VOLUME_UP:
-				return this.pageWithVolume;
+				if (!this.pageWithVolume)
+					return false;
+				if (!volumeUpIsDown) {
+					this.top -= this.getHeight() - 16;
+					this.invalidate();
+				}
+				volumeUpIsDown = true;
+				return true;
 			case KeyEvent.KEYCODE_DPAD_UP:
 			case KeyEvent.KEYCODE_DEL:
 			case KeyEvent.KEYCODE_K:
