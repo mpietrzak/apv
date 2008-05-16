@@ -955,12 +955,34 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	}
 
 	/**
+	 * Zoom down big 
+	 */
+	public void zoomDownBig() {
+		this.zoomLevel /= 2;
+		this.left /= 2;
+		this.top /= 2;
+		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
+		this.invalidate();		
+	}
+
+	/**
 	 * Zoom up one level
 	 */
 	public void zoomUp() {
 		this.zoomLevel *= step;
 		this.left *= step;
 		this.top *= step;
+		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
+		this.invalidate();
+	}
+
+	/**
+	 * Zoom up big level
+	 */
+	public void zoomUpBig() {
+		this.zoomLevel *= 2;
+		this.left *= 2;
+		this.top *= 2;
 		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
 		this.invalidate();
 	}
@@ -972,6 +994,18 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		this.top = (this.top - this.height / 2) * this.width / pageWidth + this.height / 2;
 		this.zoomLevel = this.zoomLevel * this.width / pageWidth;
 		this.left = this.width/2;
+		this.invalidate();		
+	}
+
+	/* zoom to fit */
+	public void zoomFit() {
+		int page = currentPage < 0 ? 0 : currentPage;
+		int z1 = this.zoomLevel * this.width / getCurrentPageWidth(page);
+		int z2 = (int)(this.zoomLevel * this.height / getCurrentPageHeight(page));
+		this.zoomLevel = z2 < z1 ? z2 : z1;
+		Point pos = getPagePositionInDocumentWithZoom(page);
+		this.left = this.width/2;
+		this.top = this.height/2 + pos.y;
 		this.invalidate();		
 	}
 
