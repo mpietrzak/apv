@@ -271,7 +271,9 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		this.zoomPlusDrawable.draw(canvas);
 	}
 
-	@Override
+	/**
+	 * Handle touch event coming from Android system.
+	 */
 	public boolean onTouch(View v, MotionEvent event) {
 		this.lastControlsUseMillis = System.currentTimeMillis();
 		if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -320,7 +322,6 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Used as a callback from pdf rendering code.
 	 * TODO: only invalidate what needs to be painted, not the whole view
 	 */
-	@Override
 	public void onImageRendered(int pageNumber, int zoom, int tilex, int tiley, Bitmap bitmap) {
 		this.post(new Runnable() {
 			public void run() {
@@ -334,7 +335,6 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Show error message and then quit parent activity.
 	 * TODO: find a proper way to finish an activity when something bad happens in view.
 	 */
-	@Override
 	public void onRenderingException(RenderingException reason) {
 		final Activity activity = this.activity;
 		final String message = reason.getMessage();
