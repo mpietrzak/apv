@@ -10,12 +10,19 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.Window;
 import android.widget.LinearLayout;
 import cx.hell.android.lib.pagesview.PagesView;
 
 
+/**
+ * Minimalistic file browser.
+ */
 public class OpenFileActivity extends Activity {
+	
+	private MenuItem aboutMenuItem = null;
 
     /** Called when the activity is first created. */
     @Override
@@ -36,6 +43,13 @@ public class OpenFileActivity extends Activity {
         this.setContentView(layout);
     }
     
+    /**
+     * Return PDF instance wrapping file referenced by Intent.
+     * Currently reads all bytes to memory, in future local files
+     * should be passed to native code and remote ones should
+     * be downloaded to local tmp dir.
+     * @return PDF instance
+     */
     private PDF getPDF() {
         final Intent intent = getIntent();
 		Uri uri = intent.getData();
@@ -49,7 +63,7 @@ public class OpenFileActivity extends Activity {
     
     /**
      * Read bytes from uri.
-     * TODO: do not load file contens to memory - left underlying native code read content directly
+     * TODO: do not load file contents to memory - let underlying native code read content directly
      */
     private byte[] readBytes(Uri uri) {
     	try {
@@ -60,6 +74,23 @@ public class OpenFileActivity extends Activity {
     		/* TODO: user friendly error message */
     		throw new RuntimeException(e);
     	}
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem menuItem) {
+    	if (menuItem == this.aboutMenuItem) {
+			Intent intent = new Intent();
+			intent.setClass(this, AboutPDFViewActivity.class);
+			this.startActivity(intent);
+    		return true;
+    	}
+    	return false;
+    }
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+    	this.aboutMenuItem = menu.add(R.string.about);
+    	return true;
     }
 }
 

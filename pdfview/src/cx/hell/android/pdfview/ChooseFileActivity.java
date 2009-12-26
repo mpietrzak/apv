@@ -9,6 +9,8 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -26,6 +28,8 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 	private ListView filesListView = null;
 	private FileFilter fileFilter = null;
 	private ArrayAdapter<String> fileListAdapter = null;
+	
+	private MenuItem aboutMenuItem = null;
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -77,5 +81,22 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     		intent.setAction("android.intent.action.VIEW");
     		this.startActivity(intent);
     	}
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem menuItem) {
+    	if (menuItem == this.aboutMenuItem) {
+			Intent intent = new Intent();
+			intent.setClass(this, AboutPDFViewActivity.class);
+			this.startActivity(intent);
+    		return true;
+    	}
+    	return false;
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+    	this.aboutMenuItem = menu.add("About");
+    	return true;
     }
 }
