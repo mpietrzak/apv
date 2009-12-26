@@ -2,6 +2,7 @@ package cx.hell.android.pdfview;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -17,7 +18,7 @@ import android.widget.AdapterView.OnItemClickListener;
 
 public class ChooseFileActivity extends Activity implements OnItemClickListener {
 	
-	private final static String TAG = "cx.hell.android.pdfview2";
+	private final static String TAG = "cx.hell.android.pdfview";
 	
 	private String currentPath = "/sdcard";
 	
@@ -51,12 +52,19 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	File files[] = new File(this.currentPath).listFiles(this.fileFilter);
     	//String fileNames[] = new String[files.length];
     	this.fileListAdapter.clear();
+    	this.fileListAdapter.add("..");
     	for(int i = 0; i < files.length; ++i) this.fileListAdapter.add(files[i].getName());
     }
     
-    public void onItemClick(AdapterView parent, View v, int position, long id) {
+    @SuppressWarnings("unchecked")
+	public void onItemClick(AdapterView parent, View v, int position, long id) {
     	String filename = (String) this.filesListView.getItemAtPosition(position);
-    	File clickedFile = new File(this.currentPath, filename);
+    	File clickedFile = null;
+    	try {
+    		clickedFile = new File(this.currentPath, filename).getCanonicalFile();
+    	} catch (IOException e) {
+    		throw new RuntimeException(e);
+    	}
     	if (clickedFile.isDirectory()) {
     		Log.d(TAG, "change dir to " + clickedFile);
     		this.currentPath = clickedFile.getAbsolutePath();

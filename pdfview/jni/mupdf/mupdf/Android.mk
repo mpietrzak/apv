@@ -10,7 +10,7 @@ LOCAL_SRC_FILES := \
 	apv_pdf_debug.c \
 	pdf_lex.c \
 	pdf_nametree.c \
-	pdf_open.c \
+	apv_pdf_open.c \
 	pdf_parse.c \
 	pdf_repair.c \
 	pdf_stream.c \
