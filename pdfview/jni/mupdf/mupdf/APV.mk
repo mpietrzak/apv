@@ -1,5 +1,7 @@
 
 
+font_files: font_misc.c font_mono.c font_serif.c font_sans.c
+
 
 cmapdump: cmapdump.c
 	gcc -ocmapdump cmapdump.c -I../fitz

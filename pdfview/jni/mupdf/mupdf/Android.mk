@@ -2,7 +2,7 @@ LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../fitz $(LOCAL_PATH)/../../freetype2/include
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../fitz $(LOCAL_PATH)/../../pdfview2/include
 LOCAL_CFLAGS    := -DNOCJK
 LOCAL_MODULE    := mupdf
 LOCAL_SRC_FILES := \
