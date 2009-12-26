@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hello">Hello World, PDFView2Activity!</string>
-    <string name="app_name">pdfview2</string>
+    
+    <string name="app_name">PDF Viewer</string>
 </resources>

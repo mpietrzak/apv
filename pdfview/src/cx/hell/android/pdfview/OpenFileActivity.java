@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Window;
 import android.widget.LinearLayout;
 import cx.hell.android.lib.pagesview.PagesView;
 
@@ -20,6 +21,8 @@ public class OpenFileActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);

@@ -1,3 +1,9 @@
+
+/*
+ * This is a modified version of pdf_debug.c file which is part of MuPDF
+ * by Artifex Software, Inc.
+ */
+
 #include "fitz.h"
 #include "mupdf.h"
 
