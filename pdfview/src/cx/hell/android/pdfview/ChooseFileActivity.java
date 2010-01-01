@@ -51,10 +51,13 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	this.update();
     }
     
+    /**
+     * Reset list view and list adapter to reflect change to currentPath.
+     */
     private void update() {
     	this.pathTextView.setText(this.currentPath);
     	File files[] = new File(this.currentPath).listFiles(this.fileFilter);
-    	//String fileNames[] = new String[files.length];
+    	
     	this.fileListAdapter.clear();
     	this.fileListAdapter.add("..");
     	for(int i = 0; i < files.length; ++i) this.fileListAdapter.add(files[i].getName());
