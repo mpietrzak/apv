@@ -9,3 +9,10 @@ syntax: regexp
 ^pdfview/jni/pdfview2/include$
 glob:pdfview/jni/mupdf/_darcs
 glob:pdfview/libs
+
+syntax: regexp
+^pdfview/jni/mupdf/apps$
+syntax: regexp
+^pdfview/jni/mupdf/fonts/droid$
+syntax: regexp
+^pdfview/jni/mupdf/fonts$
