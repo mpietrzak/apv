@@ -7,6 +7,7 @@ import java.net.URL;
 import java.net.URLConnection;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.net.Uri;
@@ -14,8 +15,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.Window;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import cx.hell.android.lib.pagesview.PagesView;
 
 
@@ -26,9 +32,21 @@ public class OpenFileActivity extends Activity {
 	
 	private final static String TAG = "cx.hell.android.pdfview";
 	
+	private PDF pdf = null;
+	private PagesView pagesView = null;
+	private PDFPagesProvider pdfPagesProvider = null;
+	
 	private MenuItem aboutMenuItem = null;
+	private MenuItem gotoPageMenuItem = null;
+	private EditText pageNumberInputField = null;
 
-    /** Called when the activity is first created. */
+    /**
+     * Called when the activity is first created.
+     * TODO: initialize dialog fast, then move file loading
+     * to other thread
+     * TODO: add progress bar for file load
+     * TODO: add progress icon for file rendering
+     */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -38,9 +56,9 @@ public class OpenFileActivity extends Activity {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         
-        PagesView pagesView = new PagesView(this);
-        PDF pdf = this.getPDF();
-        PDFPagesProvider pdfPagesProvider = new PDFPagesProvider(pdf);
+        this.pagesView = new PagesView(this);
+        this.pdf = this.getPDF();
+        this.pdfPagesProvider = new PDFPagesProvider(pdf);
         pagesView.setPagesProvider(pdfPagesProvider);
         layout.addView(pagesView);
         
@@ -58,10 +76,7 @@ public class OpenFileActivity extends Activity {
         final Intent intent = getIntent();
 		Uri uri = intent.getData();
         byte[] pdfFileBytes = readBytes(uri);
-        Log.i("cx.hell.android.pdfview", "pdf byte count: " + pdfFileBytes.length);
         PDF pdf = new PDF(pdfFileBytes);
-        Log.i("cx.hell.android.pdfview", "pdf: " + pdf);
-        Log.i("cx.hell.android.pdfview", "page count: " + pdf.getPageCount());
         return pdf;
     }
     
@@ -103,12 +118,51 @@ public class OpenFileActivity extends Activity {
 			intent.setClass(this, AboutPDFViewActivity.class);
 			this.startActivity(intent);
     		return true;
+    	} else if (menuItem == this.gotoPageMenuItem) {
+    		this.showGotoPageDialog();
     	}
     	return false;
     }
     
+    private void showGotoPageDialog() {
+    	final Dialog d = new Dialog(this);
+    	d.setTitle(R.string.goto_page_dialog_title);
+    	LinearLayout contents = new LinearLayout(this);
+    	contents.setOrientation(LinearLayout.VERTICAL);
+    	TextView label = new TextView(this);
+    	label.setText("Page number from " + 1 + " to " + this.pdfPagesProvider.getPageCount());
+    	this.pageNumberInputField = new EditText(this);
+    	Button goButton = new Button(this);
+    	goButton.setText(R.string.goto_page_go_button);
+    	goButton.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				int pageNumber = Integer.parseInt(OpenFileActivity.this.pageNumberInputField.getText().toString()) - 1;
+				OpenFileActivity.this.gotoPage(pageNumber);
+				d.hide();
+			}
+    	});
+    	LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+    	params.leftMargin = 5;
+    	params.rightMargin = 5;
+    	params.bottomMargin = 2;
+    	params.topMargin = 2;
+    	contents.addView(label, params);
+    	contents.addView(pageNumberInputField, params);
+    	contents.addView(goButton, params);
+    	d.setContentView(contents);
+    	d.show();
+    }
+    
+    private void gotoPage(int page) {
+    	Log.i(TAG, "rewind to page " + page);
+    	if (this.pagesView != null) {
+    		this.pagesView.scrollToPage(page);
+    	}
+    }
+    
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+    	this.gotoPageMenuItem = menu.add(R.string.goto_page);
     	this.aboutMenuItem = menu.add(R.string.about);
     	return true;
     }

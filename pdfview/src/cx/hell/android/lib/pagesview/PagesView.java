@@ -14,6 +14,8 @@ import cx.hell.android.pdfview.R;
 
 /**
  * View that simplifies displaying of paged documents.
+ * TODO: redesign zooms, pages, marings, layout
+ * TODO: use more floats for better align
  */
 public class PagesView extends View implements View.OnTouchListener, OnImageRenderedListener {
 	
@@ -172,10 +174,10 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		return (int)currentpagewidth;
 	}
 	
-	private int getCurrentPageHeight(int pageno) {
+	private float getCurrentPageHeight(int pageno) {
 		float realpageheight = (float)this.pageSizes[pageno][1];
 		float currentpageheight = realpageheight * scalling0 * (this.zoomLevel*0.001f);
-		return (int)currentpageheight;
+		return currentpageheight;
 	}
 	
 	private void drawPages(Canvas canvas) {
@@ -200,7 +202,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				pagex0 = MARGIN;
 				pagex1 = MARGIN + this.getCurrentPageWidth(i);
 				pagey0 = currpageoff;
-				pagey1 = currpageoff + this.getCurrentPageHeight(i);
+				pagey1 = currpageoff + (int)this.getCurrentPageHeight(i);
 				
 				if (rectsintersect(
 							pagex0, pagey0, pagex1, pagey1, // page rect in doc
@@ -212,7 +214,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 					x = pagex0 - effleft;
 					y = pagey0 - efftop;
 					w = this.getCurrentPageWidth(i);
-					h = this.getCurrentPageHeight(i);
+					h = (int)this.getCurrentPageHeight(i);
 					//Log.d(TAG, String.format(" page %d coordds on screen: %dx%d x %dx%d", i, x, y, x+w, y+h)); 
 					for(int tilex = 0; tilex < w / TILE_SIZE + 1; ++tilex)
 						for(int tiley = 0; tiley < h / TILE_SIZE + 1; ++tiley) {
@@ -277,20 +279,32 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	public boolean onTouch(View v, MotionEvent event) {
 		this.lastControlsUseMillis = System.currentTimeMillis();
 		if (event.getAction() == MotionEvent.ACTION_DOWN) {
-			Log.d("cx.hell.android.pdfview2", "onTouch(ACTION_DOWN)");
+			Log.d("cx.hell.android.pdfview", "onTouch(ACTION_DOWN)");
 			int x = (int)event.getX();
 			int y = (int)event.getY();
 			if (this.zoomMinusDrawable.getBounds().contains(x,y)) {
-				this.zoomLevel *= 0.5f;
-				this.left *= 0.5f;
-				this.top *= 0.5f;
-				Log.d("cx.hell.android.pdfview2", "zoom level changed to " + this.zoomLevel);
+				float step = 0.5f;
+				this.zoomLevel *= step;
+				float cx, cy;
+				cx = this.left + this.width / 2;
+				cy = this.top + this.height / 2;
+				cx = cx * step;
+				cy = cy * step;
+				this.left = (int)(cx - this.width / 2f);
+				this.top = (int)(cy - this.height / 2f);
+				Log.d("cx.hell.android.pdfview", "zoom level changed to " + this.zoomLevel);
 				this.invalidate();
 			} else if (this.zoomPlusDrawable.getBounds().contains(x,y)) {
-				this.zoomLevel *= 2f;
-				this.left *= 2f;
-				this.top *= 2f;
-				Log.d("cx.hell.android.pdfview2", "zoom level changed to " + this.zoomLevel);
+				float step = 2f;
+				this.zoomLevel *= step;
+				float cx, cy;
+				cx = this.left + this.width / 2;
+				cy = this.top + this.height / 2;
+				cx = cx * step;
+				cy = cy * step;
+				this.left = (int)(cx - this.width / 2f);
+				this.top = (int)(cy - this.height / 2f);
+				Log.d("cx.hell.android.pdfview", "zoom level changed to " + this.zoomLevel);
 				this.invalidate();
 			} else {
 				this.dragx = x;
@@ -315,6 +329,10 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		return true;
 	}
 	
+	/**
+	 * Test if specified rectangles intersect with each other.
+	 * Uses Androids standard Rect class.
+	 */
 	private static boolean rectsintersect(
 			int r1x0, int r1y0, int r1x1, int r1y1,
 			int r2x0, int r2y0, int r2x1, int r2y1) {
@@ -361,6 +379,22 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
     			errorMessageDialog.show();
 			}
 		});
+	}
+	
+	/**
+	 * Move current viewport over n-th page.
+	 * Page is 0-based.
+	 * @param page 0-based page number
+	 */
+	public void scrollToPage(int page) {
+		this.left = 0;
+		float top = 0;
+		for(int i = 0; i < page; ++i) {
+			top += this.getCurrentPageHeight(i);
+			if (i > 0) top += MARGIN;
+		}
+		this.top = (int)top;
+		this.invalidate();
 	}
 }
 

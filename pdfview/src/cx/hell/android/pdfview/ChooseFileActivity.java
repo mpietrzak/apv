@@ -58,6 +58,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	this.fileListAdapter.clear();
     	this.fileListAdapter.add("..");
     	for(int i = 0; i < files.length; ++i) this.fileListAdapter.add(files[i].getName());
+    	this.filesListView.setSelection(0);
     }
     
     @SuppressWarnings("unchecked")

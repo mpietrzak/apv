@@ -3,4 +3,7 @@
     
     <string name="app_name">PDF Viewer</string>
 <string name="about">About</string>
+<string name="goto_page">Go to page...</string>
+<string name="goto_page_dialog_title">Go to page</string>
+<string name="goto_page_go_button">Go</string>
 </resources>
