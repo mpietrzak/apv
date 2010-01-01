@@ -22,10 +22,10 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 */
 	public static final int TILE_SIZE = 256;
 
-	/**
-	 * Const for logging.
-	 */
-	private final static String TAG = "cx.hell.android.pdfview"; 
+//	/**
+//	 * Const for logging.
+//	 */
+//	private final static String TAG = "cx.hell.android.pdfview"; 
 	
 	/**
 	 * Then fade starts.
@@ -37,8 +37,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 */
 	private final static long CONTROLS_FADE_DURATION = 1000;
 	
-	private final static int MAX_ZOOM = 4000;
-	private final static int MIN_ZOOM = 100;
+//	private final static int MAX_ZOOM = 4000;
+//	private final static int MIN_ZOOM = 100;
 	
 	/**
 	 * Space between screen edge and page and between pages.
@@ -282,10 +282,14 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			int y = (int)event.getY();
 			if (this.zoomMinusDrawable.getBounds().contains(x,y)) {
 				this.zoomLevel *= 0.5f;
+				this.left *= 0.5f;
+				this.top *= 0.5f;
 				Log.d("cx.hell.android.pdfview2", "zoom level changed to " + this.zoomLevel);
 				this.invalidate();
 			} else if (this.zoomPlusDrawable.getBounds().contains(x,y)) {
 				this.zoomLevel *= 2f;
+				this.left *= 2f;
+				this.top *= 2f;
 				Log.d("cx.hell.android.pdfview2", "zoom level changed to " + this.zoomLevel);
 				this.invalidate();
 			} else {

@@ -3,6 +3,8 @@ package cx.hell.android.pdfview;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
 
 import android.app.Activity;
 import android.content.ContentResolver;
@@ -21,6 +23,8 @@ import cx.hell.android.lib.pagesview.PagesView;
  * Minimalistic file browser.
  */
 public class OpenFileActivity extends Activity {
+	
+	private final static String TAG = "cx.hell.android.pdfview";
 	
 	private MenuItem aboutMenuItem = null;
 
@@ -54,10 +58,10 @@ public class OpenFileActivity extends Activity {
         final Intent intent = getIntent();
 		Uri uri = intent.getData();
         byte[] pdfFileBytes = readBytes(uri);
-        Log.i("cx.hell.android.pdfview2", "pdf byte count: " + pdfFileBytes.length);
+        Log.i("cx.hell.android.pdfview", "pdf byte count: " + pdfFileBytes.length);
         PDF pdf = new PDF(pdfFileBytes);
-        Log.i("cx.hell.android.pdfview2", "pdf: " + pdf);
-        Log.i("cx.hell.android.pdfview2", "page count: " + pdf.getPageCount());
+        Log.i("cx.hell.android.pdfview", "pdf: " + pdf);
+        Log.i("cx.hell.android.pdfview", "page count: " + pdf.getPageCount());
         return pdf;
     }
     
@@ -67,12 +71,28 @@ public class OpenFileActivity extends Activity {
      */
     private byte[] readBytes(Uri uri) {
     	try {
+	    	InputStream i = this.openUri(uri);
+	    	return StreamUtils.readBytesFully(i);
+    	} catch (IOException e) {
+    		throw new RuntimeException(e);
+    	}
+    }
+    
+    private InputStream openUri(Uri uri) throws IOException {
+    	Log.i(TAG, "opening uri " + uri);
+    	if (uri.getScheme().equals("http")
+    			|| uri.getScheme().equals("https")
+    			|| uri.getScheme().equals("file")) {
+    		URL url = new URL(uri.toString());
+    		URLConnection urlConnection = url.openConnection();
+    		InputStream i = urlConnection.getInputStream();
+    		return i;
+    	} else if (uri.getScheme().equals("content")) {
 	    	ContentResolver cr = this.getContentResolver();
 	    	InputStream i = new BufferedInputStream(cr.openInputStream(uri));
-    		return StreamUtils.readBytesFully(i);
-    	} catch (IOException e) {
-    		/* TODO: user friendly error message */
-    		throw new RuntimeException(e);
+    		return i; 
+    	} else {
+    		throw new RuntimeException("don't know how to open " + uri);
     	}
     }
     

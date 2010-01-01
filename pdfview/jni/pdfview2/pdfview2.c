@@ -386,6 +386,6 @@ int get_page_size(pdf_t *pdf, int pageno, int *width, int *height) {
 
 
 void pdf_android_loghandler(const char *m) {
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview.mupdf", m);
+    /* __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview.mupdf", m); */
 }
 

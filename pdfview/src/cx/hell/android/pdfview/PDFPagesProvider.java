@@ -27,7 +27,7 @@ public class PDFPagesProvider extends PagesProvider {
 	 */
 	private static class BitmapCache {
 		
-		private static final int MAX_CACHE_SIZE_BYTES = 2*1024*1024;
+		private static final int MAX_CACHE_SIZE_BYTES = 4*1024*1024;
 		
 		private static class BitmapCacheKey {
 			int pagenum;
