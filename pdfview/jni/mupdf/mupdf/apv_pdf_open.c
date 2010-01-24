@@ -847,3 +847,103 @@ cleanup:
 }
 
 
+/*
+ * open and load xref tables from pdf by fileno
+ */
+
+fz_error
+pdf_loadxref_fileno(pdf_xref *xref, int fileno)
+{
+	fz_error error;
+	fz_obj *size;
+	int i;
+
+	char buf[65536];	/* yeowch! */
+
+	pdf_logxref("loadxref_fileno %d %p\n", fileno, xref);
+
+	error = fz_openrfileno(&xref->file, fileno);
+	if (error)
+	{
+		return fz_rethrow(error, "cannot open file: '%d'", fileno);
+	}
+
+
+	error = loadversion(xref);
+	if (error)
+	{
+		error = fz_rethrow(error, "cannot read version marker");
+		goto cleanup;
+	}
+
+	error = readstartxref(xref);
+	if (error)
+	{
+		error = fz_rethrow(error, "cannot read startxref");
+		goto cleanup;
+	}
+
+	error = readtrailer(xref, buf, sizeof buf);
+	if (error)
+	{
+		error = fz_rethrow(error, "cannot read trailer");
+		goto cleanup;
+	}
+
+	size = fz_dictgets(xref->trailer, "Size");
+	if (!size)
+	{
+		error = fz_throw("trailer missing Size entry");
+		goto cleanup;
+	}
+
+	pdf_logxref("  size %d at 0x%x\n", fz_toint(size), xref->startxref);
+
+	assert(xref->table == nil);
+
+	xref->len = fz_toint(size);
+	xref->cap = xref->len + 1; /* for hack to allow broken pdf generators with off-by-one errors */
+	xref->table = fz_malloc(xref->cap * sizeof(pdf_xrefentry));
+	for (i = 0; i < xref->cap; i++)
+	{
+		xref->table[i].ofs = 0;
+		xref->table[i].gen = 0;
+		xref->table[i].stmofs = 0;
+		xref->table[i].obj = nil;
+		xref->table[i].type = 0;
+	}
+
+	error = readxrefsections(xref, xref->startxref, buf, sizeof buf);
+	if (error)
+	{
+		error = fz_rethrow(error, "cannot read xref");
+		goto cleanup;
+	}
+
+	/* broken pdfs where first object is not free */
+	if (xref->table[0].type != 'f')
+	{
+		fz_warn("first object in xref is not free");
+		xref->table[0].type = 'f';
+	}
+
+	/* broken pdfs where freed objects have offset and gen set to 0
+	but still exits */
+	for (i = 0; i < xref->len; i++)
+		if (xref->table[i].type == 'n' && xref->table[i].ofs == 0 &&
+			xref->table[i].gen == 0 && xref->table[i].obj == nil)
+	{
+		fz_warn("object (%d %d R) has invalid offset, assumed missing", i, xref->table[i].gen);
+		xref->table[i].type = 'f';
+	}
+
+	return fz_okay;
+
+cleanup:
+	fz_dropstream(xref->file);
+	xref->file = nil;
+	free(xref->table);
+	xref->table = nil;
+	return error;
+}
+

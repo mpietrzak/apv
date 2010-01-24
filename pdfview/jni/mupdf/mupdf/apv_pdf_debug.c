@@ -82,8 +82,13 @@ static inline void pdflog(int tag, char *name, char *fmt, va_list ap)
     } else {
         char b[2048];
         int ll = push ? level : 0;
-        for(i = 0; i < ll; ++i) b[i] = ' ';
-        vsnprintf(b+ll, 2048-ll, fmt, ap);
+        b[0] = 0;
+        if (push) {
+            strncat(b, name, 100);
+            strncat(b, ": ", 100);
+        }
+        for(i = 0; i < ll; ++i) strncat(b, " ", 100);
+        vsnprintf(b+strlen(b), 2048-strlen(b), fmt, ap);
         b[2047] = 0;
         pdf_loghandler(b);
     }

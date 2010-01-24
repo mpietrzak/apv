@@ -3,7 +3,7 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../mupdf $(LOCAL_PATH)/../../jpeg $(LOCAL_PATH)/../../pdfview2/include
-LOCAL_CFLAGS := -DNOCJK -Drestrict=
+LOCAL_CFLAGS := -Drestrict=
 LOCAL_MODULE    := fitz
 LOCAL_SRC_FILES := \
         base_cpudep.c \
@@ -28,7 +28,7 @@ LOCAL_SRC_FILES := \
          \
 	stm_buffer.c \
 	stm_filter.c \
-	stm_open.c \
+	apv_stm_open.c \
 	apv_stm_read.c \
 	stm_misc.c \
          \

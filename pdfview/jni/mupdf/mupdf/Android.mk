@@ -47,6 +47,11 @@ LOCAL_SRC_FILES := \
 	font_sans.c \
 	font_serif.c
 
+#	font_cjk.c
+
+#	cmap_tounicode.c \
+#	cmap_cns.c \
+#	cmap_gb.c cmap_japan.c cmap_korea.c
 
 
 include $(BUILD_STATIC_LIBRARY)

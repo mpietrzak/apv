@@ -3,7 +3,7 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../mupdf $(LOCAL_PATH)/../fitz
-LOCAL_CFLAGS := -DNOCJK -Drestrict=
+LOCAL_CFLAGS := -Drestrict=
 LOCAL_MODULE    := fitzdraw
 LOCAL_SRC_FILES := \
         archppc.c \

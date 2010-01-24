@@ -8,16 +8,23 @@
 #include "mupdf.h"
 
 
+/**
+ * Holds pdf info.
+ */
 struct pdf_s {
 	pdf_xref *xref;
 	pdf_outline *outline;
+    int fileno; /* used only when opening by file descriptor */
 };
 
 
 typedef struct pdf_s pdf_t;
 
 
+pdf_t* create_pdf_t();
 pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len);
+pdf_t* parse_pdf_file(const char *filename);
+pdf_t* parse_pdf_fileno(int fileno);
 jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int *blen, int *width, int *height);
 pdf_t* get_pdf_from_this(JNIEnv *env, jobject this);
 void get_size(JNIEnv *env, jobject size, int *width, int *height);
@@ -27,14 +34,16 @@ int get_page_size(pdf_t *pdf, int pageno, int *width, int *height);
 void pdf_android_loghandler(const char *m);
 
 
-/*
-JNIEXPORT jint Java_cx_hell_android_pdfview_PDFView2Activity_parse_pdf(
-		JNIEnv *env,
-		jobject jthis,
-		jbyteArray bytes) {
-	return 0;
+
+JNIEXPORT jint JNICALL
+JNI_OnLoad(JavaVM *jvm, void *reserved) {
+    __android_log_print(ANDROID_LOG_INFO, "cx.hell.android.pdfview", "JNI_OnLoad");
+    fz_cpudetect();
+    fz_accelerate();
+    /* pdf_setloghandler(pdf_android_loghandler); */
+    return JNI_VERSION_1_2;
 }
-*/
+
 
 
 JNIEXPORT void JNICALL
@@ -55,6 +64,60 @@ Java_cx_hell_android_pdfview_PDF_parseBytes(
 }
 
 
+/**
+ * Implementation of native method PDF.parseFile.
+ * Opens file and parses at least some bytes - so it could take a while.
+ * @param file_name file name to parse.
+ */
+JNIEXPORT void JNICALL
+Java_cx_hell_android_pdfview_PDF_parseFile(
+        JNIEnv *env,
+        jobject jthis,
+        jstring file_name) {
+    const char *c_file_name = NULL;
+    jboolean iscopy;
+    jclass this_class;
+    jfieldID pdf_field_id;
+    pdf_t *pdf = NULL;
+
+
+    c_file_name = (*env)->GetStringUTFChars(env, file_name, &iscopy);
+	this_class = (*env)->GetObjectClass(env, jthis);
+	pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
+	pdf = parse_pdf_file(c_file_name);
+    (*env)->ReleaseStringUTFChars(env, file_name, c_file_name);
+	(*env)->SetIntField(env, jthis, pdf_field_id, (int)pdf);
+}
+
+
+/**
+ * Create pdf_t struct from opened file descriptor.
+ */
+JNIEXPORT void JNICALL
+Java_cx_hell_android_pdfview_PDF_parseFileDescriptor(
+        JNIEnv *env,
+        jobject jthis,
+        jobject fileDescriptor) {
+    int fileno;
+    jclass this_class;
+    jfieldID pdf_field_id;
+    pdf_t *pdf = NULL;
+
+	this_class = (*env)->GetObjectClass(env, jthis);
+	pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
+    fileno = get_descriptor_from_file_descriptor(env, fileDescriptor);
+	pdf = parse_pdf_fileno(fileno);
+	(*env)->SetIntField(env, jthis, pdf_field_id, (int)pdf);
+}
+
+
+/**
+ * Implementation of native method PDF.getPageCount - return page count of this PDF file.
+ * Returns -1 on error, eg if pdf_ptr is NULL.
+ * @param env JNI Environment
+ * @param this PDF object
+ * @return page count or -1 on error
+ */
 JNIEXPORT jint JNICALL
 Java_cx_hell_android_pdfview_PDF_getPageCount(
 		JNIEnv *env,
@@ -134,8 +197,11 @@ Java_cx_hell_android_pdfview_PDF_getPageSize(
 }
 
 
+/**
+ * Free resources allocated in native code.
+ */
 JNIEXPORT void JNICALL
-Java_cx_hell_android_pdfview_PDF_freeMemory(
+Java_cx_hell_android_pdfview_PDF_freeResources(
         JNIEnv *env,
         jobject this) {
     pdf_t *pdf = NULL;
@@ -146,23 +212,54 @@ Java_cx_hell_android_pdfview_PDF_freeMemory(
 	pdf = (pdf_t*) (*env)->GetIntField(env, this, pdf_field_id);
 	(*env)->SetIntField(env, this, pdf_field_id, 0);
 
-    /* TODO: free memory :D */
+    /* TODO: free memory referenced by pdf :D */
+
+    /* pdf->fileno is dup()-ed in parse_pdf_fileno */
+    if (pdf->fileno >= 0) close(pdf->fileno);
+    free(pdf);
 }
 
 
 
+/**
+ * Get pdf_ptr field value, cache field address as a static field.
+ * @param env Java JNI Environment
+ * @param this object to get "pdf_ptr" field from
+ * @return pdf_ptr field value
+ */
 pdf_t* get_pdf_from_this(JNIEnv *env, jobject this) {
     static jfieldID field_id = 0;
-    static unsigned char field_id_cached = 0;
+    static unsigned char field_is_cached = 0;
     pdf_t *pdf = NULL;
-    if (! field_id_cached) {
+    if (! field_is_cached) {
         jclass this_class = (*env)->GetObjectClass(env, this);
         field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
-        field_id_cached = 1;
+        field_is_cached = 1;
         __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "cached pdf_ptr field id %d", (int)field_id);
     }
 	pdf = (pdf_t*) (*env)->GetIntField(env, this, field_id);
     return pdf;
+}
+
+
+/**
+ * Get descriptor field value from FileDescriptor class, cache field offset.
+ * This is undocumented private field.
+ * @param env JNI Environment
+ * @param this FileDescriptor object
+ * @return file descriptor field value
+ */
+int get_descriptor_from_file_descriptor(JNIEnv *env, jobject this) {
+    static jfieldID field_id = 0;
+    static unsigned char is_cached = 0;
+    if (!is_cached) {
+        jclass this_class = (*env)->GetObjectClass(env, this);
+        field_id = (*env)->GetFieldID(env, this_class, "descriptor", "I");
+        is_cached = 1;
+        __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "cached descriptor field id %d", (int)field_id);
+    }
+    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "will get descriptor field...");
+    return (*env)->GetIntField(env, this, field_id);
 }
 
 
@@ -182,6 +279,13 @@ void get_size(JNIEnv *env, jobject size, int *width, int *height) {
 }
 
 
+/**
+ * Store width and height values into PDF.Size object, cache field ids in static members.
+ * @param env JNI Environment
+ * @param width width to store
+ * @param height height field value to be stored
+ * @param size target PDF.Size object
+ */
 void save_size(JNIEnv *env, jobject size, int width, int height) {
     static jfieldID width_field_id = 0;
     static jfieldID height_field_id = 0;
@@ -198,29 +302,160 @@ void save_size(JNIEnv *env, jobject size, int width, int height) {
 }
 
 
-pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len) {
-    pdf_t *pdf;
-    fz_error error;
-    pdf_xref *xref;
-
+/**
+ * pdf_t "constructor": create empty pdf_t with default values.
+ * @return newly allocated pdf_t struct with fields set to default values
+ */
+pdf_t* create_pdf_t() {
+    pdf_t *pdf = NULL;
     pdf = (pdf_t*)malloc(sizeof(pdf_t));
     pdf->xref = NULL;
     pdf->outline = NULL;
+    pdf->fileno = -1;
+}
 
-    xref = pdf_newxref();
-    error = pdf_loadxref_mem(xref, bytes, len);
+
+/**
+ * Parse bytes into PDF struct.
+ * @param bytes pointer to bytes that should be parsed
+ * @param len length of byte buffer
+ * @return initialized pdf_t struct; or NULL if loading failed
+ */
+pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len) {
+    pdf_t *pdf;
+    fz_error error;
+
+    pdf = create_pdf_t();
+
+    pdf->xref = pdf_newxref();
+    error = pdf_loadxref_mem(pdf->xref, bytes, len);
     if (error) {
         __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "got err from pdf_loadxref_mem: %d", (int)error);
         __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "fz errors:\n%s", fz_errorbuf);
+        /* TODO: free resources */
         return NULL;
     }
 
-    pdf->xref = xref;
+    error = pdf_decryptxref(pdf->xref);
+    if (error) {
+        return NULL;
+    }
+
+    if (pdf_needspassword(pdf->xref)) {
+        int authenticated = 0;
+        authenticated = pdf_authenticatepassword(pdf->xref, "");
+        if (!authenticated) {
+            /* TODO: ask for password */
+            __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "failed to authenticate with empty password");
+            return NULL;
+        }
+    }
+
+    pdf->xref->root = fz_resolveindirect(fz_dictgets(pdf->xref->trailer, "Root"));
+    fz_keepobj(pdf->xref->root);
+
+    pdf->xref->info = fz_resolveindirect(fz_dictgets(pdf->xref->trailer, "Info"));
+    fz_keepobj(pdf->xref->info);
+
+    pdf->outline = pdf_loadoutline(pdf->xref);
 
     return pdf;
 }
 
 
+/**
+ * Parse file into PDF struct.
+ */
+pdf_t* parse_pdf_file(const char *filename) {
+    pdf_t *pdf;
+    fz_error error;
+
+    pdf = create_pdf_t();
+
+    pdf->xref = pdf_newxref();
+    error = pdf_loadxref(pdf->xref, (char*)filename); /* mupdf doesn't store nor modify filename; TODO: patch mupdf to use const or pass copy of filename */
+    if (error) {
+        __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "got err from pdf_loadxref: %d", (int)error);
+        __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "fz errors:\n%s", fz_errorbuf);
+        return NULL;
+    }
+
+    error = pdf_decryptxref(pdf->xref);
+    if (error) {
+        return NULL;
+    }
+
+    if (pdf_needspassword(pdf->xref)) {
+        int authenticated = 0;
+        authenticated = pdf_authenticatepassword(pdf->xref, "");
+        if (!authenticated) {
+            /* TODO: ask for password */
+            __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "failed to authenticate with empty password");
+            return NULL;
+        }
+    }
+
+    pdf->xref->root = fz_resolveindirect(fz_dictgets(pdf->xref->trailer, "Root"));
+    fz_keepobj(pdf->xref->root);
+    pdf->xref->info = fz_resolveindirect(fz_dictgets(pdf->xref->trailer, "Info"));
+    if (pdf->xref->info) fz_keepobj(pdf->xref->info);
+    pdf->outline = pdf_loadoutline(pdf->xref);
+    return pdf;
+}
+
+
+/**
+ * Parse opened file into PDF struct.
+ * @param file opened file descriptor
+ */
+pdf_t* parse_pdf_fileno(int fileno) {
+    pdf_t *pdf;
+    fz_error error;
+
+    pdf = create_pdf_t();
+    pdf->fileno = dup(fileno);
+
+    pdf->xref = pdf_newxref();
+    error = pdf_loadxref_fileno(pdf->xref, pdf->fileno);
+    if (error) {
+        __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "got err from pdf_loadxref_fileno: %d", (int)error);
+        __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "fz errors:\n%s", fz_errorbuf);
+        return NULL;
+    }
+
+    error = pdf_decryptxref(pdf->xref);
+    if (error) {
+        return NULL;
+    }
+
+    if (pdf_needspassword(pdf->xref)) {
+        int authenticated = 0;
+        authenticated = pdf_authenticatepassword(pdf->xref, "");
+        if (!authenticated) {
+            /* TODO: ask for password */
+            __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "failed to authenticate with empty password");
+            return NULL;
+        }
+    }
+
+    pdf->xref->root = fz_resolveindirect(fz_dictgets(pdf->xref->trailer, "Root"));
+    fz_keepobj(pdf->xref->root);
+    pdf->xref->info = fz_resolveindirect(fz_dictgets(pdf->xref->trailer, "Info"));
+    if (pdf->xref->info) fz_keepobj(pdf->xref->info);
+    pdf->outline = pdf_loadoutline(pdf->xref);
+
+    return pdf;
+}
+
+
+/**
+ * Calculate zoom to best match given dimensions.
+ * There's no guarantee that page zoomed by resulting zoom will fit rectangle max_width x max_height exactly.
+ * @param max_width expected max width
+ * @param max_height expected max height
+ * @param page original page
+ * @return zoom required to best fit page into max_width x max_height rectangle
+ */
 double get_page_zoom(pdf_page *page, int max_width, int max_height) {
     double page_width, page_height;
     double zoom_x, zoom_y;
@@ -257,19 +492,14 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
     fz_renderer *rast = NULL;
     static int runs = 0;
 
-    if (runs == 0) {
-        /* TODO: move to jni init */
-        __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "setting mupdf log handler routine");
-        pdf_setloghandler(pdf_android_loghandler);
-    }
-
     zoom = (double)zoom_pmil / 1000.0;
 
     __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "get_page_image_bitmap(pageno: %d) start", (int)pageno);
 
     /* TODO: save renderer in pdf_t */
     error = fz_newrenderer(&rast, pdf_devicergb, 0, 1024 * 512);
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "fz_newrenderer -> %d", (int)error);
+
+    pdf_flushxref(pdf->xref, 0);
 
     /* TODO: cache pages in pdf_t */
     obj = pdf_getpageobject(pdf->xref, pageno+1);
@@ -281,15 +511,14 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
         return NULL;
     }
 
+    /*
     __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "page mediabox: %.2f x %.2f  %.2f x %.2f",
             (float)(page->mediabox.x0),
             (float)(page->mediabox.y0),
             (float)(page->mediabox.x1),
             (float)(page->mediabox.y1)
         );
-
-    /* zoom = get_page_zoom(page, *width, *height); */
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "zoom: %.2f", (float)zoom);
+    */
 
     ctm = fz_identity();
     ctm = fz_concat(ctm, fz_translate(-page->mediabox.x0, -page->mediabox.y1));
@@ -305,18 +534,7 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
     bbox.x1 = left + *width;
     bbox.y1 = top + *height;
 
-
-    /* apply clipping to bbox */
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "bbox after (tile): %.2f x %.2f  %.2f x %.2f",
-            (float)(bbox.x0),
-            (float)(bbox.y0),
-            (float)(bbox.x1),
-            (float)(bbox.y1)
-        );
-
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "attempting to render tree");
     error = fz_rendertree(&image, rast, page->tree, ctm, fz_roundrect(bbox), 1);
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "fz_rendertree -> %d", (int)error);
     if (error) {
         fz_rethrow(error, "rendering failed");
         /* TODO: cleanup mem on error, so user can try to open many files without causing memleaks; also report errors nicely to user */
@@ -327,9 +545,7 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
             (int)(image->w), (int)(image->h),
             *width, *height);
 
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "will now fix_samples()");
     fix_samples(image->samples, image->w, image->h);
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "fix_samples() done");
 
     /* TODO: shouldn't malloc so often; but in practice, those temp malloc-memcpy pairs don't cost that much */
     bytes = (unsigned char*)malloc(image->w * image->h * 4);
@@ -340,10 +556,8 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
     pdf_droppage(page);
     fz_droppixmap(image);
     fz_droprenderer(rast);
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "cleanup done");
 
     runs += 1;
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "get_page_image_bitmap: %d-th execution finished", (int)runs);
     return (jint*)bytes;
 }
 
@@ -386,6 +600,6 @@ int get_page_size(pdf_t *pdf, int pageno, int *width, int *height) {
 
 
 void pdf_android_loghandler(const char *m) {
-    /* __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview.mupdf", m); */
+    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview.mupdf", m);
 }
 

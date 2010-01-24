@@ -14,8 +14,14 @@ import cx.hell.android.lib.pagesview.PagesProvider;
 import cx.hell.android.lib.pagesview.PagesView;
 import cx.hell.android.lib.pagesview.RenderingException;
 
+/**
+ * Provide rendered bitmaps of pages.
+ */
 public class PDFPagesProvider extends PagesProvider {
 
+	/**
+	 * Const used by logging.
+	 */
 	private final static String TAG = "cx.hell.android.pdfview";
 	
 	/**
@@ -26,24 +32,28 @@ public class PDFPagesProvider extends PagesProvider {
 	 * Bitmap images are tiled - tile size is specified in PagesView.TILE_SIZE.
 	 */
 	private static class BitmapCache {
-		
-		private static final int MAX_CACHE_SIZE_BYTES = 4*1024*1024;
-		
+
+		/**
+		 * Max size of bitmap cache.
+		 */
+		private static final int MAX_CACHE_SIZE_BYTES = 6*1024*1024;
+
 		private static class BitmapCacheKey {
 			int pagenum;
 			int zoom;
 			int tilex;
 			int tiley;
 			private int _hashCode;
-			
+
 			BitmapCacheKey(int pagenum, int zoom, int tilex, int tiley) {
 				this.pagenum = pagenum;
 				this.zoom = zoom;
 				this.tilex = tilex;
 				this.tiley = tiley;
+				/* writing cool hashCode() is not that easy, so I'll get away with String.hashCode() for now */
 				this._hashCode = (this.pagenum + ":" + this.zoom + ":" + this.tilex + ":" + this.tiley).hashCode();
 			}
-			
+
 			public boolean equals(Object o) {
 				if (! (o instanceof BitmapCacheKey)) return false;
 				BitmapCacheKey k = (BitmapCacheKey) o;
@@ -58,7 +68,6 @@ public class PDFPagesProvider extends PagesProvider {
 			}
 			
 			public int hashCode() {
-				//Log.d("cx.hell.android.pdfview2.pagecache", "hashCode(" + this + ")");
 				return this._hashCode;
 				
 			}
@@ -86,9 +95,19 @@ public class PDFPagesProvider extends PagesProvider {
 			}
 		}
 		
+		/**
+		 * Stores cached bitmaps.
+		 */
 		private Map<BitmapCacheKey, BitmapCacheValue> bitmaps;
 		
+		/**
+		 * Stats logging - number of cache hits.
+		 */
 		private long hits;
+		
+		/**
+		 * Stats logging - number of misses.
+		 */
 		private long misses;
 		
 		BitmapCache() {
@@ -97,8 +116,15 @@ public class PDFPagesProvider extends PagesProvider {
 			this.misses = 0;
 		}
 		
+		/**
+		 * Get cached bitmap.
+		 * @param page page number
+		 * @param zoom zoom level
+		 * @param x tile x position
+		 * @param y tile y position
+		 * @return bitmap found in cache or null if there's no matching bitmap
+		 */
 		Bitmap get(int page, int zoom, int x, int y) {
-			//Log.d("cx.hell.android.pdfview2.pagecache", "get(" + width + ", " + height + ", " + pageno + ")");
 			BitmapCacheKey k = new BitmapCacheKey(page, zoom, x, y);
 			BitmapCacheValue v = this.bitmaps.get(k);
 			Bitmap b = null;
@@ -137,7 +163,7 @@ public class PDFPagesProvider extends PagesProvider {
 		}
 		
 		/**
-		 * Get estimated sum of sizes of bitmaps stored in cache currently.
+		 * Get estimated sum of byte sizes of bitmaps stored in cache currently.
 		 */
 		private synchronized int getCurrentCacheSize() {
 			int size = 0;

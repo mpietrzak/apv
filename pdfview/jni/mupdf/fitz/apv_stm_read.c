@@ -158,7 +158,7 @@ fz_seek(fz_stream *stm, int offset, int whence)
 		if (t < 0)
 		{
 			stm->dead = 1;
-			return fz_throw("syserr: lseek: %s", strerror(errno));
+			return fz_throw("syserr: lseek(%d): %s", stm->file, strerror(errno));
 		}
 
 		buf->rp = buf->bp;

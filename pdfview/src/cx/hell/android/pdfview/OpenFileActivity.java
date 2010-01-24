@@ -1,12 +1,11 @@
 package cx.hell.android.pdfview;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileNotFoundException;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ContentResolver;
 import android.content.Intent;
@@ -75,39 +74,19 @@ public class OpenFileActivity extends Activity {
     private PDF getPDF() {
         final Intent intent = getIntent();
 		Uri uri = intent.getData();
-        byte[] pdfFileBytes = readBytes(uri);
-        PDF pdf = new PDF(pdfFileBytes);
-        return pdf;
-    }
-    
-    /**
-     * Read bytes from uri.
-     * TODO: do not load file contents to memory - let underlying native code read content directly
-     */
-    private byte[] readBytes(Uri uri) {
-    	try {
-	    	InputStream i = this.openUri(uri);
-	    	return StreamUtils.readBytesFully(i);
-    	} catch (IOException e) {
-    		throw new RuntimeException(e);
-    	}
-    }
-    
-    private InputStream openUri(Uri uri) throws IOException {
-    	Log.i(TAG, "opening uri " + uri);
-    	if (uri.getScheme().equals("http")
-    			|| uri.getScheme().equals("https")
-    			|| uri.getScheme().equals("file")) {
-    		URL url = new URL(uri.toString());
-    		URLConnection urlConnection = url.openConnection();
-    		InputStream i = urlConnection.getInputStream();
-    		return i;
+    	if (uri.getScheme().equals("file")) {
+    		return new PDF(new File(uri.getPath()));
     	} else if (uri.getScheme().equals("content")) {
-	    	ContentResolver cr = this.getContentResolver();
-	    	InputStream i = new BufferedInputStream(cr.openInputStream(uri));
-    		return i; 
+    		ContentResolver cr = this.getContentResolver();
+    		FileDescriptor fileDescriptor;
+			try {
+				fileDescriptor = cr.openFileDescriptor(uri, "r").getFileDescriptor();
+			} catch (FileNotFoundException e) {
+				throw new RuntimeException(e); // TODO: handle errors
+			}
+    		return new PDF(fileDescriptor);
     	} else {
-    		throw new RuntimeException("don't know how to open " + uri);
+    		throw new RuntimeException("don't know how to get filename from " + uri);
     	}
     }
     
@@ -124,21 +103,44 @@ public class OpenFileActivity extends Activity {
     	return false;
     }
     
+    /**
+     * Show error message to user.
+     * @param message message to show
+     */
+    private void errorMessage(String message) {
+    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    	AlertDialog dialog = builder.setMessage(message).setTitle("Error").create();
+    	dialog.show();
+    }
+    
+    /**
+     * Called from menu when user want to go to specific page.
+     */
     private void showGotoPageDialog() {
     	final Dialog d = new Dialog(this);
     	d.setTitle(R.string.goto_page_dialog_title);
     	LinearLayout contents = new LinearLayout(this);
     	contents.setOrientation(LinearLayout.VERTICAL);
     	TextView label = new TextView(this);
-    	label.setText("Page number from " + 1 + " to " + this.pdfPagesProvider.getPageCount());
+    	final int pagecount = this.pdfPagesProvider.getPageCount();
+    	label.setText("Page number from " + 1 + " to " + pagecount);
     	this.pageNumberInputField = new EditText(this);
     	Button goButton = new Button(this);
     	goButton.setText(R.string.goto_page_go_button);
     	goButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				int pageNumber = Integer.parseInt(OpenFileActivity.this.pageNumberInputField.getText().toString()) - 1;
-				OpenFileActivity.this.gotoPage(pageNumber);
-				d.hide();
+				int pageNumber = 0;
+				try {
+					pageNumber = Integer.parseInt(OpenFileActivity.this.pageNumberInputField.getText().toString()) - 1;
+				} catch (NumberFormatException e) {
+				}
+				if (pageNumber >= 1 && pageNumber <= pagecount) {
+					OpenFileActivity.this.gotoPage(pageNumber);
+					d.hide();
+				} else {
+					d.hide();
+					OpenFileActivity.this.errorMessage("Invalid page number");
+				}
 			}
     	});
     	LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -153,6 +155,10 @@ public class OpenFileActivity extends Activity {
     	d.show();
     }
     
+    /**
+     * Called after submiting go to page dialog.
+     * @param page page number, 1-based
+     */
     private void gotoPage(int page) {
     	Log.i(TAG, "rewind to page " + page);
     	if (this.pagesView != null) {
@@ -160,6 +166,11 @@ public class OpenFileActivity extends Activity {
     	}
     }
     
+    /**
+     * Create options menu, called by Android system.
+     * @param menu menu to populate
+     * @return true meaning that menu was populated
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
     	this.gotoPageMenuItem = menu.add(R.string.goto_page);

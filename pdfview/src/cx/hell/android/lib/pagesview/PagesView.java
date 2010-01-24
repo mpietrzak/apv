@@ -30,12 +30,12 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 //	private final static String TAG = "cx.hell.android.pdfview"; 
 	
 	/**
-	 * Then fade starts.
+	 * When fade starts.
 	 */
 	private final static long CONTROLS_FADE_START = 3000;
 	
 	/**
-	 * How long should fade be visible. Currently unused.
+	 * How long should fade be visible..
 	 */
 	private final static long CONTROLS_FADE_DURATION = 1000;
 	
@@ -124,6 +124,9 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		this.zoomPlusDrawable.setState(new int[] { android.R.attr.state_enabled });
 	}
 	
+	/**
+	 * Update zoom controls position and size based on current width and height.
+	 */
 	private void setZoomControlsBounds() {
 		this.zoomMinusDrawable.setBounds(
 				this.getWidth() / 2 - this.zoomMinusDrawable.getIntrinsicWidth(),
@@ -137,12 +140,22 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				this.getHeight());
 	}
 	
+	/**
+	 * Handle size change event.
+	 * Update base scaling, move zoom controls to correct place etc.
+	 * @param w new width
+	 * @param h new height
+	 * @param oldw old width
+	 * @param oldh old height
+	 */
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
 		super.onSizeChanged(w, h, oldw, oldh);
 		this.width = w;
 		this.height = h;
-		this.scalling0 = ((float)this.height - 2*MARGIN) / (float)this.pageSizes[0][1];
+		this.scalling0 = Math.min(
+				((float)this.height - 2*MARGIN) / (float)this.pageSizes[0][1],
+				((float)this.width - 2*MARGIN) / (float)this.pageSizes[0][0]);
 		this.setZoomControlsBounds();
 	}
 	
