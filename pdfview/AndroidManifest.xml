@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 		package="cx.hell.android.pdfview"
-		android:versionCode="203"
-		android:versionName="0.2.3">
+		android:versionCode="204"
+		android:versionName="0.2.4">
     <uses-sdk android:minSdkVersion="3" /> <!-- 3 is 1.5 or later, that's more than 99% of devices -->
     <uses-permission android:name="android.permission.INTERNET" />
     

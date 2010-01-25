@@ -15,6 +15,8 @@ struct pdf_s {
 	pdf_xref *xref;
 	pdf_outline *outline;
     int fileno; /* used only when opening by file descriptor */
+    pdf_page **pages; /* lazy-loaded pages */
+    fz_renderer *renderer;
 };
 
 
@@ -22,9 +24,8 @@ typedef struct pdf_s pdf_t;
 
 
 pdf_t* create_pdf_t();
-pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len);
-pdf_t* parse_pdf_file(const char *filename);
-pdf_t* parse_pdf_fileno(int fileno);
+/* pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len); */
+pdf_t* parse_pdf_file(const char *filename, int fileno);
 jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int *blen, int *width, int *height);
 pdf_t* get_pdf_from_this(JNIEnv *env, jobject this);
 void get_size(JNIEnv *env, jobject size, int *width, int *height);
@@ -46,6 +47,7 @@ JNI_OnLoad(JavaVM *jvm, void *reserved) {
 
 
 
+#if 0
 JNIEXPORT void JNICALL
 Java_cx_hell_android_pdfview_PDF_parseBytes(
 		JNIEnv *env,
@@ -62,6 +64,7 @@ Java_cx_hell_android_pdfview_PDF_parseBytes(
 	(*env)->SetIntField(env, jthis, pdf_field_id, (int)pdf);
 	(*env)->ReleaseByteArrayElements(env, bytes, cbytes, 0);
 }
+#endif
 
 
 /**
@@ -84,7 +87,7 @@ Java_cx_hell_android_pdfview_PDF_parseFile(
     c_file_name = (*env)->GetStringUTFChars(env, file_name, &iscopy);
 	this_class = (*env)->GetObjectClass(env, jthis);
 	pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
-	pdf = parse_pdf_file(c_file_name);
+	pdf = parse_pdf_file(c_file_name, 0);
     (*env)->ReleaseStringUTFChars(env, file_name, c_file_name);
 	(*env)->SetIntField(env, jthis, pdf_field_id, (int)pdf);
 }
@@ -106,7 +109,7 @@ Java_cx_hell_android_pdfview_PDF_parseFileDescriptor(
 	this_class = (*env)->GetObjectClass(env, jthis);
 	pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
     fileno = get_descriptor_from_file_descriptor(env, fileDescriptor);
-	pdf = parse_pdf_fileno(fileno);
+	pdf = parse_pdf_file(NULL, fileno);
 	(*env)->SetIntField(env, jthis, pdf_field_id, (int)pdf);
 }
 
@@ -213,6 +216,23 @@ Java_cx_hell_android_pdfview_PDF_freeResources(
 	(*env)->SetIntField(env, this, pdf_field_id, 0);
 
     /* TODO: free memory referenced by pdf :D */
+    if (pdf->pages) {
+        int i;
+        int pagecount;
+        pagecount = pdf_getpagecount(pdf->xref);
+        for(i = 0; i < pagecount; ++i) {
+            if (pdf->pages[i]) {
+                pdf_droppage(pdf->pages[i]);
+            }
+        }
+        free(pdf->pages);
+        pdf->pages = NULL;
+    }
+
+    if (pdf->renderer) {
+        fz_droprenderer(pdf->renderer);
+        pdf->renderer = NULL;
+    }
 
     /* pdf->fileno is dup()-ed in parse_pdf_fileno */
     if (pdf->fileno >= 0) close(pdf->fileno);
@@ -312,9 +332,12 @@ pdf_t* create_pdf_t() {
     pdf->xref = NULL;
     pdf->outline = NULL;
     pdf->fileno = -1;
+    pdf->pages = NULL;
+    pdf->renderer = NULL;
 }
 
 
+#if 0
 /**
  * Parse bytes into PDF struct.
  * @param bytes pointer to bytes that should be parsed
@@ -361,23 +384,43 @@ pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len) {
 
     return pdf;
 }
+#endif
 
 
 /**
  * Parse file into PDF struct.
+ * Use filename if it's not null, otherwise use fileno.
  */
-pdf_t* parse_pdf_file(const char *filename) {
+pdf_t* parse_pdf_file(const char *filename, int fileno) {
     pdf_t *pdf;
     fz_error error;
 
     pdf = create_pdf_t();
 
     pdf->xref = pdf_newxref();
-    error = pdf_loadxref(pdf->xref, (char*)filename); /* mupdf doesn't store nor modify filename; TODO: patch mupdf to use const or pass copy of filename */
-    if (error) {
-        __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "got err from pdf_loadxref: %d", (int)error);
-        __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "fz errors:\n%s", fz_errorbuf);
-        return NULL;
+    if (filename) {
+        error = pdf_loadxref(pdf->xref, (char*)filename); /* mupdf doesn't store nor modify filename; TODO: patch mupdf to use const or pass copy of filename */
+        if (error) {
+            __android_log_print(ANDROID_LOG_INFO, "cx.hell.android.pdfview", "error from pdf_loadxref, trying to repair");
+            error = pdf_repairxref(pdf->xref, (char*)filename);
+            if (error) {
+                __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "got err from pdf_loadxref: %d", (int)error);
+                __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "fz errors:\n%s", fz_errorbuf);
+                return NULL;
+            }
+        }
+    } else {
+        pdf->fileno = dup(fileno);
+        error = pdf_loadxref_fileno(pdf->xref, pdf->fileno);
+        if (error) {
+            __android_log_print(ANDROID_LOG_INFO, "cx.hell.android.pdfview", "error from pdf_loadxref_fileno, trying to repair");
+            error = pdf_repairxref_fileno(pdf->xref, fileno);
+            if (error) {
+                __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "got err from pdf_loadxref_fileno: %d", (int)error);
+                __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "fz errors:\n%s", fz_errorbuf);
+                return NULL;
+            }
+        }
     }
 
     error = pdf_decryptxref(pdf->xref);
@@ -400,50 +443,6 @@ pdf_t* parse_pdf_file(const char *filename) {
     pdf->xref->info = fz_resolveindirect(fz_dictgets(pdf->xref->trailer, "Info"));
     if (pdf->xref->info) fz_keepobj(pdf->xref->info);
     pdf->outline = pdf_loadoutline(pdf->xref);
-    return pdf;
-}
-
-
-/**
- * Parse opened file into PDF struct.
- * @param file opened file descriptor
- */
-pdf_t* parse_pdf_fileno(int fileno) {
-    pdf_t *pdf;
-    fz_error error;
-
-    pdf = create_pdf_t();
-    pdf->fileno = dup(fileno);
-
-    pdf->xref = pdf_newxref();
-    error = pdf_loadxref_fileno(pdf->xref, pdf->fileno);
-    if (error) {
-        __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "got err from pdf_loadxref_fileno: %d", (int)error);
-        __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "fz errors:\n%s", fz_errorbuf);
-        return NULL;
-    }
-
-    error = pdf_decryptxref(pdf->xref);
-    if (error) {
-        return NULL;
-    }
-
-    if (pdf_needspassword(pdf->xref)) {
-        int authenticated = 0;
-        authenticated = pdf_authenticatepassword(pdf->xref, "");
-        if (!authenticated) {
-            /* TODO: ask for password */
-            __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "failed to authenticate with empty password");
-            return NULL;
-        }
-    }
-
-    pdf->xref->root = fz_resolveindirect(fz_dictgets(pdf->xref->trailer, "Root"));
-    fz_keepobj(pdf->xref->root);
-    pdf->xref->info = fz_resolveindirect(fz_dictgets(pdf->xref->trailer, "Info"));
-    if (pdf->xref->info) fz_keepobj(pdf->xref->info);
-    pdf->outline = pdf_loadoutline(pdf->xref);
-
     return pdf;
 }
 
@@ -473,6 +472,39 @@ double get_page_zoom(pdf_page *page, int max_width, int max_height) {
 
 
 /**
+ * Lazy get-or-load page.
+ * @param pdf pdf struct
+ * @param pageno 0-based page number
+ * @return pdf_page
+ */
+pdf_page* get_page(pdf_t *pdf, int pageno) {
+    fz_error error = 0;
+
+    if (!pdf->pages) {
+        int pagecount;
+        int i;
+        pagecount = pdf_getpagecount(pdf->xref);
+        pdf->pages = (pdf_page**)malloc(pagecount * sizeof(pdf_page*));
+        for(i = 0; i < pagecount; ++i) pdf->pages[i] = NULL;
+    }
+
+    if (!pdf->pages[pageno]) {
+        pdf_page *page = NULL;
+        fz_obj *obj = NULL;
+        obj = pdf_getpageobject(pdf->xref, pageno+1);
+        error = pdf_loadpage(&page, pdf->xref, obj);
+        if (error) {
+            __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "pdf_loadpage -> %d", (int)error);
+            __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "fitz error is:\n%s", fz_errorbuf);
+            return NULL;
+        }
+        pdf->pages[pageno] = page;
+    }
+    return pdf->pages[pageno];
+}
+
+
+/**
  * Get part of page as bitmap.
  * Parameters left, top, width and height are interprted after scalling, so if we have 100x200 page scalled by 25% and
  * request 0x0 x 25x50 tile, we should get 25x50 bitmap of whole page content.
@@ -482,14 +514,12 @@ double get_page_zoom(pdf_page *page, int max_width, int max_height) {
 jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int *blen, int *width, int *height) {
     unsigned char *bytes = NULL;
     fz_matrix ctm;
-    fz_obj *obj = NULL;
     double zoom;
     int rotate = 0;
     fz_rect bbox;
     fz_error error = 0;
     pdf_page *page = NULL;
     fz_pixmap *image = NULL;
-    fz_renderer *rast = NULL;
     static int runs = 0;
 
     zoom = (double)zoom_pmil / 1000.0;
@@ -497,19 +527,17 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
     __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "get_page_image_bitmap(pageno: %d) start", (int)pageno);
 
     /* TODO: save renderer in pdf_t */
-    error = fz_newrenderer(&rast, pdf_devicergb, 0, 1024 * 512);
+    if (!pdf->renderer) {
+        error = fz_newrenderer(&(pdf->renderer), pdf_devicergb, 0, 1024 * 512);
+        if (error) {
+            __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "failed to create renderer");
+        }
+    }
 
     pdf_flushxref(pdf->xref, 0);
 
-    /* TODO: cache pages in pdf_t */
-    obj = pdf_getpageobject(pdf->xref, pageno+1);
-
-    error = pdf_loadpage(&page, pdf->xref, obj);
-    if (error) {
-        __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "pdf_loadpage -> %d", (int)error);
-        __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "fitz error is:\n%s", fz_errorbuf);
-        return NULL;
-    }
+    page = get_page(pdf, pageno);
+    if (!page) return NULL; /* TODO: handle/propagate errors */
 
     /*
     __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "page mediabox: %.2f x %.2f  %.2f x %.2f",
@@ -534,7 +562,7 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
     bbox.x1 = left + *width;
     bbox.y1 = top + *height;
 
-    error = fz_rendertree(&image, rast, page->tree, ctm, fz_roundrect(bbox), 1);
+    error = fz_rendertree(&image, pdf->renderer, page->tree, ctm, fz_roundrect(bbox), 1);
     if (error) {
         fz_rethrow(error, "rendering failed");
         /* TODO: cleanup mem on error, so user can try to open many files without causing memleaks; also report errors nicely to user */
@@ -553,9 +581,7 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
     *blen = image->w * image->h * 4;
     *width = image->w;
     *height = image->h;
-    pdf_droppage(page);
     fz_droppixmap(image);
-    fz_droprenderer(rast);
 
     runs += 1;
     return (jint*)bytes;

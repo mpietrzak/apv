@@ -23,7 +23,7 @@ public class PDFPagesProvider extends PagesProvider {
 	 * Const used by logging.
 	 */
 	private final static String TAG = "cx.hell.android.pdfview";
-	
+
 	/**
 	 * Smart page-bitmap cache.
 	 * Stores up to approx MAX_CACHE_SIZE_BYTES of images.

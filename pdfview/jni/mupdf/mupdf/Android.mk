@@ -3,7 +3,6 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../fitz $(LOCAL_PATH)/../../pdfview2/include
-LOCAL_CFLAGS    := -DNOCJK
 LOCAL_MODULE    := mupdf
 LOCAL_SRC_FILES := \
 	pdf_crypt.c \
@@ -12,7 +11,7 @@ LOCAL_SRC_FILES := \
 	pdf_nametree.c \
 	apv_pdf_open.c \
 	pdf_parse.c \
-	pdf_repair.c \
+	apv_pdf_repair.c \
 	pdf_stream.c \
 	pdf_xref.c \
 	pdf_annot.c \
@@ -45,13 +44,13 @@ LOCAL_SRC_FILES := \
 	font_misc.c \
 	font_mono.c \
 	font_sans.c \
-	font_serif.c
+	font_serif.c \
+	cmap_tounicode.c \
+	\
+	font_cjk.c \
+	cmap_cns.c \
+	cmap_gb.c cmap_japan.c cmap_korea.c
 
-#	font_cjk.c
-
-#	cmap_tounicode.c \
-#	cmap_cns.c \
-#	cmap_gb.c cmap_japan.c cmap_korea.c
 
 
 include $(BUILD_STATIC_LIBRARY)
