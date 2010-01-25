@@ -4,6 +4,7 @@ include $(CLEAR_VARS)
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../fitz $(LOCAL_PATH)/../../pdfview2/include
 LOCAL_MODULE    := mupdf
+LOCAL_CFLAGS := -DNOCJK
 LOCAL_SRC_FILES := \
 	pdf_crypt.c \
 	apv_pdf_debug.c \
@@ -44,10 +45,10 @@ LOCAL_SRC_FILES := \
 	font_misc.c \
 	font_mono.c \
 	font_sans.c \
-	font_serif.c \
-	cmap_tounicode.c \
-	\
-	font_cjk.c \
+	font_serif.c
+
+#	cmap_tounicode.c
+#	font_cjk.c \
 	cmap_cns.c \
 	cmap_gb.c cmap_japan.c cmap_korea.c
 
