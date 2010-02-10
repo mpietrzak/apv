@@ -16,3 +16,6 @@ syntax: regexp
 ^pdfview/jni/mupdf/fonts/droid$
 syntax: regexp
 ^pdfview/jni/mupdf/fonts$
+syntax: regexp
+^pdfview/jni/jpeg/cderror\.h$
+glob:pdfview/jni/jpeg/Makefile.am

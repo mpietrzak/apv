@@ -9,6 +9,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -37,7 +38,10 @@ public class OpenFileActivity extends Activity {
 	
 	private MenuItem aboutMenuItem = null;
 	private MenuItem gotoPageMenuItem = null;
+	private MenuItem rotateLeftMenuItem = null;
+	private MenuItem rotateRightMenuItem = null;
 	private EditText pageNumberInputField = null;
+	
 
     /**
      * Called when the activity is first created.
@@ -90,6 +94,11 @@ public class OpenFileActivity extends Activity {
     	}
     }
     
+    /**
+     * Handle menu.
+     * @param menuItem selected menu item
+     * @return true if menu item was handled
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem menuItem) {
     	if (menuItem == this.aboutMenuItem) {
@@ -99,6 +108,10 @@ public class OpenFileActivity extends Activity {
     		return true;
     	} else if (menuItem == this.gotoPageMenuItem) {
     		this.showGotoPageDialog();
+    	} else if (menuItem == this.rotateLeftMenuItem) {
+    		this.pagesView.rotate(-1);
+    	} else if (menuItem == this.rotateRightMenuItem) {
+    		this.pagesView.rotate(1);
     	}
     	return false;
     }
@@ -129,16 +142,17 @@ public class OpenFileActivity extends Activity {
     	goButton.setText(R.string.goto_page_go_button);
     	goButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				int pageNumber = 0;
+				int pageNumber = -1;
 				try {
-					pageNumber = Integer.parseInt(OpenFileActivity.this.pageNumberInputField.getText().toString()) - 1;
+					pageNumber = Integer.parseInt(OpenFileActivity.this.pageNumberInputField.getText().toString())-1;
 				} catch (NumberFormatException e) {
+					/* ignore */
 				}
-				if (pageNumber >= 1 && pageNumber <= pagecount) {
+				d.dismiss();
+				if (pageNumber >= 0 && pageNumber < pagecount) {
 					OpenFileActivity.this.gotoPage(pageNumber);
-					d.hide();
+
 				} else {
-					d.hide();
 					OpenFileActivity.this.errorMessage("Invalid page number");
 				}
 			}
@@ -157,7 +171,7 @@ public class OpenFileActivity extends Activity {
     
     /**
      * Called after submiting go to page dialog.
-     * @param page page number, 1-based
+     * @param page page number, 0-based
      */
     private void gotoPage(int page) {
     	Log.i(TAG, "rewind to page " + page);
@@ -174,8 +188,16 @@ public class OpenFileActivity extends Activity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
     	this.gotoPageMenuItem = menu.add(R.string.goto_page);
+    	this.rotateRightMenuItem = menu.add(R.string.rotate_page_left);
+    	this.rotateLeftMenuItem = menu.add(R.string.rotate_page_right);
     	this.aboutMenuItem = menu.add(R.string.about);
     	return true;
+    }
+    
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+      super.onConfigurationChanged(newConfig);
+      Log.i(TAG, "onConfigurationChanged(" + newConfig + ")");
     }
 }
 

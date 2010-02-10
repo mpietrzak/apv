@@ -1,5 +1,7 @@
 package cx.hell.android.lib.pagesview;
 
+import java.util.Collection;
+
 import android.graphics.Bitmap;
 
 
@@ -11,7 +13,7 @@ public abstract class PagesProvider {
 	/**
 	 * Get page image tile for drawing.
 	 */
-	public abstract Bitmap getPageBitmap(int pageNumber, int zoom, int tilex, int tiley);
+	public abstract Bitmap getPageBitmap(Tile tile);
 	
 	/**
 	 * Get page count.
@@ -38,4 +40,6 @@ public abstract class PagesProvider {
 	public void setOnImageRenderedListener(OnImageRenderedListener listener) {
 		/* to be overridden when needed */
 	}
+	
+	public abstract void setVisibleTiles(Collection<Tile> tiles);
 }

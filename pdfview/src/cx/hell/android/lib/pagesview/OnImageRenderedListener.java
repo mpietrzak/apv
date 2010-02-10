@@ -1,5 +1,7 @@
 package cx.hell.android.lib.pagesview;
 
+import java.util.Map;
+
 import android.graphics.Bitmap;
 
 /**
@@ -7,6 +9,6 @@ import android.graphics.Bitmap;
  * Implemented by PagesView.
  */
 public interface OnImageRenderedListener {
-	void onImageRendered(int pageNumber, int zoom, int tilex, int tiley, Bitmap bitmap);
+	void onImagesRendered(Map<Tile,Bitmap> renderedImages);
 	void onRenderingException(RenderingException reason);
 }

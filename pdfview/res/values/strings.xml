@@ -6,4 +6,6 @@
 <string name="goto_page">Go to page...</string>
 <string name="goto_page_dialog_title">Go to page</string>
 <string name="goto_page_go_button">Go</string>
+<string name="rotate_page_left">Rotate left</string>
+<string name="rotate_page_right">Rotate right</string>
 </resources>

@@ -8,6 +8,7 @@
 #include "mupdf.h"
 
 
+
 /**
  * Holds pdf info.
  */
@@ -26,7 +27,7 @@ typedef struct pdf_s pdf_t;
 pdf_t* create_pdf_t();
 /* pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len); */
 pdf_t* parse_pdf_file(const char *filename, int fileno);
-jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int *blen, int *width, int *height);
+jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation, int *blen, int *width, int *height);
 pdf_t* get_pdf_from_this(JNIEnv *env, jobject this);
 void get_size(JNIEnv *env, jobject size, int *width, int *height);
 void save_size(JNIEnv *env, jobject size, int width, int height);
@@ -140,6 +141,7 @@ Java_cx_hell_android_pdfview_PDF_renderPage(
         jint zoom,
         jint left,
         jint top,
+        jint rotation,
         jobject size) {
 
     int blen;
@@ -157,7 +159,7 @@ Java_cx_hell_android_pdfview_PDF_renderPage(
             (int)width, (int)height);
 
     pdf = get_pdf_from_this(env, this);
-    buf = get_page_image_bitmap(pdf, pageno, zoom, left, top, &blen, &width, &height);
+    buf = get_page_image_bitmap(pdf, pageno, zoom, left, top, rotation, &blen, &width, &height);
 
     if (buf == NULL) return NULL;
 
@@ -511,11 +513,10 @@ pdf_page* get_page(pdf_t *pdf, int pageno) {
  * Page size is currently MediaBox size: http://www.prepressure.com/pdf/basics/page_boxes, but probably shuld be TrimBox.
  * pageno is 0-based.
  */
-jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int *blen, int *width, int *height) {
+jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation, int *blen, int *width, int *height) {
     unsigned char *bytes = NULL;
     fz_matrix ctm;
     double zoom;
-    int rotate = 0;
     fz_rect bbox;
     fz_error error = 0;
     pdf_page *page = NULL;
@@ -539,28 +540,19 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
     page = get_page(pdf, pageno);
     if (!page) return NULL; /* TODO: handle/propagate errors */
 
-    /*
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "page mediabox: %.2f x %.2f  %.2f x %.2f",
-            (float)(page->mediabox.x0),
-            (float)(page->mediabox.y0),
-            (float)(page->mediabox.x1),
-            (float)(page->mediabox.y1)
-        );
-    */
-
     ctm = fz_identity();
     ctm = fz_concat(ctm, fz_translate(-page->mediabox.x0, -page->mediabox.y1));
     ctm = fz_concat(ctm, fz_scale(zoom, -zoom));
-    rotate += page->rotate;
-    if (rotate != 0) ctm = fz_concat(ctm, fz_rotate(rotate));
-    /*
+    rotation = page->rotate + rotation * -90;
+    if (rotation != 0) ctm = fz_concat(ctm, fz_rotate(rotation));
     bbox = fz_transformaabb(ctm, page->mediabox);
-    */
 
-    bbox.x0 = left;
-    bbox.y0 = top;
-    bbox.x1 = left + *width;
-    bbox.y1 = top + *height;
+    /* not bbox holds page after transform, but we only need tile at (left,right) from top-left corner */
+
+    bbox.x0 = bbox.x0 + left;
+    bbox.y0 = bbox.y0 + top;
+    bbox.x1 = bbox.x0 + *width;
+    bbox.y1 = bbox.y0 + *height;
 
     error = fz_rendertree(&image, pdf->renderer, page->tree, ctm, fz_roundrect(bbox), 1);
     if (error) {

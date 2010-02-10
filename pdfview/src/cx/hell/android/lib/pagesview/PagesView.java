@@ -1,5 +1,8 @@
 package cx.hell.android.lib.pagesview;
 
+import java.util.LinkedList;
+import java.util.Map;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -19,15 +22,17 @@ import cx.hell.android.pdfview.R;
  */
 public class PagesView extends View implements View.OnTouchListener, OnImageRenderedListener {
 	
+
+	
 	/**
 	 * Tile size.
 	 */
 	public static final int TILE_SIZE = 256;
 
-//	/**
-//	 * Const for logging.
-//	 */
-//	private final static String TAG = "cx.hell.android.pdfview"; 
+	/**
+	 * Logging tag.
+	 */
+	private static final String TAG = "cx.hell.android.pdfview";
 	
 	/**
 	 * When fade starts.
@@ -51,10 +56,21 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	private Drawable zoomPlusDrawable = null;
 	
 	private Activity activity = null;
+	
+	/**
+	 * Source of page bitmaps.
+	 */
 	private PagesProvider pagesProvider = null;
 	private long lastControlsUseMillis = 0;
 	
+	/**
+	 * Current width of this view.
+	 */
 	private int width = 0;
+	
+	/**
+	 * Current height of this view.
+	 */
 	private int height = 0;
 	
 	/**
@@ -94,18 +110,32 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	
 	/**
 	 * Current zoom level.
+	 * 1000 is 100%.
 	 */
 	private int zoomLevel = 1000;
 	
 	/**
-	 * Base scalling factor - how much shrink (or grow) page to fit it nicely to screen at zoomLevel = 1.0.
+	 * Current rotation of pages.
+	 */
+	private int rotation = 0;
+	
+	/**
+	 * Base scalling factor - how much shrink (or grow) page to fit it nicely to screen at zoomLevel = 1000.
 	 * For example, if we determine that 200x400 image fits screen best, but PDF's pages are 400x800, then
 	 * base scaling would be 0.5, since at base scalling, without any zoom, page should fit into screen nicely.
 	 */
 	private float scalling0 = 0f;
 	
+	/**
+	 * Page sized obtained from pages provider.
+	 * These do not change.
+	 */
 	private int pageSizes[][];
-
+	
+	/**
+	 * Construct this view.
+	 * @param activity parent activity
+	 */
 	public PagesView(Activity activity) {
 		super(activity);
 		this.activity = activity;
@@ -153,95 +183,123 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		super.onSizeChanged(w, h, oldw, oldh);
 		this.width = w;
 		this.height = h;
-		this.scalling0 = Math.min(
-				((float)this.height - 2*MARGIN) / (float)this.pageSizes[0][1],
-				((float)this.width - 2*MARGIN) / (float)this.pageSizes[0][0]);
+		if (this.scalling0 == 0f) {
+			this.scalling0 = Math.min(
+					((float)this.height - 2*MARGIN) / (float)this.pageSizes[0][1],
+					((float)this.width - 2*MARGIN) / (float)this.pageSizes[0][0]);
+		}
+		if (oldw == 0 && oldh == 0) {
+			this.left = this.width / 2;
+			this.top = this.height / 2;
+		}
 		this.setZoomControlsBounds();
 	}
-	
-//	public PagesView(Context context, AttributeSet attrs) {
-//		super(context, attrs);
-//	}
 	
 	public void setPagesProvider(PagesProvider pagesProvider) {
 		this.pagesProvider = pagesProvider;
 		if (this.pagesProvider != null) {
 			this.pageSizes = this.pagesProvider.getPageSizes();
-			this.scalling0 = ((float)this.height - 2*MARGIN) / (float)this.pageSizes[0][1];
+			if (this.width > 0 && this.height > 0) {
+				this.scalling0 = Math.min(
+						((float)this.height - 2*MARGIN) / (float)this.pageSizes[0][1],
+						((float)this.width - 2*MARGIN) / (float)this.pageSizes[0][0]);
+				this.left = this.width / 2;
+				this.top = this.height / 2;
+			}
 		} else {
 			this.pageSizes = null;
 		}
 		this.pagesProvider.setOnImageRenderedListener(this);
 	}
 	
+	/**
+	 * Draw view.
+	 * @param canvas what to draw on
+	 */
 	@Override
 	public void onDraw(Canvas canvas) {
 		this.drawPages(canvas);
 		this.drawControls(canvas);
 	}
 	
+	/**
+	 * Get current page width by page number taking into account zoom and rotation
+	 * @param pageno 0-based page number
+	 */
 	private int getCurrentPageWidth(int pageno) {
-		// on default zoom level first page fits perfectly into screen
-		float realpagewidth = (float)this.pageSizes[pageno][0];
+		float realpagewidth = (float)this.pageSizes[pageno][this.rotation % 2 == 0 ? 0 : 1];
 		float currentpagewidth = realpagewidth * scalling0 * (this.zoomLevel*0.001f);
 		return (int)currentpagewidth;
 	}
 	
+	/**
+	 * Get current page height by page number taking into account zoom and rotation.
+	 * @param pageno 0-based page number
+	 */
 	private float getCurrentPageHeight(int pageno) {
-		float realpageheight = (float)this.pageSizes[pageno][1];
+		float realpageheight = (float)this.pageSizes[pageno][this.rotation % 2 == 0 ? 1 : 0];
 		float currentpageheight = realpageheight * scalling0 * (this.zoomLevel*0.001f);
 		return currentpageheight;
 	}
 	
+	/**
+	 * Draw pages.
+	 * Also collect info what's visible and push this info to page renderer.
+	 */
 	private void drawPages(Canvas canvas) {
-		Rect src = new Rect();
-		Rect dst = new Rect();
+		Rect src = new Rect(); /* TODO: move out of drawPages */
+		Rect dst = new Rect(); /* TODO: move out of drawPages */
+		int pageWidth = 0;
+		int pageHeight = 0;
+		float pagex0, pagey0, pagex1, pagey1; // in doc, counts zoom
+		float x, y; // on screen
+		int dragoffx, dragoffy;
+		int viewx0, viewy0; // view over doc
+		LinkedList<Tile> visibleTiles = new LinkedList<Tile>();
+		float currentMargin = (float)MARGIN * this.zoomLevel * 0.001f;
 		if (this.pagesProvider != null) {
-			int effleft, efftop;
-			int dragoffx, dragoffy;
-			
+
 			dragoffx = (inDrag) ? (dragx1 - dragx) : 0;
 			dragoffy = (inDrag) ? (dragy1 - dragy) : 0;
 			
-			effleft = left - dragoffx;
-			efftop = top - dragoffy;
+			viewx0 = left - dragoffx - width/2;
+			viewy0 = top - dragoffy - height/2;
 			
 			int pageCount = this.pageSizes.length;
-			int currpageoff = MARGIN;
+			float currpageoff = currentMargin;
 			
 			for(int i = 0; i < pageCount; ++i) {
 				// is page i visible?
-				int pagex0, pagey0, pagex1, pagey1; // in doc
-				pagex0 = MARGIN;
-				pagex1 = MARGIN + this.getCurrentPageWidth(i);
+
+				pageWidth = this.getCurrentPageWidth(i);
+				pageHeight = (int) this.getCurrentPageHeight(i);
+				
+				pagex0 = currentMargin;
+				pagex1 = (int)(currentMargin + pageWidth);
 				pagey0 = currpageoff;
-				pagey1 = currpageoff + (int)this.getCurrentPageHeight(i);
+				pagey1 = (int)(currpageoff + pageHeight);
 				
 				if (rectsintersect(
-							pagex0, pagey0, pagex1, pagey1, // page rect in doc
-							effleft, efftop, effleft + this.width, efftop + this.height // viewport rect in doc 
+							(int)pagex0, (int)pagey0, (int)pagex1, (int)pagey1, // page rect in doc
+							viewx0, viewy0, viewx0 + this.width, viewy0 + this.height // viewport rect in doc 
 						))
 				{
-					int x, y; // x,y on screen
-					int w, h; // w,h of page - on screen dimensions
-					x = pagex0 - effleft;
-					y = pagey0 - efftop;
-					w = this.getCurrentPageWidth(i);
-					h = (int)this.getCurrentPageHeight(i);
-					//Log.d(TAG, String.format(" page %d coordds on screen: %dx%d x %dx%d", i, x, y, x+w, y+h)); 
-					for(int tilex = 0; tilex < w / TILE_SIZE + 1; ++tilex)
-						for(int tiley = 0; tiley < h / TILE_SIZE + 1; ++tiley) {
-							//Log.d(TAG, String.format(" page: %2d, tile: %02dx%02d", i, tilex, tiley));
-							//Rect dst = new Rect(x+tilex*TILE_SIZE, y+tiley*TILE_SIZE, x+tilex*TILE_SIZE + TILE_SIZE, y+tiley*TILE_SIZE + TILE_SIZE);
-							dst.left =  x + tilex*TILE_SIZE;
-							dst.top = y + tiley*TILE_SIZE;
+
+					x = pagex0 - viewx0;
+					y = pagey0 - viewy0;
+					
+					for(int tileix = 0; tileix < pageWidth / TILE_SIZE + 1; ++tileix)
+						for(int tileiy = 0; tileiy < pageHeight / TILE_SIZE + 1; ++tileiy) {
+							
+							dst.left = (int)(x + tileix*TILE_SIZE);
+							dst.top = (int)(y + tileiy*TILE_SIZE);
 							dst.right = dst.left + TILE_SIZE;
-							dst.bottom = dst.top + TILE_SIZE;
+							dst.bottom = dst.top + TILE_SIZE;	
 						
-							//Log.d(TAG, String.format("  dst: %dx%d x %dx%d", dst.left, dst.top, dst.right, dst.bottom));
 							if (dst.intersects(0, 0, this.width, this.height)) {
-								//Log.d(TAG, "  tile is visible - dst intersects screen");
-								Bitmap b = this.pagesProvider.getPageBitmap(i, (int)(this.zoomLevel * scalling0), tilex, tiley);
+								/* tile is visible */
+								Tile tile = new Tile(i, (int)(this.zoomLevel * scalling0), tileix*TILE_SIZE, tileiy*TILE_SIZE, this.rotation);
+								Bitmap b = this.pagesProvider.getPageBitmap(tile);
 								if (b != null) {
 									//Log.d(TAG, "  have bitmap: " + b + ", size: " + b.getWidth() + " x " + b.getHeight());
 									src.left = 0;
@@ -249,24 +307,28 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 									src.right = b.getWidth();
 									src.bottom = b.getWidth();
 									
-									if (dst.right > x + w) {
-										src.right = (int)(b.getWidth() * (float)((x+w)-dst.left) / (float)(dst.right - dst.left));
-										dst.right = x + w;
+									if (dst.right > x + pageWidth) {
+										src.right = (int)(b.getWidth() * (float)((x+pageWidth)-dst.left) / (float)(dst.right - dst.left));
+										dst.right = (int)(x + pageWidth);
 									}
 									
-									if (dst.bottom > y + h) {
-										src.bottom = (int)(b.getHeight() * (float)((y+h)-dst.top) / (float)(dst.bottom - dst.top));
-										dst.bottom = y + h;
+									if (dst.bottom > y + pageHeight) {
+										src.bottom = (int)(b.getHeight() * (float)((y+pageHeight)-dst.top) / (float)(dst.bottom - dst.top));
+										dst.bottom = (int)(y + pageHeight);
 									}
 									
 									//this.fixOfscreen(dst, src);
 									canvas.drawBitmap(b, src, dst, null);
 								}
+								visibleTiles.add(tile);
 							}
 						}
 				}
-				currpageoff += MARGIN + this.getCurrentPageHeight(i);
+				
+				/* move to next page */
+				currpageoff += currentMargin + this.getCurrentPageHeight(i);
 			}
+			this.pagesProvider.setVisibleTiles(visibleTiles);
 		}
 	}
 	
@@ -292,32 +354,36 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	public boolean onTouch(View v, MotionEvent event) {
 		this.lastControlsUseMillis = System.currentTimeMillis();
 		if (event.getAction() == MotionEvent.ACTION_DOWN) {
-			Log.d("cx.hell.android.pdfview", "onTouch(ACTION_DOWN)");
+			Log.d(TAG, "onTouch(ACTION_DOWN)");
 			int x = (int)event.getX();
 			int y = (int)event.getY();
 			if (this.zoomMinusDrawable.getBounds().contains(x,y)) {
 				float step = 0.5f;
 				this.zoomLevel *= step;
-				float cx, cy;
-				cx = this.left + this.width / 2;
-				cy = this.top + this.height / 2;
-				cx = cx * step;
-				cy = cy * step;
-				this.left = (int)(cx - this.width / 2f);
-				this.top = (int)(cy - this.height / 2f);
-				Log.d("cx.hell.android.pdfview", "zoom level changed to " + this.zoomLevel);
+//				float cx, cy;
+//				cx = this.left + this.width / 2;
+//				cy = this.top + this.height / 2;
+//				cx = cx * step;
+//				cy = cy * step;
+//				this.left = (int)(cx - this.width / 2f);
+//				this.top = (int)(cy - this.height / 2f);
+				this.left *= step;
+				this.top *= step;
+				Log.d(TAG, "zoom level changed to " + this.zoomLevel);
 				this.invalidate();
 			} else if (this.zoomPlusDrawable.getBounds().contains(x,y)) {
 				float step = 2f;
 				this.zoomLevel *= step;
-				float cx, cy;
-				cx = this.left + this.width / 2;
-				cy = this.top + this.height / 2;
-				cx = cx * step;
-				cy = cy * step;
-				this.left = (int)(cx - this.width / 2f);
-				this.top = (int)(cy - this.height / 2f);
-				Log.d("cx.hell.android.pdfview", "zoom level changed to " + this.zoomLevel);
+				this.left *= step;
+				this.top *= step;
+//				float cx, cy;
+//				cx = this.left + this.width / 2;
+//				cy = this.top + this.height / 2;
+//				cx = cx * step;
+//				cy = cy * step;
+//				this.left = (int)(cx - this.width / 2f);
+//				this.top = (int)(cy - this.height / 2f);
+				Log.d(TAG, "zoom level changed to " + this.zoomLevel);
 				this.invalidate();
 			} else {
 				this.dragx = x;
@@ -349,15 +415,28 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	private static boolean rectsintersect(
 			int r1x0, int r1y0, int r1x1, int r1y1,
 			int r2x0, int r2y0, int r2x1, int r2y1) {
-		Rect r1 = new Rect(r1x0, r1y0, r1x1, r1y1);
+		Rect r1 = new Rect();
+		r1.set(r1x0, r1y0, r1x1, r1y1);
 		return r1.intersects(r2x0, r2y0, r2x1, r2y1);
 	}
+
+//	/**
+//	 * Test if specified rectangles intersect with each other.
+//	 * Uses Androids standard RectF class.
+//	 */
+//	private static boolean rectsintersect(
+//			float r1x0, float r1y0, float r1x1, float r1y1,
+//			float r2x0, float r2y0, float r2x1, float r2y1) {
+//		RectF r1 = new RectF(r1x0, r1y0, r1x1, r1y1);
+//		return r1.intersects(r2x0, r2y0, r2x1, r2y1);
+//	}
 	
 	/**
 	 * Used as a callback from pdf rendering code.
 	 * TODO: only invalidate what needs to be painted, not the whole view
 	 */
-	public void onImageRendered(int pageNumber, int zoom, int tilex, int tiley, Bitmap bitmap) {
+	public void onImagesRendered(Map<Tile,Bitmap> renderedTiles) {
+		Log.d(TAG, "there are " + renderedTiles.size() + " new rendered tiles");
 		this.post(new Runnable() {
 			public void run() {
 				PagesView.this.invalidate();
@@ -400,14 +479,69 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * @param page 0-based page number
 	 */
 	public void scrollToPage(int page) {
-		this.left = 0;
-		float top = 0;
+		this.left = this.width / 2;
+		float top = this.height / 2;
 		for(int i = 0; i < page; ++i) {
 			top += this.getCurrentPageHeight(i);
-			if (i > 0) top += MARGIN;
 		}
+		if (page > 0)
+			top += (float)MARGIN * this.zoomLevel * 0.001f * (float)(page); 
 		this.top = (int)top;
 		this.invalidate();
 	}
+	
+//	/**
+//	 * Compute what's currently visible.
+//	 * @return collection of tiles that define what's currently visible
+//	 */
+//	private Collection<Tile> computeVisibleTiles() {
+//		LinkedList<Tile> tiles = new LinkedList<Tile>();
+//		float viewx = this.left + (this.dragx1 - this.dragx);
+//		float viewy = this.top + (this.dragy1 - this.dragy);
+//		float pagex = MARGIN;
+//		float pagey = MARGIN;
+//		float pageWidth;
+//		float pageHeight;
+//		int tileix;
+//		int tileiy;
+//		int thisPageTileCountX;
+//		int thisPageTileCountY;
+//		float tilex;
+//		float tiley;
+//		for(int page = 0; page < this.pageSizes.length; ++page) {
+//			
+//			pageWidth = this.getCurrentPageWidth(page);
+//			pageHeight = this.getCurrentPageHeight(page);
+//			
+//			thisPageTileCountX = (int)Math.ceil(pageWidth / TILE_SIZE);
+//			thisPageTileCountY = (int)Math.ceil(pageHeight / TILE_SIZE);
+//			
+//			if (viewy + this.height < pagey) continue; /* before first visible page */
+//			if (viewx > pagey + pageHeight) break; /* after last page */
+//
+//			for(tileix = 0; tileix < thisPageTileCountX; ++tileix) {
+//				for(tileiy = 0; tileiy < thisPageTileCountY; ++tileiy) {
+//					tilex = pagex + tileix * TILE_SIZE;
+//					tiley = pagey + tileiy * TILE_SIZE;
+//					if (rectsintersect(viewx, viewy, viewx+this.width, viewy+this.height,
+//							tilex, tiley, tilex+TILE_SIZE, tiley+TILE_SIZE)) {
+//						tiles.add(new Tile(page, this.zoomLevel, (int)tilex, (int)tiley, this.rotation));
+//					}
+//				}
+//			}
+//			
+//			/* move to next page */
+//			pagey += this.getCurrentPageHeight(page) + MARGIN;
+//		}
+//		return tiles;
+//	}
+//	synchronized Collection<Tile> getVisibleTiles() {
+//		return this.visibleTiles;
+//	}
+	
+	synchronized public void rotate(int rotation) {
+		this.rotation = (this.rotation + rotation) % 4;
+		this.invalidate();
+	}	
 }
 

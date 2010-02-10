@@ -1,11 +1,12 @@
 package cx.hell.android.pdfview;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import android.graphics.Bitmap;
 import android.util.Log;
@@ -13,6 +14,7 @@ import cx.hell.android.lib.pagesview.OnImageRenderedListener;
 import cx.hell.android.lib.pagesview.PagesProvider;
 import cx.hell.android.lib.pagesview.PagesView;
 import cx.hell.android.lib.pagesview.RenderingException;
+import cx.hell.android.lib.pagesview.Tile;
 
 /**
  * Provide rendered bitmaps of pages.
@@ -28,7 +30,7 @@ public class PDFPagesProvider extends PagesProvider {
 	 * Smart page-bitmap cache.
 	 * Stores up to approx MAX_CACHE_SIZE_BYTES of images.
 	 * Dynamically drops oldest unused bitmaps.
-	 * TODO: Return high resolution bitmap if no exact res is available.
+	 * TODO: Return high resolution bitmaps if no exact res is available.
 	 * Bitmap images are tiled - tile size is specified in PagesView.TILE_SIZE.
 	 */
 	private static class BitmapCache {
@@ -36,50 +38,7 @@ public class PDFPagesProvider extends PagesProvider {
 		/**
 		 * Max size of bitmap cache.
 		 */
-		private static final int MAX_CACHE_SIZE_BYTES = 6*1024*1024;
-
-		private static class BitmapCacheKey {
-			int pagenum;
-			int zoom;
-			int tilex;
-			int tiley;
-			private int _hashCode;
-
-			BitmapCacheKey(int pagenum, int zoom, int tilex, int tiley) {
-				this.pagenum = pagenum;
-				this.zoom = zoom;
-				this.tilex = tilex;
-				this.tiley = tiley;
-				/* writing cool hashCode() is not that easy, so I'll get away with String.hashCode() for now */
-				this._hashCode = (this.pagenum + ":" + this.zoom + ":" + this.tilex + ":" + this.tiley).hashCode();
-			}
-
-			public boolean equals(Object o) {
-				if (! (o instanceof BitmapCacheKey)) return false;
-				BitmapCacheKey k = (BitmapCacheKey) o;
-				//Log.d("cx.hell.android.pdfview2.pagecache", "equals(" + this + ", " + k);
-				return (
-							this._hashCode == k._hashCode
-							&& this.pagenum == k.pagenum
-							&& this.zoom == k.zoom
-							&& this.tilex == k.tilex
-							&& this.tiley == k.tiley
-						);
-			}
-			
-			public int hashCode() {
-				return this._hashCode;
-				
-			}
-			
-			public String toString() {
-				return "BitmapCacheKey(" +
-					this.pagenum + ", " +
-					this.zoom + ", " +
-					this.tilex + ", " +
-					this.tiley + ")";
-			}
-		}
+		private static final int MAX_CACHE_SIZE_BYTES = 5*1024*1024;
 		
 		/**
 		 * Cache value - tuple with data and properties.
@@ -98,7 +57,7 @@ public class PDFPagesProvider extends PagesProvider {
 		/**
 		 * Stores cached bitmaps.
 		 */
-		private Map<BitmapCacheKey, BitmapCacheValue> bitmaps;
+		private Map<Tile, BitmapCacheValue> bitmaps;
 		
 		/**
 		 * Stats logging - number of cache hits.
@@ -111,21 +70,17 @@ public class PDFPagesProvider extends PagesProvider {
 		private long misses;
 		
 		BitmapCache() {
-			this.bitmaps = new HashMap<BitmapCacheKey, BitmapCacheValue>();
+			this.bitmaps = new HashMap<Tile, BitmapCacheValue>();
 			this.hits = 0;
 			this.misses = 0;
 		}
 		
 		/**
 		 * Get cached bitmap.
-		 * @param page page number
-		 * @param zoom zoom level
-		 * @param x tile x position
-		 * @param y tile y position
+		 * @param k cache key
 		 * @return bitmap found in cache or null if there's no matching bitmap
 		 */
-		Bitmap get(int page, int zoom, int x, int y) {
-			BitmapCacheKey k = new BitmapCacheKey(page, zoom, x, y);
+		Bitmap get(Tile k) {
 			BitmapCacheValue v = this.bitmaps.get(k);
 			Bitmap b = null;
 			if (v != null) {
@@ -139,18 +94,25 @@ public class PDFPagesProvider extends PagesProvider {
 				this.misses += 1;
 			}
 			if ((this.hits + this.misses) % 100 == 0 && (this.hits > 0 || this.misses > 0)) {
-				Log.d("cx.hell.android.pdfview2.pagecache", "hits: " + hits + ", misses: " + misses + ", hit ratio: " + (float)(hits) / (float)(hits+misses) +
+				Log.d("cx.hell.android.pdfview.pagecache", "hits: " + hits + ", misses: " + misses + ", hit ratio: " + (float)(hits) / (float)(hits+misses) +
 						", size: " + this.bitmaps.size());
 			}
 			return b;
 		}
 		
-		synchronized void put(int page, int zoom, int x, int y, Bitmap bitmap) {
+		synchronized void put(Tile tile, Bitmap bitmap) {
 			while (this.willExceedCacheSize(bitmap) && !this.bitmaps.isEmpty()) {
 				this.removeOldest();
 			}
-			this.bitmaps.put(new BitmapCacheKey(page, zoom, x, y), new BitmapCacheValue(bitmap, System.currentTimeMillis()));
-			//Log.d("cx.hell.android.pdfview2.pagecache", "put(" + width + ", " + height + ", " + pageno + ")");
+			this.bitmaps.put(tile, new BitmapCacheValue(bitmap, System.currentTimeMillis()));
+		}
+		
+		/**
+		 * Check if cache contains specified bitmap tile. Doesn't update last-used timestamp.
+		 * @return true if cache contains specified bitmap tile
+		 */
+		synchronized boolean contains(Tile tile) {
+			return this.bitmaps.containsKey(tile);
 		}
 		
 		/**
@@ -187,11 +149,11 @@ public class PDFPagesProvider extends PagesProvider {
 		 * Remove oldest bitmap cache value.
 		 */
 		private void removeOldest() {
-			Iterator<BitmapCacheKey> i = this.bitmaps.keySet().iterator();
+			Iterator<Tile> i = this.bitmaps.keySet().iterator();
 			long minmillis = 0;
-			BitmapCacheKey oldest = null;
+			Tile oldest = null;
 			while(i.hasNext()) {
-				BitmapCacheKey k = i.next();
+				Tile k = i.next();
 				BitmapCacheValue v = this.bitmaps.get(k);
 				if (oldest == null) {
 					oldest = k;
@@ -208,86 +170,71 @@ public class PDFPagesProvider extends PagesProvider {
 			BitmapCacheValue v = this.bitmaps.get(oldest);
 			v.bitmap.recycle();
 			this.bitmaps.remove(oldest);
-			Log.d("cx.hell.android.pdfview2.pagecache", "removed oldest (" + oldest + ")");
-		}
-		
-		/**
-		 * Touch a bitmap in cache to mark that it's been used.
-		 * @return true if entry was found.
-		 */
-		private synchronized boolean touch(int page, int zoom, int x, int y) {
-			BitmapCacheKey k = new BitmapCacheKey(page, zoom, x, y);
-			BitmapCacheValue v = this.bitmaps.get(k);
-			if (v != null) {
-				v.millisAccessed = System.currentTimeMillis();
-				return true;
-			} else
-				return false;
-		}
-	}
-	
-	/**
-	 * Renderer task - specifies what should be rendered.
-	 */
-	private static class RenderingTask {
-		public int pageno;
-		public int zoom;
-		public int tilex;
-		public int tiley;
-		public RenderingTask(int page, int zoom, int x, int y) {
-			this.pageno = page;
-			this.zoom = zoom;
-			this.tilex = x;
-			this.tiley = y;
+			Log.d("cx.hell.android.pdfview.pagecache", "removed oldest (" + oldest + ")");
 		}
 	}
 	
 	private static class RendererWorker implements Runnable {
+		
 		private PDFPagesProvider pdfPagesProvider;
-		private BlockingQueue<RenderingTask> tasks = null;
+		
+		private Collection<Tile> tiles;
+		
+		/**
+		 * Loop exit flag.
+		 */
 		private boolean shouldStop = false;
 		
 		RendererWorker(PDFPagesProvider pdfPagesProvider) {
 			this.pdfPagesProvider = pdfPagesProvider;
 			this.shouldStop = false;
-			this.tasks = new LinkedBlockingQueue<RenderingTask>();
 		}
 		
+		/**
+		 * Stop as soon as possible.
+		 */
 		public void pleaseStop() {
 			this.shouldStop = true;
 		}
 		
-		public void addTask(int page, int zoom, int x, int y) {
-			this.tasks.add(new RenderingTask(page, zoom, x, y));
+		synchronized void setTiles(Collection<Tile> tiles) {
+			{
+				this.tiles = tiles;
+				this.notify();
+			}
+		}
+		
+		synchronized Collection<Tile> popTiles() {
+			if (this.tiles == null || this.tiles.isEmpty()) {
+				try {
+					this.wait();
+					if (this.shouldStop) return null;
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}
+			/* debug */
+			if (this.tiles == null || this.tiles.isEmpty()) {
+				throw new RuntimeException("Worker has been woken up, but there are no tiles!"); 
+			}
+			Tile tile = this.tiles.iterator().next();
+			this.tiles.remove(tile);
+			return Collections.singleton(tile);
 		}
 		
 		public void run() {
 			while(true) {
+				Collection<Tile> tiles = this.popTiles(); /* this can block */
 				if (this.shouldStop) break;
-				RenderingTask task = null;
 				try {
-					task = this.tasks.poll(10, TimeUnit.SECONDS);
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
+					Map<Tile,Bitmap> renderedTiles = this.pdfPagesProvider.renderTiles(tiles);
+					/* should we publish bitmaps if we've been asked to stop? */
+					if (this.shouldStop) break;
+					this.pdfPagesProvider.publishBitmaps(renderedTiles);
+				} catch (RenderingException e) {
+					this.pdfPagesProvider.publishRenderingException(e);
 				}
-				if (task == null) {
-					Log.d(TAG, "renderer worker: still noting to do");
-					continue;
-				}
-				Log.d("cx.hell.android.pdfview2", "got rendering task: " +
-						"page: " + task.pageno + ", " +
-						"zoom: " + task.zoom + ", " +
-						"x: " + task.tilex + ", " +
-						"y: " + task.tiley);
-				if (! this.pdfPagesProvider.alreadyRendered(task.pageno, task.zoom, task.tilex, task.tiley)) {
-					Bitmap tile = null;
-					try {
-						tile = this.pdfPagesProvider.renderBitmap(task.pageno, task.zoom, task.tilex, task.tiley);
-						this.pdfPagesProvider.publishBitmap(task.pageno, task.zoom, task.tilex, task.tiley, tile);
-					} catch (RenderingException e) {
-						this.pdfPagesProvider.publishRenderingException(e);
-					}
-				}
+				if (this.shouldStop) break;
 			}
 		}
 	}
@@ -307,33 +254,47 @@ public class PDFPagesProvider extends PagesProvider {
 		this.rendererWorkerThread.start();
 	}
 	
+	private Map<Tile,Bitmap> renderTiles(Collection<Tile> tiles) throws RenderingException {
+		Map<Tile,Bitmap> renderedTiles = new HashMap<Tile,Bitmap>();
+		Iterator<Tile> i = tiles.iterator();
+		Tile tile = null;
+		while(i.hasNext()) {
+			tile = i.next();
+			Log.d(TAG, "rendering tile " + tile);
+			renderedTiles.put(tile, this.renderBitmap(tile));
+		}
+		return renderedTiles;
+	}
+	
 	/**
 	 * Really render bitmap. Takes time, should be done in background thread. Calls native code (through PDF object).
 	 */
-	private Bitmap renderBitmap(int page, int zoom, int x, int y) throws RenderingException {
-		Log.d(TAG, "renderBitmap(" + page + ", " + zoom + ", " + x + ", " + y + ")");
+	private Bitmap renderBitmap(Tile tile) throws RenderingException {
+		Log.d(TAG, "renderBitmap(" + tile.getPage() + ", " + tile.getZoom() + ", " + tile.getX() + ", " + tile.getY() + ", " + tile.getRotation() + ")");
 		Bitmap b, btmp;
-		Log.d("cx.hell.android.pdfview2", "will now render page ;)");
 		PDF.Size size = new PDF.Size(PagesView.TILE_SIZE, PagesView.TILE_SIZE);
-		int[] pagebytes = pdf.renderPage(page, zoom, x*PagesView.TILE_SIZE, y*PagesView.TILE_SIZE, size); /* native */
-		if (pagebytes == null) throw new RenderingException("Couldn't render page " + (page+1));
-		Log.d("cx.hell.android.pdfview2", "got int buf, size: " + pagebytes.length);
-		Log.d("cx.hell.android.pdfview2", "dimensions: " + size.width + " x " + size.height);
+		int[] pagebytes = pdf.renderPage(tile.getPage(), tile.getZoom(), tile.getX(), tile.getY(), tile.getRotation(), size); /* native */
+		if (pagebytes == null) throw new RenderingException("Couldn't render page " + tile.getPage());
+		Log.d(TAG, "got int buf, size: " + pagebytes.length);
+		Log.d(TAG, "dimensions: " + size.width + " x " + size.height);
 		
 		b = Bitmap.createBitmap(pagebytes, size.width, size.height, Bitmap.Config.ARGB_8888);
 
-		/* TODO: analyze if it's really needed */
+		/* TODO: analyze if it's really needed - I'm trying to convert 8888 to 565 to save mem */
 		btmp = b.copy(Bitmap.Config.RGB_565, true);
 		if (btmp == null) throw new RuntimeException("bitmap copy failed");
 		b.recycle();
 		b = btmp;
-		this.bitmapCache.put(page, zoom, x, y, b);
+		
+		this.bitmapCache.put(tile, b);
 		return b;
 	}
 	
-	private void publishBitmap(int page, int zoom, int x, int y, Bitmap b) {
+	private void publishBitmaps(Map<Tile,Bitmap> renderedTiles) {
 		if (this.onImageRendererListener != null) {
-			this.onImageRendererListener.onImageRendered(page, zoom, x, y, b);
+			this.onImageRendererListener.onImagesRendered(renderedTiles);
+		} else {
+			Log.w(TAG, "we've got new bitmaps, but there's no one to notify about it!");
 		}
 	}
 	
@@ -341,10 +302,6 @@ public class PDFPagesProvider extends PagesProvider {
 		if (this.onImageRendererListener != null) {
 			this.onImageRendererListener.onRenderingException(e);
 		}
-	}
-	
-	private boolean alreadyRendered(int page, int zoom, int x, int y) {
-		return this.bitmapCache.touch(page, zoom, x, y);
 	}
 	
 	@Override
@@ -358,15 +315,15 @@ public class PDFPagesProvider extends PagesProvider {
 	 * @param zoom zoom level as int where 1000 equals 100% zoom
 	 * @param tilex tile x coord
 	 * @param tiley tile y coord
+	 * @param rotation rotation
 	 * @return rendered tile; tile represents rect of TILE_SIZE x TILE_SIZE pixels,
 	 * but might be of different size (should be scaled when painting) 
 	 */
 	@Override
-	public Bitmap getPageBitmap(int pageNumber, int zoom, int tilex, int tiley) {
+	public Bitmap getPageBitmap(Tile tile) {
 		Bitmap b = null;
-		b = this.bitmapCache.get(pageNumber, zoom, tilex, tiley);
+		b = this.bitmapCache.get(tile);
 		if (b != null) return b;
-		this.rendererWorker.addTask(pageNumber, zoom, tilex, tiley);
 		return null;
 	}
 
@@ -393,5 +350,23 @@ public class PDFPagesProvider extends PagesProvider {
 			sizes[i][1] = size.height;
 		}
 		return sizes;
+	}
+	
+	/**
+	 * View informs provider what's currently visible.
+	 * Compute what should be rendered and pass that info to renderer worker thread, possibly waking up worker.
+	 * @param tiles specs of whats currently visible
+	 */
+	public void setVisibleTiles(Collection<Tile> tiles) {
+		List<Tile> newtiles = null;
+		for(Tile tile: tiles) {
+			if (!this.bitmapCache.contains(tile)) {
+				if (newtiles == null) newtiles = new LinkedList<Tile>();
+				newtiles.add(tile);
+			}
+		}
+		if (newtiles != null) {
+			this.rendererWorker.setTiles(newtiles);
+		}
 	}
 }
