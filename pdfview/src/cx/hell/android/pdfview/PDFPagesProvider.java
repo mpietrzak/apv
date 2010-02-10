@@ -76,7 +76,7 @@ public class PDFPagesProvider extends PagesProvider {
 		}
 		
 		/**
-		 * Get cached bitmap.
+		 * Get cached bitmap. Updates last access timestamp.
 		 * @param k cache key
 		 * @return bitmap found in cache or null if there's no matching bitmap
 		 */
@@ -100,6 +100,11 @@ public class PDFPagesProvider extends PagesProvider {
 			return b;
 		}
 		
+		/**
+		 * Put rendered tile in cache.
+		 * @param tile tile definition (page, position etc), cache key
+		 * @param bitmap rendered tile contents, cache value
+		 */
 		synchronized void put(Tile tile, Bitmap bitmap) {
 			while (this.willExceedCacheSize(bitmap) && !this.bitmaps.isEmpty()) {
 				this.removeOldest();
@@ -166,11 +171,9 @@ public class PDFPagesProvider extends PagesProvider {
 				}
 			}
 			if (oldest == null) throw new RuntimeException("couldnt find oldest");
-			// also recycle bitmap
 			BitmapCacheValue v = this.bitmaps.get(oldest);
 			v.bitmap.recycle();
 			this.bitmaps.remove(oldest);
-			Log.d("cx.hell.android.pdfview.pagecache", "removed oldest (" + oldest + ")");
 		}
 	}
 	
@@ -198,12 +201,14 @@ public class PDFPagesProvider extends PagesProvider {
 		}
 		
 		synchronized void setTiles(Collection<Tile> tiles) {
-			{
 				this.tiles = tiles;
 				this.notify();
-			}
 		}
 		
+		/**
+		 * Get tiles that should be rendered next. May block.
+		 * @return some tiles
+		 */
 		synchronized Collection<Tile> popTiles() {
 			if (this.tiles == null || this.tiles.isEmpty()) {
 				try {
@@ -270,13 +275,10 @@ public class PDFPagesProvider extends PagesProvider {
 	 * Really render bitmap. Takes time, should be done in background thread. Calls native code (through PDF object).
 	 */
 	private Bitmap renderBitmap(Tile tile) throws RenderingException {
-		Log.d(TAG, "renderBitmap(" + tile.getPage() + ", " + tile.getZoom() + ", " + tile.getX() + ", " + tile.getY() + ", " + tile.getRotation() + ")");
 		Bitmap b, btmp;
 		PDF.Size size = new PDF.Size(PagesView.TILE_SIZE, PagesView.TILE_SIZE);
 		int[] pagebytes = pdf.renderPage(tile.getPage(), tile.getZoom(), tile.getX(), tile.getY(), tile.getRotation(), size); /* native */
 		if (pagebytes == null) throw new RenderingException("Couldn't render page " + tile.getPage());
-		Log.d(TAG, "got int buf, size: " + pagebytes.length);
-		Log.d(TAG, "dimensions: " + size.width + " x " + size.height);
 		
 		b = Bitmap.createBitmap(pagebytes, size.width, size.height, Bitmap.Config.ARGB_8888);
 
@@ -310,12 +312,8 @@ public class PDFPagesProvider extends PagesProvider {
 	}
 	
 	/**
-	 * Provide page bitmap. If there's no bitmap available immediately - add task to rendering queue.
-	 * @param pageNumber page number
-	 * @param zoom zoom level as int where 1000 equals 100% zoom
-	 * @param tilex tile x coord
-	 * @param tiley tile y coord
-	 * @param rotation rotation
+	 * Get tile bitmap if it's already rendered.
+	 * @param tile which bitmap
 	 * @return rendered tile; tile represents rect of TILE_SIZE x TILE_SIZE pixels,
 	 * but might be of different size (should be scaled when painting) 
 	 */
