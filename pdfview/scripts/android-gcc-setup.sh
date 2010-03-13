@@ -3,7 +3,7 @@
 # . ./android-gcc-setup.sh
 # to setup build environment
 
-NDK=/cygdrive/c/fun/android/android-ndk-1.6_r1
+export NDK=/cygdrive/d/Code/android/android-ndk-r3
 ANDROID_VERSION=3
 LIBDIR=$NDK/build/platforms/android-$ANDROID_VERSION/arch-arm/usr/lib
 
