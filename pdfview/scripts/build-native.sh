@@ -1,7 +1,7 @@
 #!/bin/sh
 
 SCRIPTDIR=`dirname $0`
-source $SCRIPTDIR/android-gcc-setup.sh
+. $SCRIPTDIR/android-gcc-setup.sh
 cd $SCRIPTDIR/..
 if [ ! -d "deps" ]
 then
