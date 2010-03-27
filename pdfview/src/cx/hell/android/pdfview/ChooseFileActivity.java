@@ -3,8 +3,6 @@ package cx.hell.android.pdfview;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -59,11 +57,6 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     private void update() {
     	this.pathTextView.setText(this.currentPath);
     	File files[] = new File(this.currentPath).listFiles(this.fileFilter);
-    	Arrays.sort(files, new Comparator<File>() {
-    		public int compare(File f1, File f2) {
-    			return f1.getName().toLowerCase().compareTo(f2.getName().toLowerCase());
-			}
-    	});
     	
     	this.fileListAdapter.clear();
     	this.fileListAdapter.add("..");
