@@ -16,6 +16,23 @@ syntax: regexp
 ^pdfview/jni/mupdf/fonts/droid$
 syntax: regexp
 ^pdfview/jni/mupdf/fonts$
+glob:pdfview/jni/mupdf/cmaps
+syntax: regexp
+^pdfview/jni/mupdf/mupdf(?!.*(apv|\.mk)$).+
+syntax: regexp
+^pdfview/jni/mupdf/fitz(?!.*(apv|\.mk)$).+
+syntax: regexp
+^pdfview/jni/mupdf/fitzdraw(?!.*(apv|\.mk)$).+
+
+
 syntax: regexp
 ^pdfview/jni/jpeg/cderror\.h$
 glob:pdfview/jni/jpeg/Makefile.am
+syntax: regexp
+^pdfview/jni/jpeg/(?!.*\.mk$).+
+
+
+glob:pdfview/deps
+
+
+

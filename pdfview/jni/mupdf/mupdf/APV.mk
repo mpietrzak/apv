@@ -7,11 +7,11 @@ clean:
 
 
 cmapdump: cmapdump.c
-	gcc -ocmapdump cmapdump.c ../fitz/base_error.c ../fitz/stm_read.c ../fitz/base_memory.c ../fitz/base_string.c ../fitz/stm_open.c ../fitz/stm_buffer.c ../fitz/stm_filter.c -I../fitz
+	gcc -o cmapdump cmapdump.c -I../fitz
 
 
 fonttump: fontdump.c
-	gcc -ofontdump fontdump.c
+	gcc -o fontdump fontdump.c
 
 
 font_misc.c: fontdump
