@@ -1,0 +1,21 @@
+
+syntax: regexp
+^pdfview/bin$
+syntax: regexp
+^pdfview/gen$
+syntax: regexp
+^pdfview/jni/pdfview2/lib$
+syntax: regexp
+^pdfview/jni/pdfview2/include$
+glob:pdfview/jni/mupdf/_darcs
+glob:pdfview/libs
+
+syntax: regexp
+^pdfview/jni/mupdf/apps$
+syntax: regexp
+^pdfview/jni/mupdf/fonts/droid$
+syntax: regexp
+^pdfview/jni/mupdf/fonts$
+syntax: regexp
+^pdfview/jni/jpeg/cderror\.h$
+glob:pdfview/jni/jpeg/Makefile.am
