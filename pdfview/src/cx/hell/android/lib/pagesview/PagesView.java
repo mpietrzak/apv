@@ -133,6 +133,11 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	private int pageSizes[][];
 	
 	/**
+	 * hold the currently displayed page 
+	 */
+	private int currentPage = 0;
+	
+	/**
 	 * Construct this view.
 	 * @param activity parent activity
 	 */
@@ -268,6 +273,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			int pageCount = this.pageSizes.length;
 			float currpageoff = currentMargin;
 			
+			this.currentPage = -1;
+			
 			for(int i = 0; i < pageCount; ++i) {
 				// is page i visible?
 
@@ -284,7 +291,10 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 							viewx0, viewy0, viewx0 + this.width, viewy0 + this.height // viewport rect in doc 
 						))
 				{
-
+					if (this.currentPage == -1)  {
+						// remember the currently displayed page
+						this.currentPage = i;
+					}
 					x = pagex0 - viewx0;
 					y = pagey0 - viewy0;
 					
@@ -358,7 +368,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			int x = (int)event.getX();
 			int y = (int)event.getY();
 			if (this.zoomMinusDrawable.getBounds().contains(x,y)) {
-				float step = 0.5f;
+				float step = 1f/1.414f;
 				this.zoomLevel *= step;
 //				float cx, cy;
 //				cx = this.left + this.width / 2;
@@ -372,7 +382,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				Log.d(TAG, "zoom level changed to " + this.zoomLevel);
 				this.invalidate();
 			} else if (this.zoomPlusDrawable.getBounds().contains(x,y)) {
-				float step = 2f;
+				float step = 1.414f;
 				this.zoomLevel *= step;
 				this.left *= step;
 				this.top *= step;
@@ -488,6 +498,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			top += (float)MARGIN * this.zoomLevel * 0.001f * (float)(page); 
 		this.top = (int)top;
 		this.invalidate();
+		this.currentPage = page;
 	}
 	
 //	/**
@@ -542,6 +553,15 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	synchronized public void rotate(int rotation) {
 		this.rotation = (this.rotation + rotation) % 4;
 		this.invalidate();
+	}
+
+	/**
+	 * Get the current page number
+	 * 
+	 * @return the current page
+	 */
+	public int getCurrentPage() {
+		return currentPage;
 	}	
 }
 
