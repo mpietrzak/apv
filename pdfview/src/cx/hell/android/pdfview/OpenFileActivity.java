@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -138,6 +139,8 @@ public class OpenFileActivity extends Activity {
     	final int pagecount = this.pdfPagesProvider.getPageCount();
     	label.setText("Page number from " + 1 + " to " + pagecount);
     	this.pageNumberInputField = new EditText(this);
+    	this.pageNumberInputField.setInputType(InputType.TYPE_CLASS_NUMBER);
+    	this.pageNumberInputField.setText(""+(this.pagesView.getCurrentPage()+1));
     	Button goButton = new Button(this);
     	goButton.setText(R.string.goto_page_go_button);
     	goButton.setOnClickListener(new OnClickListener() {
