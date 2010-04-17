@@ -20,6 +20,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
 
+/**
+ * Minimalistic file browser.
+ */
 public class ChooseFileActivity extends Activity implements OnItemClickListener {
 	
 	private final static String TAG = "cx.hell.android.pdfview";

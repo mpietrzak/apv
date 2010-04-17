@@ -14,6 +14,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -23,11 +24,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import cx.hell.android.lib.pagesview.FindResult;
 import cx.hell.android.lib.pagesview.PagesView;
 
 
 /**
- * Minimalistic file browser.
+ * Document display activity.
  */
 public class OpenFileActivity extends Activity {
 	
@@ -41,13 +43,20 @@ public class OpenFileActivity extends Activity {
 	private MenuItem gotoPageMenuItem = null;
 	private MenuItem rotateLeftMenuItem = null;
 	private MenuItem rotateRightMenuItem = null;
+	private MenuItem findTextMenuItem = null;
+	private MenuItem clearFindTextMenuItem = null;
+	
 	private EditText pageNumberInputField = null;
+	private EditText findTextInputField = null;
+	
+	private LinearLayout findButtonsLayout = null;
+	private Button findNextButton = null;
+	private Button findHideButton = null;
 	
 
     /**
      * Called when the activity is first created.
-     * TODO: initialize dialog fast, then move file loading
-     * to other thread
+     * TODO: initialize dialog fast, then move file loading to other thread
      * TODO: add progress bar for file load
      * TODO: add progress icon for file rendering
      */
@@ -60,6 +69,19 @@ public class OpenFileActivity extends Activity {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         
+        this.findButtonsLayout = new LinearLayout(this);
+        this.findButtonsLayout.setOrientation(LinearLayout.HORIZONTAL);
+        this.findButtonsLayout.setVisibility(View.GONE);
+        this.findButtonsLayout.setGravity(Gravity.CENTER);
+        this.findNextButton = new Button(this);
+        this.findNextButton.setText("Next");
+        this.findButtonsLayout.addView(this.findNextButton);
+        this.findHideButton = new Button(this);
+        this.findHideButton.setText("Hide");
+        this.findButtonsLayout.addView(this.findHideButton);
+        this.setFindButtonHandlers();
+        layout.addView(this.findButtonsLayout);
+        
         this.pagesView = new PagesView(this);
         this.pdf = this.getPDF();
         this.pdfPagesProvider = new PDFPagesProvider(pdf);
@@ -67,6 +89,23 @@ public class OpenFileActivity extends Activity {
         layout.addView(pagesView);
         
         this.setContentView(layout);
+    }
+
+    /**
+     * Set handlers on findNextButton and findHideButton.
+     */
+    private void setFindButtonHandlers() {
+    	this.findNextButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				OpenFileActivity.this.findNext();
+			}
+    	});
+    	
+    	this.findHideButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				OpenFileActivity.this.findHide();
+			}
+    	});
     }
     
     /**
@@ -113,6 +152,10 @@ public class OpenFileActivity extends Activity {
     		this.pagesView.rotate(-1);
     	} else if (menuItem == this.rotateRightMenuItem) {
     		this.pagesView.rotate(1);
+    	} else if (menuItem == this.findTextMenuItem) {
+    		this.showFindDialog();
+    	} else if (menuItem == this.clearFindTextMenuItem) {
+    		this.pagesView.setFindMode(false);
     	}
     	return false;
     }
@@ -190,10 +233,26 @@ public class OpenFileActivity extends Activity {
      */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+    	super.onCreateOptionsMenu(menu);
     	this.gotoPageMenuItem = menu.add(R.string.goto_page);
     	this.rotateRightMenuItem = menu.add(R.string.rotate_page_left);
     	this.rotateLeftMenuItem = menu.add(R.string.rotate_page_right);
+		this.findTextMenuItem = menu.add(R.string.find_text);
+    	this.clearFindTextMenuItem = menu.add(R.string.clear_find_text);
     	this.aboutMenuItem = menu.add(R.string.about);
+    	return true;
+    }
+    
+    /**
+     * Prepare menu contents.
+     * Hide or show "Clear find results" menu item depending on whether
+     * we're in find mode.
+     * @param menu menu that should be prepared
+     */
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+    	super.onPrepareOptionsMenu(menu);
+    	this.clearFindTextMenuItem.setVisible(this.pagesView.getFindMode());
     	return true;
     }
     
@@ -201,6 +260,77 @@ public class OpenFileActivity extends Activity {
     public void onConfigurationChanged(Configuration newConfig) {
       super.onConfigurationChanged(newConfig);
       Log.i(TAG, "onConfigurationChanged(" + newConfig + ")");
+    }
+    
+    /**
+     * Show find dialog.
+     * Very pretty UI code ;)
+     */
+    private void showFindDialog() {
+    	Log.d(TAG, "find dialog...");
+    	final Dialog dialog = new Dialog(this);
+    	dialog.setTitle(R.string.find_dialog_title);
+    	LinearLayout contents = new LinearLayout(this);
+    	contents.setOrientation(LinearLayout.VERTICAL);
+    	this.findTextInputField = new EditText(this);
+    	this.findTextInputField.setWidth(this.pagesView.getWidth() * 80 / 100);
+    	Button goButton = new Button(this);
+    	goButton.setText(R.string.find_go_button);
+    	goButton.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				String text = OpenFileActivity.this.findTextInputField.getText().toString();
+				OpenFileActivity.this.findText(text);
+				dialog.dismiss();
+			}
+    	});
+    	LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+    	params.leftMargin = 5;
+    	params.rightMargin = 5;
+    	params.bottomMargin = 2;
+    	params.topMargin = 2;
+    	contents.addView(findTextInputField, params);
+    	contents.addView(goButton, params);
+    	dialog.setContentView(contents);
+    	dialog.show();
+    }
+    
+    private void findText(String text) {
+    	Log.d(TAG, "findText(" + text + ")");
+    	if (this.pdf != null) {
+    		this.pdf.findText(text);
+    		FindResult r = this.pdf.getCurrentFindResult();
+    		if (r != null) {
+    			if (this.pagesView != null) this.pagesView.setFindMode(true);
+    			this.findButtonsLayout.setVisibility(View.VISIBLE);
+    		} else {
+    	    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    	    	AlertDialog dialog = builder.setMessage("Nothing found").create();
+    	    	dialog.show();
+    		}
+    	}
+    }
+    
+    /**
+     * Called when user presses "next" button in find panel.
+     */
+    private void findNext() {
+    	if (this.pagesView != null) {
+    		this.pagesView.findNext(true);
+    		FindResult r = this.pdf.getCurrentFindResult();
+    		if (r == null) {
+		    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		    	AlertDialog dialog = builder.setMessage("Nothing found").create();
+		    	dialog.show();
+    		}
+    	}
+    }
+    
+    /**
+     * Called when user presses hide button in find panel.
+     */
+    private void findHide() {
+    	if (this.pagesView != null) this.pagesView.setFindMode(false);
+    	this.findButtonsLayout.setVisibility(View.GONE);
     }
 }
 
