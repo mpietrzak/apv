@@ -2,6 +2,7 @@ package cx.hell.android.lib.pagesview;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import android.app.Activity;
@@ -144,6 +145,11 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Paint used to draw find results.
 	 */
 	private Paint findResultsPaint = null;
+	
+	/**
+	 * Currently displayed find results.
+	 */
+	private List<FindResult> findResults = null;
 
 	/**
 	 * hold the currently displayed page 
@@ -161,8 +167,9 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		this.loadZoomControls();
 		//this.loadFindControls();
 		this.findResultsPaint = new Paint();
-		this.findResultsPaint.setARGB(0xc0, 0xff, 0, 0);
+		this.findResultsPaint.setARGB(0xd0, 0xc0, 0, 0);
 		this.findResultsPaint.setStyle(Paint.Style.FILL);
+		this.findResultsPaint.setAntiAlias(true);
 		this.findResultsPaint.setStrokeWidth(3);
 		this.setOnTouchListener(this);
 	}
@@ -481,33 +488,33 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 */
 	private void drawFindResults(Canvas canvas) {
 		if (!this.findMode) throw new RuntimeException("drawFindResults but not in find results mode");
-		FindResult findResult = this.pagesProvider.getCurrentFindResult();
-		if (findResult == null) {
+		if (this.findResults == null || this.findResults.isEmpty()) {
 			Log.w(TAG, "nothing found");
 			return;
 		}
-		if (findResult.markers == null || findResult.markers.isEmpty())
-			throw new RuntimeException("illegal FindResult: find result must have at least one marker");
-		Iterator<Rect> i = findResult.markers.iterator();
-		Rect r = null;
-		Point pagePosition = this.getPagePositionOnScreen(findResult.page);
-		float pagex = pagePosition.x;
-		float pagey = pagePosition.y;
-		float z = (this.scalling0 * (float)this.zoomLevel * 0.001f);
-		while(i.hasNext()) {
-			r = i.next();
-			canvas.drawLine(
-					r.left * z + pagex, r.top * z + pagey,
-					r.left * z + pagex, r.bottom * z + pagey,
-					this.findResultsPaint);
-			canvas.drawLine(
-					r.left * z + pagex, r.bottom * z + pagey,
-					r.right * z + pagex, r.bottom * z + pagey,
-					this.findResultsPaint);
-			canvas.drawLine(
-					r.right * z + pagex, r.bottom * z + pagey,
-					r.right * z + pagex, r.top * z + pagey,
-					this.findResultsPaint);
+		for(FindResult findResult: this.findResults) {
+			if (findResult.markers == null || findResult.markers.isEmpty())
+				throw new RuntimeException("illegal FindResult: find result must have at least one marker");
+			Iterator<Rect> i = findResult.markers.iterator();
+			Rect r = null;
+			Point pagePosition = this.getPagePositionOnScreen(findResult.page);
+			float pagex = pagePosition.x;
+			float pagey = pagePosition.y;
+			float z = (this.scalling0 * (float)this.zoomLevel * 0.001f);
+			while(i.hasNext()) {
+				r = i.next();
+				canvas.drawLine(
+						r.left * z + pagex, r.top * z + pagey,
+						r.left * z + pagex, r.bottom * z + pagey,
+						this.findResultsPaint);
+				canvas.drawLine(
+						r.left * z + pagex, r.bottom * z + pagey,
+						r.right * z + pagex, r.bottom * z + pagey,
+						this.findResultsPaint);
+				canvas.drawLine(
+						r.right * z + pagex, r.bottom * z + pagey,
+						r.right * z + pagex, r.top * z + pagey,
+						this.findResultsPaint);
 //			canvas.drawRect(
 //					r.left * z + pagex,
 //					r.top * z + pagey,
@@ -519,6 +526,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 //					(r.top * z + pagey) + ", " + 
 //					(r.right * z + pagex) + ", " +
 //					(r.bottom * z + pagey) + ", ");
+			}
 		}
 	}
 
@@ -709,10 +717,9 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	synchronized public void setFindMode(boolean m) {
 		if (this.findMode != m) {
 			this.findMode = m;
-			this.setZoomControlsBounds();
-			//this.setFindControlsBounds();
-			if (m) this.scrollToFindResult();
-			this.invalidate();
+			if (!m) {
+				this.findResults = null;
+			}
 		}
 	}
 	
@@ -724,34 +731,31 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		return this.findMode;
 	}
 
-	/**
-	 * Ask pages provider to focus on next find result.
-	 * @param forward direction of search - true for forward, false for backward
-	 */
-	public void findNext(boolean forward) {
-		this.pagesProvider.findNext(forward);
-		this.scrollToFindResult();
-		this.invalidate();
-	}
+//	/**
+//	 * Ask pages provider to focus on next find result.
+//	 * @param forward direction of search - true for forward, false for backward
+//	 */
+//	public void findNext(boolean forward) {
+//		this.pagesProvider.findNext(forward);
+//		this.scrollToFindResult();
+//		this.invalidate();
+//	}
 	
 	/**
 	 * Move viewport position to find result (if any).
-	 * Doesn't call invalidate().
+	 * Does not call invalidate().
 	 */
-	private void scrollToFindResult() {
-		FindResult findResult = this.pagesProvider.getCurrentFindResult();
-		if (findResult == null) {
-			Log.d(TAG, "scrollToFindResult: not find result returned by pages provider");
-			return;
-		}
+	public void scrollToFindResult(int n) {
+		if (this.findResults == null || this.findResults.isEmpty()) return;
 		Rect center = new Rect();
+		FindResult findResult = this.findResults.get(n);
 		for(Rect marker: findResult.markers) {
 			center.union(marker);
 		}
-		Log.d(TAG, "trying to scroll to find result " + findResult);
+		int page = findResult.page;
 		int x = 0;
 		int y = 0;
-		for(int p = 0; p < findResult.page; ++p) {
+		for(int p = 0; p < page; ++p) {
 			Log.d(TAG, "adding page " + p + " to y: " + this.pageSizes[p][1]);
 			y += this.pageSizes[p][1];
 		}
@@ -761,7 +765,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		float margin = this.getCurrentMargin();
 	
 		this.left = (int)(x * scalling0 * this.zoomLevel * 0.001f + margin);
-		this.top = (int)(y * scalling0 * this.zoomLevel * 0.001f + (findResult.page+1)*margin); 
+		this.top = (int)(y * scalling0 * this.zoomLevel * 0.001f + (page+1)*margin);
 	}
 	
 	/**
@@ -771,6 +775,27 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 */
 	public int getCurrentPage() {
 		return currentPage;
+	}
+	
+	/**
+	 * Get page count.
+	 */
+	public int getPageCount() {
+		return this.pageSizes.length;
+	}
+	
+	/**
+	 * Set find results.
+	 */
+	public void setFindResults(List<FindResult> results) {
+		this.findResults = results;
+	}
+	
+	/**
+	 * Get current find results.
+	 */
+	public List<FindResult> getFindResults() {
+		return this.findResults;
 	}
 }
 

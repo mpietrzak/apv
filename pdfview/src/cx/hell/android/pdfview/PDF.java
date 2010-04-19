@@ -2,6 +2,7 @@ package cx.hell.android.pdfview;
 
 import java.io.File;
 import java.io.FileDescriptor;
+import java.util.List;
 
 import cx.hell.android.lib.pagesview.FindResult;
 
@@ -111,25 +112,35 @@ public class PDF {
 	 */
 	synchronized public native int getPageSize(int n, PDF.Size size);
 	
-	/**
-	 * Find text in PDF document.
-	 */
-	synchronized public native void findText(String text);
+//	/**
+//	 * Find text in PDF document.
+//	 */
+//	synchronized public native void findText(String text);
+//	
+//	/**
+//	 * Find next search result.
+//	 */
+//	synchronized public native void findNext(int forward);
 	
 	/**
-	 * Find next search result.
+	 * Find text on given page, return list of find results.
 	 */
-	synchronized public native void findNext(int forward);
+	synchronized public native List<FindResult> find(String text, int page);
 	
-	/**
-	 * Get find text result. 
-	 */
-	synchronized public native FindResult getCurrentFindResult();
+//	/**
+//	 * Get find text result. 
+//	 */
+//	synchronized public native FindResult getCurrentFindResult();
 	
 	/**
 	 * Clear search.
 	 */
 	synchronized public native void clearFindResult();
+	
+	/**
+	 * Find text on page, return find results.
+	 */
+	synchronized public native List<FindResult> findOnPage(int page, String text);
 
 	/**
 	 * Free memory allocated in native code.
