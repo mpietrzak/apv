@@ -280,13 +280,7 @@ public class OpenFileActivity extends Activity {
     	this.aboutMenuItem = menu.add(R.string.about);
     	return true;
     }
-    
-	@Override
-	public void onConfigurationChanged(Configuration newConfig) {
-		super.onConfigurationChanged(newConfig);
-		Log.i(TAG, "onConfigurationChanged(" + newConfig + ")");
-	}
-    
+        
 	/**
 	 * Thread to delay the gotoPage action when opening a PDF file
 	 */
@@ -301,7 +295,7 @@ public class OpenFileActivity extends Activity {
 			gotoPage(page - 1);
 		}
 	}
-}
+
     /**
      * Prepare menu contents.
      * Hide or show "Clear find results" menu item depending on whether
