@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">PDF Viewer</string>
+	<string name="about">A propos</string>
+	<string name="goto_page">Aller à la page...</string>
+	<string name="goto_page_dialog_title">Aller à la page</string>
+	<string name="goto_page_go_button">Aller</string>
+	<string name="rotate_page_left">Rotation gauche</string>
+	<string name="rotate_page_right">Rotation droite</string>
+</resources>
