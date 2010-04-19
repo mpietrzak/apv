@@ -3,6 +3,8 @@ package cx.hell.android.pdfview;
 import java.io.File;
 import java.io.FileDescriptor;
 
+import cx.hell.android.lib.pagesview.FindResult;
+
 
 /**
  * Native PDF - interface to native code.
@@ -35,6 +37,7 @@ public class PDF {
 			return new Size(this.width, this.height);
 		}
 	}
+
 	
 	/**
 	 * Holds pointer to native pdf_t struct.
@@ -46,21 +49,21 @@ public class PDF {
 	 * Parse bytes as PDF file and store resulting pdf_t struct in pdf_ptr.
 	 * @return error code
 	 */
-	private native int parseBytes(byte[] bytes);
+	synchronized private native int parseBytes(byte[] bytes);
 	
 	/**
 	 * Parse PDF file.
 	 * @param fileName pdf file name
 	 * @return error code
 	 */
-	private native int parseFile(String fileName);
+	synchronized private native int parseFile(String fileName);
 	
 	/**
 	 * Parse PDF file.
 	 * @param fd opened file descriptor
 	 * @return error code
 	 */
-	private native int parseFileDescriptor(FileDescriptor fd);
+	synchronized private native int parseFileDescriptor(FileDescriptor fd);
 
 	/**
 	 * Construct PDF structures from bytes stored in memory.
@@ -87,7 +90,7 @@ public class PDF {
 	/**
 	 * Return page count from pdf_t struct.
 	 */
-	public native int getPageCount();
+	synchronized public native int getPageCount();
 	
 	/**
 	 * Render a page.
@@ -98,7 +101,7 @@ public class PDF {
 	 * @param passes requested size, used for size of resulting bitmap
 	 * @return bytes of bitmap in Androids format
 	 */
-	public native int[] renderPage(int n, int zoom, int left, int top, int rotation, PDF.Size rect);
+	synchronized public native int[] renderPage(int n, int zoom, int left, int top, int rotation, PDF.Size rect);
 	
 	/**
 	 * Get PDF page size, store it in size struct, return error code.
@@ -106,12 +109,32 @@ public class PDF {
 	 * @param size size struct that holds result
 	 * @return error code
 	 */
-	public native int getPageSize(int n, PDF.Size size);
+	synchronized public native int getPageSize(int n, PDF.Size size);
 	
+	/**
+	 * Find text in PDF document.
+	 */
+	synchronized public native void findText(String text);
+	
+	/**
+	 * Find next search result.
+	 */
+	synchronized public native void findNext(int forward);
+	
+	/**
+	 * Get find text result. 
+	 */
+	synchronized public native FindResult getCurrentFindResult();
+	
+	/**
+	 * Clear search.
+	 */
+	synchronized public native void clearFindResult();
+
 	/**
 	 * Free memory allocated in native code.
 	 */
-	private native void freeMemory();
+	synchronized private native void freeMemory();
 	
 	public void finalize() {
 		this.freeMemory();
