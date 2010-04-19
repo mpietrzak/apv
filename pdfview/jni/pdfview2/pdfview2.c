@@ -184,6 +184,7 @@ Java_cx_hell_android_pdfview_PDF_freeMemory(
         pdf->pages = NULL;
     }
 
+    /*
     if (pdf->textlines) {
         int i;
         int pagecount;
@@ -196,15 +197,11 @@ Java_cx_hell_android_pdfview_PDF_freeMemory(
         free(pdf->textlines);
         pdf->textlines = NULL;
     }
+    */
 
     if (pdf->renderer) {
         fz_droprenderer(pdf->renderer);
         pdf->renderer = NULL;
-    }
-
-    if (pdf->find_string) {
-        free(pdf->find_string);
-        pdf->find_string = NULL;
     }
 
     /* pdf->fileno is dup()-ed in parse_pdf_fileno */
@@ -306,195 +303,6 @@ Java_cx_hell_android_pdfview_PDF_find(
     return results;
 }
 
-
-JNIEXPORT void JNICALL
-Java_cx_hell_android_pdfview_PDF_findNext(
-    JNIEnv *env,
-    jobject this,
-    jint direction
-) {
-    find_next(env, this, direction);
-}
-
-
-JNIEXPORT void JNICALL
-Java_cx_hell_android_pdfview_PDF_findText(
-    JNIEnv *env,
-    jobject this,
-    jstring text
-) {
-    pdf_t *pdf = NULL;
-    char *ctext = NULL;
-    jboolean is_copy;
-
-    ctext = (char*)(*env)->GetStringUTFChars(env, text, &is_copy); /* jbyte is signed 8 bit */
-    pdf = get_pdf_from_this(env, this);
-    if (pdf->find_string) free(pdf->find_string);
-    pdf->find_string = strdup(ctext);
-    (*env)->ReleaseStringUTFChars(env, text, ctext);
-    pdf->find_result_page = 0;
-    pdf->find_result_textline_no = 0;
-    pdf->find_result_offset = 0;
-    if (pdf->find_result) {
-        (*env)->DeleteGlobalRef(env, pdf->find_result);
-        pdf->find_result = NULL;
-    }
-    find_next(env, this, 1);
-}
-
-
-/**
- * Find text.
- * @param env JNI Environment
- * @param this PDF object against which findText or findNext method is being called
- * @param direction ignored currently, in future it'll be 1 for forward and 0 for backward
- * @return error code, 0 meaning ok
- */
-int find_next(
-        JNIEnv *env,
-        jobject this,
-        int direction) {
-    fz_error error;
-    pdf_textline *textline, *ln;
-    pdf_t *pdf = NULL;
-    pdf_page *page;
-    int pageno;
-    char *find_result = NULL;
-    int textline_no = 0;
-    int pagecount = 0;
-    int found_something = 0;    /* flag used to get free from nested loops */
-    
-    
-    pdf = get_pdf_from_this(env, this);
-    pagecount = pdf_getpagecount(pdf->xref);
-
-    for(pageno = pdf->find_result_page; pageno < pagecount; ++pageno) {
-        __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "searching on page %d", pageno);
-        page = get_page(pdf, pageno);
-        __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "loaded page");
-        error = pdf_loadtextfromtree(&textline, page->tree, fz_identity());
-        __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "loaded text from page tree, error: %d", error);
-        if (error) {
-            __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "pdf_loadtextfromtree failed");
-            return;
-        }
-
-        textline_no = 0;
-        for(ln = textline; ln; ln = ln->next) {
-            char *textlinechars;
-            char *found = NULL;
-            int offset_in_textline = 0;
-            if (pageno == pdf->find_result_page && textline_no < pdf->find_result_textline_no) {
-                textline_no++;
-                continue; /* skip to current result */
-            }
-            textlinechars = (char*)malloc(ln->len + 1);
-            {
-                int i;
-                for(i = 0; i < ln->len; ++i) textlinechars[i] = ln->text[i].c;
-            }
-            textlinechars[ln->len] = 0;
-            /* __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "extracted chars from textline, len: %d", ln->len); */
-            if (pdf->find_result) {
-                /* searching for next/prev result, so on textline reached last time, we'll start at certain offset */
-                if (textline_no == pdf->find_result_textline_no) {
-                    offset_in_textline = pdf->find_result_offset + strlen(pdf->find_string);
-                    /*
-                    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
-                        "we're on textline %d which contains %s, last time we've found here at %d-th char string %s, so we'll start from %d this time",
-                        textline_no,
-                        textlinechars,
-                        pdf->find_result_offset,
-                        pdf->find_string,
-                        offset_in_textline);
-                    */
-                }
-            }
-            found = strcasestr(textlinechars+offset_in_textline, pdf->find_string);
-            if (found) {
-                __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "found something, creating empty find result");
-                if (pdf->find_result) {
-                    (*env)->DeleteGlobalRef(env, pdf->find_result);
-                    pdf->find_result = NULL;
-                }
-                pdf->find_result = (*env)->NewGlobalRef(env, create_find_result(env));
-                if (pdf->find_result == NULL) {
-                    __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "tried to create empty find result, but got NULL instead");
-                    return; /* TODO: free resources, propagate errors */
-                }
-                __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "found something, empty find result created");
-                set_find_result_page(env, pdf->find_result, pageno);
-                pdf->find_result_page = pageno;
-                pdf->find_result_textline_no = textline_no;
-                pdf->find_result_offset = (found - textlinechars);
-                {
-                    int i = 0;
-                    int i0, i1;
-                    int x, y;
-                    i0 = (found-textlinechars);
-                    i1 = i0 + strlen(pdf->find_string);
-                    for(i = i0; i < i1; ++i) {
-                        x = ln->text[i].x;
-                        y = ln->text[i].y;
-                        convert_point_pdf_to_apv(pdf, pageno, &x, &y);
-                        add_find_result_marker(env, pdf->find_result, x-2, y-2, x+2, y+2); /* TODO: check errors */
-                    }
-                    /* TODO: obviously this sucks massively, good God please forgive me for writing this; if only I had more time... */
-                    x = ((float)(ln->text[i1-1].x - ln->text[i0].x)) / (float)strlen(pdf->find_string) + ln->text[i1-1].x;
-                    y = ((float)(ln->text[i1-1].y - ln->text[i0].y)) / (float)strlen(pdf->find_string) + ln->text[i1-1].y;
-                    convert_point_pdf_to_apv(pdf, pageno, &x, &y);
-                    add_find_result_marker(env,
-                            pdf->find_result,
-                            x-2, y-2,
-                            x+2, y+2
-                        );
-                }
-                free(textlinechars);
-                found_something = 1;
-                break; /* this break from "for each text on this page" */
-            }
-            free(textlinechars);
-            textline_no++;
-        }
-        if (found_something) break; /* this one breaks from "for each page" */
-    }
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "jni findNext done");
-    return 0;
-}
-
-
-/**
- * Get current find result.
- */
-JNIEXPORT jobject JNICALL
-Java_cx_hell_android_pdfview_PDF_getCurrentFindResult(
-        JNIEnv *env,
-        jobject this) {
-    pdf_t *pdf;
-    pdf = get_pdf_from_this(env, this);
-    return pdf->find_result;
-}
-
-
-/**
- * Clear find result.
- */
-JNIEXPORT jobject JNICALL
-Java_cx_hell_android_pdfview_PDF_clearFindResult(
-        JNIEnv *env,
-        jobject this) {
-    pdf_t *pdf;
-    pdf = get_pdf_from_this(env, this);
-    if (pdf->find_result) {
-        (*env)->DeleteGlobalRef(env, pdf->find_result);
-        pdf->find_result = NULL;
-    }
-    if (pdf->find_string) {
-        free(pdf->find_string);
-        pdf->find_string = NULL;
-    }
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "clearFindResult: done");
-}
 
 
 /**
@@ -721,12 +529,6 @@ pdf_t* create_pdf_t() {
     pdf->fileno = -1;
     pdf->pages = NULL;
     pdf->renderer = NULL;
-    pdf->textlines = NULL;
-    pdf->find_string = NULL;
-    pdf->find_result_page = 0;
-    pdf->find_result_textline_no = 0;
-    pdf->find_result_offset = 0;
-    pdf->find_result = NULL;
 }
 
 

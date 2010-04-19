@@ -396,14 +396,4 @@ public class PDFPagesProvider extends PagesProvider {
 			this.rendererWorker.setTiles(newtiles);
 		}
 	}
-	
-//	@Override
-//	public FindResult getCurrentFindResult() {
-//		return this.pdf.getCurrentFindResult();
-//	}
-//	
-//	@Override
-//	public void findNext(boolean forward) {
-//		this.pdf.findNext(forward ? 1 : 0);
-//	}
 }

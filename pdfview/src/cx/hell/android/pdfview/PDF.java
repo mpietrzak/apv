@@ -9,7 +9,6 @@ import cx.hell.android.lib.pagesview.FindResult;
 
 /**
  * Native PDF - interface to native code.
- * TODO: properly release resources
  */
 public class PDF {
 	static {
@@ -112,25 +111,10 @@ public class PDF {
 	 */
 	synchronized public native int getPageSize(int n, PDF.Size size);
 	
-//	/**
-//	 * Find text in PDF document.
-//	 */
-//	synchronized public native void findText(String text);
-//	
-//	/**
-//	 * Find next search result.
-//	 */
-//	synchronized public native void findNext(int forward);
-	
 	/**
 	 * Find text on given page, return list of find results.
 	 */
 	synchronized public native List<FindResult> find(String text, int page);
-	
-//	/**
-//	 * Get find text result. 
-//	 */
-//	synchronized public native FindResult getCurrentFindResult();
 	
 	/**
 	 * Clear search.

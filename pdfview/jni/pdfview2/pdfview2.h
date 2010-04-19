@@ -20,12 +20,6 @@ typedef struct {
     int fileno; /* used only when opening by file descriptor */
     pdf_page **pages; /* lazy-loaded pages */
     fz_renderer *renderer;
-    pdf_textline **textlines; /* lazy-loaded page texts for seaching and text-only display */
-    char *find_string;
-    int find_result_page;
-    int find_result_textline_no;
-    int find_result_offset;
-    jobject find_result;
 } pdf_t;
 
 
