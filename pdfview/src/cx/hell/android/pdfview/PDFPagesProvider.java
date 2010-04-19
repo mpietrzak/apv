@@ -10,6 +10,7 @@ import java.util.Map;
 
 import android.graphics.Bitmap;
 import android.util.Log;
+import cx.hell.android.lib.pagesview.FindResult;
 import cx.hell.android.lib.pagesview.OnImageRenderedListener;
 import cx.hell.android.lib.pagesview.PagesProvider;
 import cx.hell.android.lib.pagesview.PagesView;
@@ -38,7 +39,7 @@ public class PDFPagesProvider extends PagesProvider {
 		/**
 		 * Max size of bitmap cache.
 		 */
-		private static final int MAX_CACHE_SIZE_BYTES = 5*1024*1024;
+		private static final int MAX_CACHE_SIZE_BYTES = 4*1024*1024;
 		
 		/**
 		 * Cache value - tuple with data and properties.
@@ -184,62 +185,75 @@ public class PDFPagesProvider extends PagesProvider {
 		private Collection<Tile> tiles;
 		
 		/**
-		 * Loop exit flag.
+		 * Internal worker number for debugging.
 		 */
-		private boolean shouldStop = false;
+		private static int workerThreadId = 0;
+		
+		/**
+		 * Used as a synchronized flag.
+		 * If null, then there's no designated thread to render tiles.
+		 * There might be other worker threads running, but those have finished
+		 * their work and will finish really soon.
+		 * Only this one should pick up new jobs.
+		 */
+		private Thread workerThread = null;
 		
 		RendererWorker(PDFPagesProvider pdfPagesProvider) {
+			this.tiles = null;
 			this.pdfPagesProvider = pdfPagesProvider;
-			this.shouldStop = false;
 		}
 		
 		/**
-		 * Stop as soon as possible.
+		 * Called by outside world to provide more work for worker.
+		 * This also starts rendering thread if one is needed.
+		 * @param tiles a collection of tile objects, they carry information about what should be rendered next
 		 */
-		public void pleaseStop() {
-			this.shouldStop = true;
-		}
-		
 		synchronized void setTiles(Collection<Tile> tiles) {
-				this.tiles = tiles;
-				this.notify();
+			this.tiles = tiles;
+			if (this.workerThread == null) {
+				Thread t = new Thread(this);
+				t.setPriority(Thread.MIN_PRIORITY);
+				t.setName("RendererWorkerThread#" + RendererWorker.workerThreadId++);
+				this.workerThread = t;
+				t.start();
+				Log.d(TAG, "started new worker thread");
+			} else {
+				//Log.i(TAG, "setTiles notices tiles is not empty, that means RendererWorkerThread exists and there's no need to start new one");
+			}
 		}
 		
 		/**
-		 * Get tiles that should be rendered next. May block.
+		 * Get tiles that should be rendered next. May not block.
+		 * Also sets this.workerThread to null if there's no tiles to be rendered currently,
+		 * so that calling thread may finish.
+		 * If there are more tiles to be rendered, then this.workerThread is not reset.
 		 * @return some tiles
 		 */
 		synchronized Collection<Tile> popTiles() {
 			if (this.tiles == null || this.tiles.isEmpty()) {
-				try {
-					this.wait();
-					if (this.shouldStop) return null;
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-			}
-			/* debug */
-			if (this.tiles == null || this.tiles.isEmpty()) {
-				throw new RuntimeException("Worker has been woken up, but there are no tiles!"); 
+				this.workerThread = null; /* returning null, so calling thread will finish it's work */
+				return null;
 			}
 			Tile tile = this.tiles.iterator().next();
 			this.tiles.remove(tile);
 			return Collections.singleton(tile);
 		}
 		
+		/**
+		 * Thread's main routine.
+		 * There might be more than one running, but only one will get new tiles. Others
+		 * will get null returned by this.popTiles and will finish their work.
+		 */
 		public void run() {
 			while(true) {
-				Collection<Tile> tiles = this.popTiles(); /* this can block */
-				if (this.shouldStop) break;
+				Collection<Tile> tiles = this.popTiles(); /* this can't block */
+				if (tiles == null || tiles.size() == 0) break;
 				try {
 					Map<Tile,Bitmap> renderedTiles = this.pdfPagesProvider.renderTiles(tiles);
-					/* should we publish bitmaps if we've been asked to stop? */
-					if (this.shouldStop) break;
 					this.pdfPagesProvider.publishBitmaps(renderedTiles);
 				} catch (RenderingException e) {
 					this.pdfPagesProvider.publishRenderingException(e);
 				}
-				if (this.shouldStop) break;
 			}
 		}
 	}
@@ -247,25 +261,26 @@ public class PDFPagesProvider extends PagesProvider {
 	private PDF pdf = null;
 	private BitmapCache bitmapCache = null;
 	private RendererWorker rendererWorker = null;
-	private Thread rendererWorkerThread = null;
 	private OnImageRenderedListener onImageRendererListener = null;
 	
 	public PDFPagesProvider(PDF pdf) {
 		this.pdf = pdf;
 		this.bitmapCache = new BitmapCache();
 		this.rendererWorker = new RendererWorker(this);
-		this.rendererWorkerThread = new Thread(this.rendererWorker);
-		this.rendererWorkerThread.setPriority(Thread.MIN_PRIORITY);
-		this.rendererWorkerThread.start();
 	}
 	
+	/**
+	 * Render tiles.
+	 * Called by worker, calls PDF's methods that in turn call native code.
+	 * @param tiles job description - what to render
+	 * @return mapping of jobs and job results, with job results being Bitmap objects
+	 */
 	private Map<Tile,Bitmap> renderTiles(Collection<Tile> tiles) throws RenderingException {
 		Map<Tile,Bitmap> renderedTiles = new HashMap<Tile,Bitmap>();
 		Iterator<Tile> i = tiles.iterator();
 		Tile tile = null;
 		while(i.hasNext()) {
 			tile = i.next();
-			Log.d(TAG, "rendering tile " + tile);
 			renderedTiles.put(tile, this.renderBitmap(tile));
 		}
 		return renderedTiles;
@@ -277,7 +292,8 @@ public class PDFPagesProvider extends PagesProvider {
 	private Bitmap renderBitmap(Tile tile) throws RenderingException {
 		Bitmap b, btmp;
 		PDF.Size size = new PDF.Size(PagesView.TILE_SIZE, PagesView.TILE_SIZE);
-		int[] pagebytes = pdf.renderPage(tile.getPage(), tile.getZoom(), tile.getX(), tile.getY(), tile.getRotation(), size); /* native */
+		int[] pagebytes = null;
+		pagebytes = pdf.renderPage(tile.getPage(), tile.getZoom(), tile.getX(), tile.getY(), tile.getRotation(), size); /* native */
 		if (pagebytes == null) throw new RenderingException("Couldn't render page " + tile.getPage());
 		
 		b = Bitmap.createBitmap(pagebytes, size.width, size.height, Bitmap.Config.ARGB_8888);
@@ -292,6 +308,9 @@ public class PDFPagesProvider extends PagesProvider {
 		return b;
 	}
 	
+	/**
+	 * Called by worker.
+	 */
 	private void publishBitmaps(Map<Tile,Bitmap> renderedTiles) {
 		if (this.onImageRendererListener != null) {
 			this.onImageRendererListener.onImagesRendered(renderedTiles);
@@ -300,6 +319,9 @@ public class PDFPagesProvider extends PagesProvider {
 		}
 	}
 	
+	/**
+	 * Called by worker.
+	 */
 	private void publishRenderingException(RenderingException e) {
 		if (this.onImageRendererListener != null) {
 			this.onImageRendererListener.onRenderingException(e);
@@ -332,6 +354,10 @@ public class PDFPagesProvider extends PagesProvider {
 		return c;
 	}
 	
+	/**
+	 * Get page sizes from pdf file.
+	 * @return array of page sizes
+	 */
 	@Override
 	public int[][] getPageSizes() {
 		int cnt = this.getPageCount();
@@ -355,7 +381,7 @@ public class PDFPagesProvider extends PagesProvider {
 	 * Compute what should be rendered and pass that info to renderer worker thread, possibly waking up worker.
 	 * @param tiles specs of whats currently visible
 	 */
-	public void setVisibleTiles(Collection<Tile> tiles) {
+	synchronized public void setVisibleTiles(Collection<Tile> tiles) {
 		List<Tile> newtiles = null;
 		for(Tile tile: tiles) {
 			if (!this.bitmapCache.contains(tile)) {
@@ -366,5 +392,15 @@ public class PDFPagesProvider extends PagesProvider {
 		if (newtiles != null) {
 			this.rendererWorker.setTiles(newtiles);
 		}
+	}
+	
+	@Override
+	public FindResult getCurrentFindResult() {
+		return this.pdf.getCurrentFindResult();
+	}
+	
+	@Override
+	public void findNext(boolean forward) {
+		this.pdf.findNext(forward ? 1 : 0);
 	}
 }

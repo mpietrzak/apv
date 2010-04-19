@@ -36,3 +36,4 @@ glob:pdfview/deps
 
 
 
+glob:pdfview/jni/pdfview2/.*.swp

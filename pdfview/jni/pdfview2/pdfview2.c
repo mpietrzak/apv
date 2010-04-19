@@ -4,36 +4,11 @@
 
 #include "android/log.h"
 
-#include "fitz.h"
-#include "mupdf.h"
+#include "pdfview2.h"
 
 
-
-/**
- * Holds pdf info.
- */
-struct pdf_s {
-	pdf_xref *xref;
-	pdf_outline *outline;
-    int fileno; /* used only when opening by file descriptor */
-    pdf_page **pages; /* lazy-loaded pages */
-    fz_renderer *renderer;
-};
-
-
-typedef struct pdf_s pdf_t;
-
-
-pdf_t* create_pdf_t();
-/* pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len); */
-pdf_t* parse_pdf_file(const char *filename, int fileno);
-jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation, int *blen, int *width, int *height);
-pdf_t* get_pdf_from_this(JNIEnv *env, jobject this);
-void get_size(JNIEnv *env, jobject size, int *width, int *height);
-void save_size(JNIEnv *env, jobject size, int width, int height);
-void fix_samples(unsigned char *bytes, unsigned int w, unsigned int h);
-int get_page_size(pdf_t *pdf, int pageno, int *width, int *height);
-void pdf_android_loghandler(const char *m);
+#define PDFVIEW_LOG_TAG "cx.hell.android.pdfview"
+#define PDFVIEW_MAX_PAGES_LOADED 16
 
 
 
@@ -45,27 +20,6 @@ JNI_OnLoad(JavaVM *jvm, void *reserved) {
     /* pdf_setloghandler(pdf_android_loghandler); */
     return JNI_VERSION_1_2;
 }
-
-
-
-#if 0
-JNIEXPORT void JNICALL
-Java_cx_hell_android_pdfview_PDF_parseBytes(
-		JNIEnv *env,
-		jobject jthis,
-		jbyteArray bytes) {
-	__android_log_print(ANDROID_LOG_INFO, "cx.hell.android.pdfview", "parseBytes...");
-	jclass this_class = (*env)->GetObjectClass(env, jthis);
-	jfieldID pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
-	jbyte *cbytes = NULL;
-	cbytes = (*env)->GetByteArrayElements(env, bytes, NULL);
-	size_t len = (*env)->GetArrayLength(env, bytes);
-	__android_log_print(ANDROID_LOG_INFO, "cx.hell.android.pdfview", "got parameters, byte array has %d elements", (int)len);
-	pdf_t *pdf = parse_pdf_bytes(cbytes, len);
-	(*env)->SetIntField(env, jthis, pdf_field_id, (int)pdf);
-	(*env)->ReleaseByteArrayElements(env, bytes, cbytes, 0);
-}
-#endif
 
 
 /**
@@ -206,18 +160,17 @@ Java_cx_hell_android_pdfview_PDF_getPageSize(
  * Free resources allocated in native code.
  */
 JNIEXPORT void JNICALL
-Java_cx_hell_android_pdfview_PDF_freeResources(
+Java_cx_hell_android_pdfview_PDF_freeMemory(
         JNIEnv *env,
         jobject this) {
     pdf_t *pdf = NULL;
 	jclass this_class = (*env)->GetObjectClass(env, this);
 	jfieldID pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
 
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "freeMemory()");
+    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "jni freeMemory()");
 	pdf = (pdf_t*) (*env)->GetIntField(env, this, pdf_field_id);
 	(*env)->SetIntField(env, this, pdf_field_id, 0);
 
-    /* TODO: free memory referenced by pdf :D */
     if (pdf->pages) {
         int i;
         int pagecount;
@@ -231,9 +184,27 @@ Java_cx_hell_android_pdfview_PDF_freeResources(
         pdf->pages = NULL;
     }
 
+    if (pdf->textlines) {
+        int i;
+        int pagecount;
+        pagecount = pdf_getpagecount(pdf->xref);
+        for(i = 0; i < pagecount; ++i) {
+            if (pdf->textlines[i]) {
+                pdf_droptextline(pdf->textlines[i]);
+            }
+        }
+        free(pdf->textlines);
+        pdf->textlines = NULL;
+    }
+
     if (pdf->renderer) {
         fz_droprenderer(pdf->renderer);
         pdf->renderer = NULL;
+    }
+
+    if (pdf->find_string) {
+        free(pdf->find_string);
+        pdf->find_string = NULL;
     }
 
     /* pdf->fileno is dup()-ed in parse_pdf_fileno */
@@ -241,6 +212,272 @@ Java_cx_hell_android_pdfview_PDF_freeResources(
     free(pdf);
 }
 
+
+JNIEXPORT void JNICALL
+Java_cx_hell_android_pdfview_PDF_findNext(
+    JNIEnv *env,
+    jobject this,
+    jint direction
+) {
+    find_next(env, this, direction);
+}
+
+
+JNIEXPORT void JNICALL
+Java_cx_hell_android_pdfview_PDF_findText(
+    JNIEnv *env,
+    jobject this,
+    jstring text
+) {
+    pdf_t *pdf = NULL;
+    char *ctext = NULL;
+    jboolean is_copy;
+
+    ctext = (char*)(*env)->GetStringUTFChars(env, text, &is_copy); /* jbyte is signed 8 bit */
+    pdf = get_pdf_from_this(env, this);
+    if (pdf->find_string) free(pdf->find_string);
+    pdf->find_string = strdup(ctext);
+    (*env)->ReleaseStringUTFChars(env, text, ctext);
+    pdf->find_result_page = 0;
+    pdf->find_result_textline_no = 0;
+    pdf->find_result_offset = 0;
+    if (pdf->find_result) {
+        (*env)->DeleteGlobalRef(env, pdf->find_result);
+        pdf->find_result = NULL;
+    }
+    find_next(env, this, 1);
+}
+
+
+/**
+ * Find text.
+ * @param env JNI Environment
+ * @param this PDF object against which findText or findNext method is being called
+ * @param direction ignored currently, in future it'll be 1 for forward and 0 for backward
+ * @return error code, 0 meaning ok
+ */
+int find_next(
+        JNIEnv *env,
+        jobject this,
+        int direction) {
+    fz_error error;
+    pdf_textline *textline, *ln;
+    pdf_t *pdf = NULL;
+    pdf_page *page;
+    int pageno;
+    char *find_result = NULL;
+    int textline_no = 0;
+    int pagecount = 0;
+    int found_something = 0;    /* flag used to get free from nested loops */
+    
+    
+    pdf = get_pdf_from_this(env, this);
+    pagecount = pdf_getpagecount(pdf->xref);
+
+    for(pageno = pdf->find_result_page; pageno < pagecount; ++pageno) {
+        __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "searching on page %d", pageno);
+        page = get_page(pdf, pageno);
+        __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "loaded page");
+        error = pdf_loadtextfromtree(&textline, page->tree, fz_identity());
+        __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "loaded text from page tree, error: %d", error);
+        if (error) {
+            __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "pdf_loadtextfromtree failed");
+            return;
+        }
+
+        textline_no = 0;
+        for(ln = textline; ln; ln = ln->next) {
+            char *textlinechars;
+            char *found = NULL;
+            int offset_in_textline = 0;
+            if (pageno == pdf->find_result_page && textline_no < pdf->find_result_textline_no) {
+                textline_no++;
+                continue; /* skip to current result */
+            }
+            textlinechars = (char*)malloc(ln->len + 1);
+            {
+                int i;
+                for(i = 0; i < ln->len; ++i) textlinechars[i] = ln->text[i].c;
+            }
+            textlinechars[ln->len] = 0;
+            /* __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "extracted chars from textline, len: %d", ln->len); */
+            if (pdf->find_result) {
+                /* searching for next/prev result, so on textline reached last time, we'll start at certain offset */
+                if (textline_no == pdf->find_result_textline_no) {
+                    offset_in_textline = pdf->find_result_offset + strlen(pdf->find_string);
+                    /*
+                    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
+                        "we're on textline %d which contains %s, last time we've found here at %d-th char string %s, so we'll start from %d this time",
+                        textline_no,
+                        textlinechars,
+                        pdf->find_result_offset,
+                        pdf->find_string,
+                        offset_in_textline);
+                    */
+                }
+            }
+            found = strcasestr(textlinechars+offset_in_textline, pdf->find_string);
+            if (found) {
+                __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "found something, creating empty find result");
+                if (pdf->find_result) {
+                    (*env)->DeleteGlobalRef(env, pdf->find_result);
+                    pdf->find_result = NULL;
+                }
+                pdf->find_result = (*env)->NewGlobalRef(env, create_find_result(env));
+                if (pdf->find_result == NULL) {
+                    __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "tried to create empty find result, but got NULL instead");
+                    return; /* TODO: free resources, propagate errors */
+                }
+                __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "found something, empty find result created");
+                set_find_result_page(env, pdf->find_result, pageno);
+                pdf->find_result_page = pageno;
+                pdf->find_result_textline_no = textline_no;
+                pdf->find_result_offset = (found - textlinechars);
+                {
+                    int i = 0;
+                    int i0, i1;
+                    int x, y;
+                    i0 = (found-textlinechars);
+                    i1 = i0 + strlen(pdf->find_string);
+                    for(i = i0; i < i1; ++i) {
+                        x = ln->text[i].x;
+                        y = ln->text[i].y;
+                        convert_point_pdf_to_apv(pdf, pageno, &x, &y);
+                        add_find_result_marker(env, pdf->find_result, x-2, y-2, x+2, y+2); /* TODO: check errors */
+                    }
+                    /* TODO: obviously this sucks massively, good God please forgive me for writing this; if only I had more time... */
+                    x = ((float)(ln->text[i1-1].x - ln->text[i0].x)) / (float)strlen(pdf->find_string) + ln->text[i1-1].x;
+                    y = ((float)(ln->text[i1-1].y - ln->text[i0].y)) / (float)strlen(pdf->find_string) + ln->text[i1-1].y;
+                    convert_point_pdf_to_apv(pdf, pageno, &x, &y);
+                    add_find_result_marker(env,
+                            pdf->find_result,
+                            x-2, y-2,
+                            x+2, y+2
+                        );
+                }
+                free(textlinechars);
+                found_something = 1;
+                break; /* this break from "for each text on this page" */
+            }
+            free(textlinechars);
+            textline_no++;
+        }
+        if (found_something) break; /* this one breaks from "for each page" */
+    }
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "jni findNext done");
+    return 0;
+}
+
+
+/**
+ * Get current find result.
+ */
+JNIEXPORT jobject JNICALL
+Java_cx_hell_android_pdfview_PDF_getCurrentFindResult(
+        JNIEnv *env,
+        jobject this) {
+    pdf_t *pdf;
+    pdf = get_pdf_from_this(env, this);
+    return pdf->find_result;
+}
+
+
+/**
+ * Clear find result.
+ */
+JNIEXPORT jobject JNICALL
+Java_cx_hell_android_pdfview_PDF_clearFindResult(
+        JNIEnv *env,
+        jobject this) {
+    pdf_t *pdf;
+    pdf = get_pdf_from_this(env, this);
+    if (pdf->find_result) {
+        (*env)->DeleteGlobalRef(env, pdf->find_result);
+        pdf->find_result = NULL;
+    }
+    if (pdf->find_string) {
+        free(pdf->find_string);
+        pdf->find_string = NULL;
+    }
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "clearFindResult: done");
+}
+
+
+/**
+ * Create empty FindResult object.
+ * @param env JNI Environment
+ * @return newly created, empty FindResult object
+ */
+jobject create_find_result(JNIEnv *env) {
+    static jmethodID constructorID;
+    jclass findResultClass = NULL;
+    static int jni_ids_cached = 0;
+    jobject findResultObject = NULL;
+
+    findResultClass = (*env)->FindClass(env, "cx/hell/android/lib/pagesview/FindResult");
+
+    if (findResultClass == NULL) {
+        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "create_find_result: FindClass returned NULL");
+        return NULL;
+    }
+
+    if (jni_ids_cached == 0) {
+        constructorID = (*env)->GetMethodID(env, findResultClass, "<init>", "()V");
+        if (constructorID == NULL) {
+            (*env)->DeleteLocalRef(env, findResultClass);
+            __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "create_find_result: couldn't get method id for FindResult constructor");
+            return NULL;
+        }
+        jni_ids_cached = 1;
+    }
+
+    findResultObject = (*env)->NewObject(env, findResultClass, constructorID);
+    return findResultObject;
+}
+
+
+/**
+ * Set find results page member.
+ * @param JNI environment
+ * @param findResult find result object that should be modified
+ * @param page new value for page field
+ */
+void set_find_result_page(JNIEnv *env, jobject findResult, int page) {
+    static char jni_ids_cached = 0;
+    static jfieldID page_field_id = 0;
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "trying to set find results page number");
+    if (jni_ids_cached == 0) {
+        jclass findResultClass = (*env)->GetObjectClass(env, findResult);
+        page_field_id = (*env)->GetFieldID(env, findResultClass, "page", "I");
+        jni_ids_cached = 1;
+    }
+    (*env)->SetIntField(env, findResult, page_field_id, page);
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "find result page number set");
+}
+
+
+/**
+ * Add marker to find result.
+ */
+void add_find_result_marker(JNIEnv *env, jobject findResult, int x0, int y0, int x1, int y1) {
+    static jmethodID addMarker_methodID = 0;
+    static unsigned char jni_ids_cached = 0;
+    if (!jni_ids_cached) {
+        jclass findResultClass = NULL;
+        findResultClass = (*env)->FindClass(env, "cx/hell/android/lib/pagesview/FindResult");
+        if (findResultClass == NULL) {
+            __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "add_find_result_marker: FindClass returned NULL");
+            return;
+        }
+        addMarker_methodID = (*env)->GetMethodID(env, findResultClass, "addMarker", "(IIII)V");
+        if (addMarker_methodID == NULL) {
+            __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "add_find_result_marker: couldn't find FindResult.addMarker method ID");
+            return;
+        }
+        jni_ids_cached = 1;
+    }
+    (*env)->CallVoidMethod(env, findResult, addMarker_methodID, x0, y0, x1, y1); /* TODO: is always really int jint? */
+}
 
 
 /**
@@ -336,6 +573,12 @@ pdf_t* create_pdf_t() {
     pdf->fileno = -1;
     pdf->pages = NULL;
     pdf->renderer = NULL;
+    pdf->textlines = NULL;
+    pdf->find_string = NULL;
+    pdf->find_result_page = 0;
+    pdf->find_result_textline_no = 0;
+    pdf->find_result_offset = 0;
+    pdf->find_result = NULL;
 }
 
 
@@ -475,17 +718,20 @@ double get_page_zoom(pdf_page *page, int max_width, int max_height) {
 
 /**
  * Lazy get-or-load page.
+ * Only PDFVIEW_MAX_PAGES_LOADED pages can be loaded at the time.
  * @param pdf pdf struct
  * @param pageno 0-based page number
  * @return pdf_page
  */
 pdf_page* get_page(pdf_t *pdf, int pageno) {
     fz_error error = 0;
+    int loaded_pages = 0;
+    int pagecount;
+
+    pagecount = pdf_getpagecount(pdf->xref);
 
     if (!pdf->pages) {
-        int pagecount;
         int i;
-        pagecount = pdf_getpagecount(pdf->xref);
         pdf->pages = (pdf_page**)malloc(pagecount * sizeof(pdf_page*));
         for(i = 0; i < pagecount; ++i) pdf->pages[i] = NULL;
     }
@@ -493,6 +739,35 @@ pdf_page* get_page(pdf_t *pdf, int pageno) {
     if (!pdf->pages[pageno]) {
         pdf_page *page = NULL;
         fz_obj *obj = NULL;
+        int loaded_pages = 0;
+        int i = 0;
+
+        for(i = 0; i < pagecount; ++i) {
+            if (pdf->pages[i]) loaded_pages++;
+        }
+
+        if (loaded_pages >= PDFVIEW_MAX_PAGES_LOADED) {
+            int page_to_drop = 0; /* not the page number */
+            int j = 0;
+            __android_log_print(ANDROID_LOG_INFO, PDFVIEW_LOG_TAG, "already loaded %d pages, goint to drop random one", loaded_pages);
+            page_to_drop = rand() % loaded_pages;
+            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "will drop %d-th loaded page", page_to_drop);
+            /* search for page_to_drop-th loaded page and then drop it */
+            for(i = 0; i < pagecount; ++i) {
+                if (pdf->pages[i]) {
+                    /* one of loaded pages, the j-th one */
+                    if (j == page_to_drop) {
+                        __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "found %d-th loaded page, it's %d-th in document, dropping now", page_to_drop, i);
+                        pdf_droppage(pdf->pages[i]);
+                        pdf->pages[i] = NULL;
+                        break;
+                    } else {
+                        j++;
+                    }
+                }
+            }
+        }
+
         obj = pdf_getpageobject(pdf->xref, pageno+1);
         error = pdf_loadpage(&page, pdf->xref, obj);
         if (error) {
@@ -601,18 +876,92 @@ void fix_samples(unsigned char *bytes, unsigned int w, unsigned int h) {
 }
 
 
+/**
+ * Get page size in APV's convention.
+ * @param page 0-based page number
+ * @param pdf pdf struct
+ * @param width target for width value
+ * @param height target for height value
+ * @return error code - 0 means ok
+ */
 int get_page_size(pdf_t *pdf, int pageno, int *width, int *height) {
     fz_error error = 0;
-    pdf_page *page = 0;
     fz_obj *pageobj = NULL;
     fz_obj *sizeobj = NULL;
     fz_rect bbox;
+    fz_obj *rotateobj = NULL;
+    int rotate = 0;
 
     pageobj = pdf_getpageobject(pdf->xref, pageno+1);
     sizeobj = fz_dictgets(pageobj, "MediaBox");
+    rotateobj = fz_dictgets(pageobj, "Rotate");
+    if (fz_isint(rotateobj)) {
+        rotate = fz_toint(rotateobj);
+    } else {
+        rotate = 0;
+    }
     bbox = pdf_torect(sizeobj);
-    *width = bbox.x1 - bbox.x0;
-    *height = bbox.y1 - bbox.y0;
+    if (rotate != 0 && (rotate % 180) == 90) {
+        *width = bbox.y1 - bbox.y0;
+        *height = bbox.x1 - bbox.x0;
+    } else {
+        *width = bbox.x1 - bbox.x0;
+        *height = bbox.y1 - bbox.y0;
+    }
+    return 0;
+}
+
+
+/**
+ * Convert coordinates from pdf convetion to APVs conventions.
+ * TODO: faster? lazy?
+ * @return error code, 0 means ok
+ */
+int convert_point_pdf_to_apv(pdf_t *pdf, int page, int *x, int *y) {
+    fz_error error = 0;
+    fz_obj *pageobj = NULL;
+    fz_obj *rotateobj = NULL;
+    fz_obj *sizeobj = NULL;
+    fz_rect bbox;
+    int rotate = 0;
+    fz_point p;
+
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "convert_point_pdf_to_apv()");
+
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "trying to convert %d x %d to APV coords", *x, *y);
+
+    pageobj = pdf_getpageobject(pdf->xref, page+1);
+    if (!pageobj) return -1;
+    sizeobj = fz_dictgets(pageobj, "MediaBox");
+    if (!sizeobj) return -1;
+    bbox = pdf_torect(sizeobj);
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "page bbox is %.1f, %.1f, %.1f, %.1f", bbox.x0, bbox.y0, bbox.x1, bbox.y1);
+    rotateobj = fz_dictgets(pageobj, "Rotate");
+    if (fz_isint(rotateobj)) {
+        rotate = fz_toint(rotateobj);
+    } else {
+        rotate = 0;
+    }
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "rotate is %d", (int)rotate);
+
+    p.x = *x;
+    p.y = *y;
+
+    if (rotate != 0) {
+        fz_matrix m;
+        m = fz_rotate(-rotate);
+        bbox = fz_transformaabb(m, bbox);
+        p = fz_transformpoint(m, p);
+    }
+
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "after rotate bbox is: %.1f, %.1f, %.1f, %.1f", bbox.x0, bbox.y0, bbox.x1, bbox.y1);
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "after rotate point is: %.1f, %.1f", p.x, p.y);
+
+    *x = p.x - MIN(bbox.x0,bbox.x1);
+    *y = MAX(bbox.y1, bbox.y0) - p.y;
+
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "result is: %d, %d", *x, *y);
+
     return 0;
 }
 
@@ -620,4 +969,5 @@ int get_page_size(pdf_t *pdf, int pageno, int *width, int *height) {
 void pdf_android_loghandler(const char *m) {
     __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview.mupdf", m);
 }
+
 
