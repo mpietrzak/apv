@@ -293,7 +293,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				{
 					if (this.currentPage == -1)  {
 						// remember the currently displayed page
-						this.currentPage = i;
+						this.currentPage = i + 1;
 					}
 					x = pagex0 - viewx0;
 					y = pagey0 - viewy0;

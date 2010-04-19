@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
@@ -43,7 +44,9 @@ public class OpenFileActivity extends Activity {
 	private MenuItem rotateRightMenuItem = null;
 	private EditText pageNumberInputField = null;
 	
-
+	// currently opened file path
+	private String filePath = "/";
+	
     /**
      * Called when the activity is first created.
      * TODO: initialize dialog fast, then move file loading
@@ -67,9 +70,19 @@ public class OpenFileActivity extends Activity {
         layout.addView(pagesView);
         
         this.setContentView(layout);
+        gotoLastPage();
     }
-    
-    /**
+
+	/** 
+	 * Save the current page before exiting
+	 */
+	@Override
+	protected void onPause() {
+		saveLastPage();
+		super.onPause();
+	}
+
+	/**
      * Return PDF instance wrapping file referenced by Intent.
      * Currently reads all bytes to memory, in future local files
      * should be passed to native code and remote ones should
@@ -78,9 +91,10 @@ public class OpenFileActivity extends Activity {
      */
     private PDF getPDF() {
         final Intent intent = getIntent();
-		Uri uri = intent.getData();
-    	if (uri.getScheme().equals("file")) {
-    		return new PDF(new File(uri.getPath()));
+		Uri uri = intent.getData();    	
+		filePath = uri.getPath();
+		if (uri.getScheme().equals("file")) {
+    		return new PDF(new File(filePath));
     	} else if (uri.getScheme().equals("content")) {
     		ContentResolver cr = this.getContentResolver();
     		FileDescriptor fileDescriptor;
@@ -140,7 +154,7 @@ public class OpenFileActivity extends Activity {
     	label.setText("Page number from " + 1 + " to " + pagecount);
     	this.pageNumberInputField = new EditText(this);
     	this.pageNumberInputField.setInputType(InputType.TYPE_CLASS_NUMBER);
-    	this.pageNumberInputField.setText(""+(this.pagesView.getCurrentPage()+1));
+    	this.pageNumberInputField.setText("" + this.pagesView.getCurrentPage());
     	Button goButton = new Button(this);
     	goButton.setText(R.string.goto_page_go_button);
     	goButton.setOnClickListener(new OnClickListener() {
@@ -173,7 +187,7 @@ public class OpenFileActivity extends Activity {
     }
     
     /**
-     * Called after submiting go to page dialog.
+     * Called after submitting go to page dialog.
      * @param page page number, 0-based
      */
     private void gotoPage(int page) {
@@ -181,6 +195,30 @@ public class OpenFileActivity extends Activity {
     	if (this.pagesView != null) {
     		this.pagesView.scrollToPage(page);
     	}
+    }
+    
+    /**
+     * Goto the last open page if possible
+     */
+    private void gotoLastPage() {
+        Bookmark b = new Bookmark(this.getApplicationContext()).open();
+        int lastpage = b.getLast(filePath);
+        b.close();
+        if (lastpage > 1) {
+        	Handler mHandler = new Handler();
+        	Runnable mUpdateTimeTask = new GotoPageThread(lastpage);
+        	mHandler.postDelayed(mUpdateTimeTask, 2000);
+        }    	
+    }
+
+    /**
+     * Save the last page in the bookmarks
+     */
+    private void saveLastPage() {
+        Bookmark b = new Bookmark(this.getApplicationContext()).open();
+        b.setLast(filePath, pagesView.getCurrentPage());
+        b.close();
+        Log.i(TAG, "last page saved for "+filePath);    
     }
     
     /**
@@ -197,12 +235,24 @@ public class OpenFileActivity extends Activity {
     	return true;
     }
     
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-      super.onConfigurationChanged(newConfig);
-      Log.i(TAG, "onConfigurationChanged(" + newConfig + ")");
-    }
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+		Log.i(TAG, "onConfigurationChanged(" + newConfig + ")");
+	}
+    
+	/**
+	 * Thread to delay the gotoPage action when opening a PDF file
+	 */
+	private class GotoPageThread implements Runnable {
+		int page;
+
+		public GotoPageThread(int page) {
+			this.page = page;
+		}
+
+		public void run() {
+			gotoPage(page - 1);
+		}
+	}
 }
-
-
-
