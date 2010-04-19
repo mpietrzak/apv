@@ -372,18 +372,6 @@ public class OpenFileActivity extends Activity {
     
     private void findText(String text) {
     	Log.d(TAG, "findText(" + text + ")");
-//    	if (this.pdf != null) {
-//    		this.pdf.findText(text);
-//    		FindResult r = this.pdf.getCurrentFindResult();
-//    		if (r != null) {
-//    			if (this.pagesView != null) this.pagesView.setFindMode(true);
-//    			this.findButtonsLayout.setVisibility(View.VISIBLE);
-//    		} else {
-//    	    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
-//    	    	AlertDialog dialog = builder.setMessage("Nothing found").create();
-//    	    	dialog.show();
-//    		}
-//    	}
     	this.findText = text;
     	this.find(true);
     }

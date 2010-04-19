@@ -43,16 +43,6 @@ public class FindResult {
 		} else {
 			this.markers.get(0).union(nr);
 		}
-//		Rect nr = new Rect(x0, y0, x1, y1);
-//		Iterator<Rect> i = this.markers.iterator();
-//		while(i.hasNext()) {
-//			Rect r = i.next();
-//			if (Rect.intersects(r, nr)) {
-//				i.remove();
-//				nr.union(r);
-//			}
-//		}
-//		this.markers.add(nr);
 	}
 	
 	public String toString() {

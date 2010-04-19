@@ -42,14 +42,5 @@ public abstract class PagesProvider {
 	}
 	
 	public abstract void setVisibleTiles(Collection<Tile> tiles);
-	
-//	/**
-//	 * Get current find result.
-//	 */
-//	public abstract FindResult getCurrentFindResult();
-//	
-//	/**
-//	 * Find next.
-//	 */
-//	public abstract void findNext(boolean forward);
+
 }
