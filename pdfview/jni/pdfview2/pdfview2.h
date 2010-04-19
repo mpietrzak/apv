@@ -48,6 +48,7 @@ void pdf_android_loghandler(const char *m);
 jobject create_find_result(JNIEnv *env);
 void set_find_result_page(JNIEnv *env, jobject findResult, int page);
 void add_find_result_marker(JNIEnv *env, jobject findResult, int x0, int y0, int x1, int y1);
+void add_find_result_to_list(JNIEnv *env, jobject *list, jobject find_result);
 int convert_point_pdf_to_apv(pdf_t *pdf, int page, int *x, int *y);
 int find_next(JNIEnv *env, jobject this, int direction);
 pdf_page* get_page(pdf_t *pdf, int pageno);

@@ -8,7 +8,7 @@
 
 
 #define PDFVIEW_LOG_TAG "cx.hell.android.pdfview"
-#define PDFVIEW_MAX_PAGES_LOADED 16
+#define PDFVIEW_MAX_PAGES_LOADED 8
 
 
 
@@ -210,6 +210,100 @@ Java_cx_hell_android_pdfview_PDF_freeMemory(
     /* pdf->fileno is dup()-ed in parse_pdf_fileno */
     if (pdf->fileno >= 0) close(pdf->fileno);
     free(pdf);
+}
+
+
+JNIEXPORT jobject JNICALL
+Java_cx_hell_android_pdfview_PDF_find(
+        JNIEnv *env,
+        jobject this,
+        jstring text,
+        jint pageno) {
+    pdf_t *pdf = NULL;
+    char *ctext = NULL;
+    jboolean is_copy;
+    jobject results = NULL;
+    pdf_page *page = NULL;
+    pdf_textline *textlines = NULL, *ln = NULL;
+    char *textlinechars;
+    char *found = NULL;
+    fz_error error = 0;
+    jobject find_result = NULL;
+
+    ctext = (char*)(*env)->GetStringUTFChars(env, text, &is_copy);
+    if (ctext == NULL) {
+        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "text cannot be null");
+        (*env)->ReleaseStringUTFChars(env, text, ctext);
+        return NULL;
+    }
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "find(%s)", ctext);
+    pdf = get_pdf_from_this(env, this);
+    page = get_page(pdf, pageno);
+
+    error = pdf_loadtextfromtree(&textlines, page->tree, fz_identity());
+    if (error) {
+        __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "pdf_loadtextfromtree failed");
+        (*env)->ReleaseStringUTFChars(env, text, ctext);
+        return NULL;
+    }
+
+    for(ln = textlines; ln; ln = ln->next) {
+        textlinechars = (char*)malloc(ln->len + 1);
+        {
+            int i;
+            for(i = 0; i < ln->len; ++i) textlinechars[i] = ln->text[i].c;
+        }
+        textlinechars[ln->len] = 0;
+        found = strcasestr(textlinechars, ctext);
+        if (found) {
+            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "found something, creating empty find result");
+            find_result = create_find_result(env);
+            if (find_result == NULL) {
+                __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "tried to create empty find result, but got NULL instead");
+                /* TODO: free resources */
+                (*env)->ReleaseStringUTFChars(env, text, ctext);
+                return;
+            }
+            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "found something, empty find result created");
+            set_find_result_page(env, find_result, pageno);
+            /* now add markers to this find result */
+            {
+                int i = 0;
+                int i0, i1;
+                int x, y;
+                i0 = (found-textlinechars);
+                i1 = i0 + strlen(ctext);
+                for(i = i0; i < i1; ++i) {
+                    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "adding marker for letter %d: %c", i, textlinechars[i]);
+                    x = ln->text[i].x;
+                    y = ln->text[i].y;
+                    convert_point_pdf_to_apv(pdf, pageno, &x, &y);
+                    add_find_result_marker(env, find_result, x-2, y-2, x+2, y+2); /* TODO: check errors */
+                }
+                /* TODO: obviously this sucks massively, good God please forgive me for writing this; if only I had more time... */
+                x = ((float)(ln->text[i1-1].x - ln->text[i0].x)) / (float)strlen(ctext) + ln->text[i1-1].x;
+                y = ((float)(ln->text[i1-1].y - ln->text[i0].y)) / (float)strlen(ctext) + ln->text[i1-1].y;
+                convert_point_pdf_to_apv(pdf, pageno, &x, &y);
+                __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "adding final marker");
+                add_find_result_marker(env,
+                        find_result,
+                        x-2, y-2,
+                        x+2, y+2
+                    );
+            }
+            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "adding find result to list");
+            add_find_result_to_list(env, &results, find_result);
+            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "added find result to list");
+        }
+        free(textlinechars);
+    }
+
+    pdf_droptextline(textlines);
+
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "releasing text back to jvm");
+    (*env)->ReleaseStringUTFChars(env, text, ctext);
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "returning results");
+    return results;
 }
 
 
@@ -433,6 +527,60 @@ jobject create_find_result(JNIEnv *env) {
 
     findResultObject = (*env)->NewObject(env, findResultClass, constructorID);
     return findResultObject;
+}
+
+
+void add_find_result_to_list(JNIEnv *env, jobject *list, jobject find_result) {
+    static int jni_ids_cached = 0;
+    static jmethodID list_add_method_id = NULL;
+    jclass list_class = NULL;
+    if (list == NULL) {
+        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "list cannot be null - it must be a pointer jobject variable");
+        return;
+    }
+    if (find_result == NULL) {
+        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "find_result cannot be null");
+        return;
+    }
+    if (*list == NULL) {
+        jmethodID list_constructor_id;
+        __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "creating ArrayList");
+        list_class = (*env)->FindClass(env, "java/util/ArrayList");
+        if (list_class == NULL) {
+            __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "couldn't find class java/util/ArrayList");
+            return;
+        }
+        list_constructor_id = (*env)->GetMethodID(env, list_class, "<init>", "()V");
+        if (!list_constructor_id) {
+            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "couldn't find ArrayList constructor");
+            return;
+        }
+        *list = (*env)->NewObject(env, list_class, list_constructor_id);
+        if (*list == NULL) {
+            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "failed to create ArrayList: NewObject returned NULL");
+            return;
+        }
+    }
+
+    if (!jni_ids_cached) {
+        if (list_class == NULL) {
+            list_class = (*env)->FindClass(env, "java/util/ArrayList");
+            if (list_class == NULL) {
+                __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "couldn't find class java/util/ArrayList");
+                return;
+            }
+        }
+        list_add_method_id = (*env)->GetMethodID(env, list_class, "add", "(Ljava/lang/Object;)Z");
+        if (list_add_method_id == NULL) {
+            __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "couldn't get ArrayList.add method id");
+            return;
+        }
+        jni_ids_cached = 1;
+    } 
+
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "calling ArrayList.add");
+    (*env)->CallBooleanMethod(env, *list, list_add_method_id, find_result);
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "add_find_result_to_list done");
 }
 
 
@@ -749,7 +897,7 @@ pdf_page* get_page(pdf_t *pdf, int pageno) {
         if (loaded_pages >= PDFVIEW_MAX_PAGES_LOADED) {
             int page_to_drop = 0; /* not the page number */
             int j = 0;
-            __android_log_print(ANDROID_LOG_INFO, PDFVIEW_LOG_TAG, "already loaded %d pages, goint to drop random one", loaded_pages);
+            __android_log_print(ANDROID_LOG_INFO, PDFVIEW_LOG_TAG, "already loaded %d pages, going to drop random one", loaded_pages);
             page_to_drop = rand() % loaded_pages;
             __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "will drop %d-th loaded page", page_to_drop);
             /* search for page_to_drop-th loaded page and then drop it */

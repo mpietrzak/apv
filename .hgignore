@@ -37,3 +37,8 @@ glob:pdfview/deps
 
 
 glob:pdfview/jni/pdfview2/.*.swp
+glob:pdfview/jni/mupdf/COPYING
+glob:pdfview/jni/mupdf/Jamfile
+glob:pdfview/jni/mupdf/README
+glob:pdfview/jni/mupdf/Jamrules
+glob:pdfview/res/drawable/Thumbs.db

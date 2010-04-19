@@ -10,7 +10,6 @@ import java.util.Map;
 
 import android.graphics.Bitmap;
 import android.util.Log;
-import cx.hell.android.lib.pagesview.FindResult;
 import cx.hell.android.lib.pagesview.OnImageRenderedListener;
 import cx.hell.android.lib.pagesview.PagesProvider;
 import cx.hell.android.lib.pagesview.PagesView;
@@ -198,6 +197,10 @@ public class PDFPagesProvider extends PagesProvider {
 		 */
 		private Thread workerThread = null;
 		
+		/**
+		 * Create renderer worker.
+		 * @param pdfPagesProvider parent pages provider
+		 */
 		RendererWorker(PDFPagesProvider pdfPagesProvider) {
 			this.tiles = null;
 			this.pdfPagesProvider = pdfPagesProvider;
@@ -394,13 +397,13 @@ public class PDFPagesProvider extends PagesProvider {
 		}
 	}
 	
-	@Override
-	public FindResult getCurrentFindResult() {
-		return this.pdf.getCurrentFindResult();
-	}
-	
-	@Override
-	public void findNext(boolean forward) {
-		this.pdf.findNext(forward ? 1 : 0);
-	}
+//	@Override
+//	public FindResult getCurrentFindResult() {
+//		return this.pdf.getCurrentFindResult();
+//	}
+//	
+//	@Override
+//	public void findNext(boolean forward) {
+//		this.pdf.findNext(forward ? 1 : 0);
+//	}
 }

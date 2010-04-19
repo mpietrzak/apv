@@ -3,11 +3,13 @@ package cx.hell.android.pdfview;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
+import java.util.List;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ContentResolver;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.net.Uri;
@@ -51,11 +53,17 @@ public class OpenFileActivity extends Activity {
 	private EditText findTextInputField = null;
 	
 	private LinearLayout findButtonsLayout = null;
+	private Button findPrevButton = null;
 	private Button findNextButton = null;
 	private Button findHideButton = null;
+
 	// currently opened file path
 	private String filePath = "/";
 	
+	private String findText = null;
+	private Integer currentFindResultPage = null;
+	private Integer currentFindResultNumber = null;
+
     /**
      * Called when the activity is first created.
      * TODO: initialize dialog fast, then move file loading to other thread
@@ -75,6 +83,9 @@ public class OpenFileActivity extends Activity {
         this.findButtonsLayout.setOrientation(LinearLayout.HORIZONTAL);
         this.findButtonsLayout.setVisibility(View.GONE);
         this.findButtonsLayout.setGravity(Gravity.CENTER);
+        this.findPrevButton = new Button(this);
+        this.findPrevButton.setText("Prev");
+        this.findButtonsLayout.addView(this.findPrevButton);
         this.findNextButton = new Button(this);
         this.findNextButton.setText("Next");
         this.findButtonsLayout.addView(this.findNextButton);
@@ -108,12 +119,16 @@ public class OpenFileActivity extends Activity {
      * Set handlers on findNextButton and findHideButton.
      */
     private void setFindButtonHandlers() {
+    	this.findPrevButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				OpenFileActivity.this.findPrev();
+			}
+    	});
     	this.findNextButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				OpenFileActivity.this.findNext();
 			}
     	});
-    	
     	this.findHideButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				OpenFileActivity.this.findHide();
@@ -169,9 +184,17 @@ public class OpenFileActivity extends Activity {
     	} else if (menuItem == this.findTextMenuItem) {
     		this.showFindDialog();
     	} else if (menuItem == this.clearFindTextMenuItem) {
-    		this.pagesView.setFindMode(false);
+    		this.clearFind();
+
     	}
     	return false;
+    }
+    
+    private void clearFind() {
+		this.currentFindResultPage = null;
+		this.currentFindResultNumber = null;
+    	this.pagesView.setFindMode(false);
+		this.findButtonsLayout.setVisibility(View.GONE);
     }
     
     /**
@@ -349,33 +372,34 @@ public class OpenFileActivity extends Activity {
     
     private void findText(String text) {
     	Log.d(TAG, "findText(" + text + ")");
-    	if (this.pdf != null) {
-    		this.pdf.findText(text);
-    		FindResult r = this.pdf.getCurrentFindResult();
-    		if (r != null) {
-    			if (this.pagesView != null) this.pagesView.setFindMode(true);
-    			this.findButtonsLayout.setVisibility(View.VISIBLE);
-    		} else {
-    	    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    	    	AlertDialog dialog = builder.setMessage("Nothing found").create();
-    	    	dialog.show();
-    		}
-    	}
+//    	if (this.pdf != null) {
+//    		this.pdf.findText(text);
+//    		FindResult r = this.pdf.getCurrentFindResult();
+//    		if (r != null) {
+//    			if (this.pagesView != null) this.pagesView.setFindMode(true);
+//    			this.findButtonsLayout.setVisibility(View.VISIBLE);
+//    		} else {
+//    	    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//    	    	AlertDialog dialog = builder.setMessage("Nothing found").create();
+//    	    	dialog.show();
+//    		}
+//    	}
+    	this.findText = text;
+    	this.find(true);
     }
     
     /**
      * Called when user presses "next" button in find panel.
      */
     private void findNext() {
-    	if (this.pagesView != null) {
-    		this.pagesView.findNext(true);
-    		FindResult r = this.pdf.getCurrentFindResult();
-    		if (r == null) {
-		    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		    	AlertDialog dialog = builder.setMessage("Nothing found").create();
-		    	dialog.show();
-    		}
-    	}
+    	this.find(true);
+    }
+
+    /**
+     * Called when user presses "prev" button in find panel.
+     */
+    private void findPrev() {
+    	this.find(false);
     }
     
     /**
@@ -383,7 +407,166 @@ public class OpenFileActivity extends Activity {
      */
     private void findHide() {
     	if (this.pagesView != null) this.pagesView.setFindMode(false);
+    	this.currentFindResultNumber = null;
+    	this.currentFindResultPage = null;
     	this.findButtonsLayout.setVisibility(View.GONE);
+    }
+
+    /**
+     * Helper class that handles search progress, search cancelling etc.
+     */
+	static class Finder implements Runnable, DialogInterface.OnCancelListener, DialogInterface.OnClickListener {
+		private OpenFileActivity parent = null;
+		private boolean forward;
+		private AlertDialog dialog = null;
+		private String text;
+		private int startingPage;
+		private int pageCount;
+		private boolean cancelled = false;
+		/**
+		 * Constructor for finder.
+		 * @param parent parent activity
+		 */
+		public Finder(OpenFileActivity parent, boolean forward) {
+			this.parent = parent;
+			this.forward = forward;
+			this.text = parent.findText;
+			this.pageCount = parent.pagesView.getPageCount();
+			if (parent.currentFindResultPage != null) {
+				if (forward) {
+					this.startingPage = (parent.currentFindResultPage + 1) % pageCount;
+				} else {
+					this.startingPage = (parent.currentFindResultPage - 1 + pageCount) % pageCount;
+				}
+			} else {
+				this.startingPage = parent.pagesView.getCurrentPage();
+			}
+		}
+		public void setDialog(AlertDialog dialog) {
+			this.dialog = dialog;
+		}
+		public void run() {
+			int page = -1;
+			this.createDialog();
+			this.showDialog();
+			for(int i = 0; i < this.pageCount; ++i) {
+				if (this.cancelled) {
+					this.dismissDialog();
+					return;
+				}
+				page = (startingPage + pageCount + (this.forward ? i : -i)) % this.pageCount;
+				Log.d(TAG, "searching on " + page);
+				this.updateDialog(page);
+				List<FindResult> findResults = this.findOnPage(page);
+				if (findResults != null && !findResults.isEmpty()) {
+					Log.d(TAG, "found something at page " + page + ": " + findResults.size() + " results");
+					this.dismissDialog();
+					this.showFindResults(findResults, page);
+					return;
+				}
+			}
+			/* TODO: show "nothing found" message */
+			this.dismissDialog();
+		}
+		/**
+		 * Called by finder thread to get find results for given page.
+		 * Routed to PDF instance.
+		 * If result is not empty, then finder loop breaks, current find position
+		 * is saved and find results are displayed.
+		 * @param page page to search on
+		 * @return results 
+		 */
+		private List<FindResult> findOnPage(int page) {
+			if (this.text == null) throw new IllegalStateException("text cannot be null");
+			return this.parent.pdf.find(this.text, page);
+		}
+		private void createDialog() {
+			this.parent.runOnUiThread(new Runnable() {
+				public void run() {
+			    	AlertDialog.Builder builder = new AlertDialog.Builder(Finder.this.parent);
+			    	AlertDialog dialog = builder
+			    		.setTitle("Searching for \"" + Finder.this.text + "\"")
+			    		.setMessage("Page " + Finder.this.startingPage + " of " + pageCount)
+			    		.setCancelable(true)
+			    		.setNegativeButton("Cancel", Finder.this)
+			    		.create();
+			    	dialog.setOnCancelListener(Finder.this);
+			    	Log.d(TAG, "ok, dialog created, saving");
+			    	Finder.this.dialog = dialog;
+			    	Log.d(TAG, "dialog saved");
+				}
+			});
+		}
+		public void updateDialog(final int page) {
+			this.parent.runOnUiThread(new Runnable() {
+				public void run() {
+					Finder.this.dialog.setMessage("Page " + page + " of " + pageCount);
+				}
+			});
+		}
+		public void showDialog() {
+			this.parent.runOnUiThread(new Runnable() {
+				public void run() {
+					Finder.this.dialog.show();
+				}
+			});
+		}
+		public void dismissDialog() {
+			final AlertDialog dialog = this.dialog;
+			this.parent.runOnUiThread(new Runnable() {
+				public void run() {
+					dialog.dismiss();
+				}
+			});
+		}
+		public void onCancel(DialogInterface dialog) {
+			Log.d(TAG, "onCancel(" + dialog + ")");
+			this.cancelled = true;
+		}
+		public void onClick(DialogInterface dialog, int which) {
+			Log.d(TAG, "onClick(" + dialog + ")");
+			this.cancelled = true;
+		}
+		private void showFindResults(final List<FindResult> findResults, final int page) {
+			this.parent.runOnUiThread(new Runnable() {
+				public void run() {
+					int fn = Finder.this.forward ? 0 : findResults.size()-1;
+					Finder.this.parent.currentFindResultPage = page;
+					Finder.this.parent.currentFindResultNumber = fn;
+					Finder.this.parent.pagesView.setFindResults(findResults);
+					Finder.this.parent.pagesView.setFindMode(true);
+					Finder.this.parent.pagesView.scrollToFindResult(fn);
+					Finder.this.parent.findButtonsLayout.setVisibility(View.VISIBLE);
+					Finder.this.parent.pagesView.invalidate();
+				}
+			});
+		}
+	};
+    
+    /**
+     * GUI for finding text.
+     * Used both on initial search and for "next" and "prev" searches.
+     * Displays dialog, handles cancel button, hides dialog as soon as
+     * something is found.
+     * @param 
+     */
+    private void find(boolean forward) {
+    	if (this.currentFindResultPage != null) {
+    		/* searching again */
+    		int nextResultNum = forward ? this.currentFindResultNumber + 1 : this.currentFindResultNumber - 1;
+    		if (nextResultNum >= 0 && nextResultNum < this.pagesView.getFindResults().size()) {
+    			/* no need to really find - just focus on given result and exit */
+    			this.currentFindResultNumber = nextResultNum;
+    			this.pagesView.scrollToFindResult(nextResultNum);
+    			this.pagesView.invalidate();
+    			return;
+    		}
+    	}
+
+    	/* finder handles next/prev and initial search by itself */
+    	Finder finder = new Finder(this, forward);
+    	Thread finderThread = new Thread(finder);
+    	finderThread.start();
     }
 }
 
