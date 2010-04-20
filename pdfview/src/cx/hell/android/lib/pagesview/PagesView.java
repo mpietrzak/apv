@@ -15,6 +15,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import cx.hell.android.pdfview.R;
@@ -24,7 +25,7 @@ import cx.hell.android.pdfview.R;
  * TODO: redesign zooms, pages, margins, layout
  * TODO: use more floats for better align, or use more ints for performance ;) (that is, really analyse what should be used when)
  */
-public class PagesView extends View implements View.OnTouchListener, OnImageRenderedListener {
+public class PagesView extends View implements View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	
 	/**
 	 * Tile size.
@@ -172,6 +173,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		this.findResultsPaint.setAntiAlias(true);
 		this.findResultsPaint.setStrokeWidth(3);
 		this.setOnTouchListener(this);
+		this.setOnKeyListener(this);
 	}
 	
 	/**
@@ -411,7 +413,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				{
 					if (this.currentPage == -1)  {
 						// remember the currently displayed page
-						this.currentPage = i + 1;
+						this.currentPage = i;
 					}
 					
 					x = pagex0 - viewx0;
@@ -579,6 +581,33 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	}
 	
 	/**
+	 * Handle keyboard events
+	 */
+	public boolean onKey(View v, int keyCode, KeyEvent event) {
+		if (event.getAction() == KeyEvent.ACTION_DOWN) {
+			switch (keyCode) {
+			case KeyEvent.KEYCODE_DPAD_UP:
+			case KeyEvent.KEYCODE_DEL:
+				this.top -= this.getHeight() - 16;
+				this.invalidate();
+				return true;
+			case KeyEvent.KEYCODE_DPAD_DOWN:
+			case KeyEvent.KEYCODE_SPACE:
+				this.top += this.getHeight() - 16;
+				this.invalidate();
+				return true;
+			case KeyEvent.KEYCODE_DPAD_LEFT:
+				scrollToPage(currentPage - 1);
+				return true;
+			case KeyEvent.KEYCODE_DPAD_RIGHT:
+				scrollToPage(currentPage + 1);
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
 	 * Test if specified rectangles intersect with each other.
 	 * Uses Androids standard Rect class.
 	 * TODO: avoid creating Rect instance
@@ -632,7 +661,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			}
 		});
 	}
-	
+
 	/**
 	 * Move current viewport over n-th page.
 	 * Page is 0-based.
@@ -771,7 +800,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	/**
 	 * Get the current page number
 	 * 
-	 * @return the current page
+	 * @return the current page. 0-based
 	 */
 	public int getCurrentPage() {
 		return currentPage;

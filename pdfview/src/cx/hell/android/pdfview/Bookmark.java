@@ -131,10 +131,10 @@ public class Bookmark {
 	 * Get the last recorded page for the given file
 	 * 
 	 * @param file
-	 * @return page number or 1 if not found
+	 * @return page number (0-based) or 0 if not found
 	 */
 	public int getLast(String file) {
-		int page = 1;
+		int page = 0;
 		String md5 = nameToMD5(file);
 
 		Cursor cur = db.query(true, "bookmark", new String[] { KEY_PAGE },
