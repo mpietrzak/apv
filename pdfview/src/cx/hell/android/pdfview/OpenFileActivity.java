@@ -100,9 +100,13 @@ public class OpenFileActivity extends Activity {
         this.pdfPagesProvider = new PDFPagesProvider(pdf);
         pagesView.setPagesProvider(pdfPagesProvider);
         layout.addView(pagesView);
-        
+       
         this.setContentView(layout);
+        // go to last viewed page
         gotoLastPage();
+        // send keyboard events to this view
+        pagesView.setFocusable(true);
+        pagesView.setFocusableInTouchMode(true);
     }
 
 	/** 
@@ -114,7 +118,6 @@ public class OpenFileActivity extends Activity {
 		super.onPause();
 	}
 
-	/**
     /**
      * Set handlers on findNextButton and findHideButton.
      */
@@ -220,7 +223,7 @@ public class OpenFileActivity extends Activity {
     	label.setText("Page number from " + 1 + " to " + pagecount);
     	this.pageNumberInputField = new EditText(this);
     	this.pageNumberInputField.setInputType(InputType.TYPE_CLASS_NUMBER);
-    	this.pageNumberInputField.setText("" + this.pagesView.getCurrentPage());
+    	this.pageNumberInputField.setText("" + (this.pagesView.getCurrentPage() + 1));
     	Button goButton = new Button(this);
     	goButton.setText(R.string.goto_page_go_button);
     	goButton.setOnClickListener(new OnClickListener() {
@@ -270,7 +273,7 @@ public class OpenFileActivity extends Activity {
         Bookmark b = new Bookmark(this.getApplicationContext()).open();
         int lastpage = b.getLast(filePath);
         b.close();
-        if (lastpage > 1) {
+        if (lastpage > 0) {
         	Handler mHandler = new Handler();
         	Runnable mUpdateTimeTask = new GotoPageThread(lastpage);
         	mHandler.postDelayed(mUpdateTimeTask, 2000);
@@ -315,7 +318,7 @@ public class OpenFileActivity extends Activity {
 		}
 
 		public void run() {
-			gotoPage(page - 1);
+			gotoPage(page);
 		}
 	}
 
