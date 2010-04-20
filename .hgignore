@@ -1,0 +1,44 @@
+
+syntax: regexp
+^pdfview/bin$
+syntax: regexp
+^pdfview/gen$
+syntax: regexp
+^pdfview/jni/pdfview2/lib$
+syntax: regexp
+^pdfview/jni/pdfview2/include$
+glob:pdfview/jni/mupdf/_darcs
+glob:pdfview/libs
+
+syntax: regexp
+^pdfview/jni/mupdf/apps$
+syntax: regexp
+^pdfview/jni/mupdf/fonts/droid$
+syntax: regexp
+^pdfview/jni/mupdf/fonts$
+glob:pdfview/jni/mupdf/cmaps
+syntax: regexp
+^pdfview/jni/mupdf/mupdf(?!.*(apv|\.mk)$).+
+syntax: regexp
+^pdfview/jni/mupdf/fitz(?!.*(apv|\.mk)$).+
+syntax: regexp
+^pdfview/jni/mupdf/fitzdraw(?!.*(apv|\.mk)$).+
+
+
+syntax: regexp
+^pdfview/jni/jpeg/cderror\.h$
+glob:pdfview/jni/jpeg/Makefile.am
+syntax: regexp
+^pdfview/jni/jpeg/(?!.*\.mk$).+
+
+
+glob:pdfview/deps
+
+
+
+glob:pdfview/jni/pdfview2/.*.swp
+glob:pdfview/jni/mupdf/COPYING
+glob:pdfview/jni/mupdf/Jamfile
+glob:pdfview/jni/mupdf/README
+glob:pdfview/jni/mupdf/Jamrules
+glob:pdfview/res/drawable/Thumbs.db
