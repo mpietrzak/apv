@@ -588,12 +588,22 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			switch (keyCode) {
 			case KeyEvent.KEYCODE_DPAD_UP:
 			case KeyEvent.KEYCODE_DEL:
+			case KeyEvent.KEYCODE_K:
 				this.top -= this.getHeight() - 16;
 				this.invalidate();
 				return true;
 			case KeyEvent.KEYCODE_DPAD_DOWN:
 			case KeyEvent.KEYCODE_SPACE:
+			case KeyEvent.KEYCODE_J:
 				this.top += this.getHeight() - 16;
+				this.invalidate();
+				return true;
+			case KeyEvent.KEYCODE_H:
+				this.left -= this.getWidth() / 4;
+				this.invalidate();
+				return true;
+			case KeyEvent.KEYCODE_L:
+				this.left += this.getWidth() / 4;
 				this.invalidate();
 				return true;
 			case KeyEvent.KEYCODE_DPAD_LEFT:
