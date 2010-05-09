@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">PDF Viewer</string>
+	<string name="about">O programie</string>
+	<string name="goto_page">Przejdź do strony...</string>
+	<string name="goto_page_dialog_title">Przejdź do strony</string>
+	<string name="goto_page_go_button">Przejdź</string>
+	<string name="rotate_page_left">Obróć w lewo</string>
+	<string name="rotate_page_right">Obróć w prawo</string>
+	<string name="find_text">Szukaj...</string>
+	<string name="find_dialog_title">Wyszukiwanie</string>
+	<string name="find_go_button">Szukaj</string>
+	<string name="find_cancel_button">Anuluj</string>
+	<string name="clear_find_text">Wyczyść wyniki</string>
+	<string name="cancel">Anuluj</string>
+	<string name="searching_for">Wyszukiwanie "%1"</string>
+	<string name="page_of">Strona %1 z %2</string>
+</resources>
