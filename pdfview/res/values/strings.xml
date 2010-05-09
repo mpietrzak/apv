@@ -12,4 +12,7 @@
 	<string name="find_go_button">Find</string>
 	<string name="find_cancel_button">Cancel</string>
 	<string name="clear_find_text">Clear find</string>
+	<string name="cancel">Cancel</string>
+	<string name="searching_for">Searching for "%1"</string>
+	<string name="page_of">Page %1 of %2</string>
 </resources>
