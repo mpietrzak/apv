@@ -8,7 +8,7 @@
 
 
 #include "fitz.h"
-#include "mupdf.h"
+#include "apv_mupdf.h"
 
 
 /**
@@ -19,7 +19,7 @@ typedef struct {
 	pdf_outline *outline;
     int fileno; /* used only when opening by file descriptor */
     pdf_page **pages; /* lazy-loaded pages */
-    fz_renderer *renderer;
+    fz_glyphcache *drawcache;
 } pdf_t;
 
 
@@ -44,5 +44,7 @@ void set_find_result_page(JNIEnv *env, jobject findResult, int page);
 void add_find_result_marker(JNIEnv *env, jobject findResult, int x0, int y0, int x1, int y1);
 void add_find_result_to_list(JNIEnv *env, jobject *list, jobject find_result);
 int convert_point_pdf_to_apv(pdf_t *pdf, int page, int *x, int *y);
+int convert_box_pdf_to_apv(pdf_t *pdf, int page, fz_bbox *bbox);
 int find_next(JNIEnv *env, jobject this, int direction);
 pdf_page* get_page(pdf_t *pdf, int pageno);
+

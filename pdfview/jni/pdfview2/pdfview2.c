@@ -17,7 +17,7 @@ JNI_OnLoad(JavaVM *jvm, void *reserved) {
     __android_log_print(ANDROID_LOG_INFO, "cx.hell.android.pdfview", "JNI_OnLoad");
     fz_cpudetect();
     fz_accelerate();
-    /* pdf_setloghandler(pdf_android_loghandler); */
+    pdf_setloghandler(pdf_android_loghandler);
     return JNI_VERSION_1_2;
 }
 
@@ -199,9 +199,9 @@ Java_cx_hell_android_pdfview_PDF_freeMemory(
     }
     */
 
-    if (pdf->renderer) {
-        fz_droprenderer(pdf->renderer);
-        pdf->renderer = NULL;
+    if (pdf->drawcache) {
+        fz_freeglyphcache(pdf->drawcache);
+        pdf->drawcache = NULL;
     }
 
     /* pdf->fileno is dup()-ed in parse_pdf_fileno */
@@ -221,7 +221,8 @@ Java_cx_hell_android_pdfview_PDF_find(
     jboolean is_copy;
     jobject results = NULL;
     pdf_page *page = NULL;
-    pdf_textline *textlines = NULL, *ln = NULL;
+    fz_textspan *textspan = NULL, *ln = NULL;
+    fz_device *dev = NULL;
     char *textlinechars;
     char *found = NULL;
     fz_error error = 0;
@@ -237,14 +238,19 @@ Java_cx_hell_android_pdfview_PDF_find(
     pdf = get_pdf_from_this(env, this);
     page = get_page(pdf, pageno);
 
+    /*
     error = pdf_loadtextfromtree(&textlines, page->tree, fz_identity());
     if (error) {
         __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "pdf_loadtextfromtree failed");
         (*env)->ReleaseStringUTFChars(env, text, ctext);
         return NULL;
     }
+    */
+    textspan = fz_newtextspan();
+    dev = fz_newtextdevice(textspan);
+    error = pdf_runcontentstream(dev, fz_identity(), pdf->xref, page->resources, page->contents);
 
-    for(ln = textlines; ln; ln = ln->next) {
+    for(ln = textspan; ln; ln = ln->next) {
         textlinechars = (char*)malloc(ln->len + 1);
         {
             int i;
@@ -267,17 +273,25 @@ Java_cx_hell_android_pdfview_PDF_find(
             {
                 int i = 0;
                 int i0, i1;
-                int x, y;
+                /* int x, y; */
+                fz_bbox charbox;
                 i0 = (found-textlinechars);
                 i1 = i0 + strlen(ctext);
                 for(i = i0; i < i1; ++i) {
                     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "adding marker for letter %d: %c", i, textlinechars[i]);
+                    /* 
                     x = ln->text[i].x;
                     y = ln->text[i].y;
                     convert_point_pdf_to_apv(pdf, pageno, &x, &y);
-                    add_find_result_marker(env, find_result, x-2, y-2, x+2, y+2); /* TODO: check errors */
+                    */
+                    charbox = ln->text[i].bbox;
+                    convert_box_pdf_to_apv(pdf, pageno, &charbox);
+                    /* add_find_result_marker(env, find_result, x-2, y-2, x+2, y+2); */
+                    add_find_result_marker(env, find_result, charbox.x0-2, charbox.y0-2, charbox.x1+2, charbox.y1+2); /* TODO: check errors */
+
                 }
                 /* TODO: obviously this sucks massively, good God please forgive me for writing this; if only I had more time... */
+                /*
                 x = ((float)(ln->text[i1-1].x - ln->text[i0].x)) / (float)strlen(ctext) + ln->text[i1-1].x;
                 y = ((float)(ln->text[i1-1].y - ln->text[i0].y)) / (float)strlen(ctext) + ln->text[i1-1].y;
                 convert_point_pdf_to_apv(pdf, pageno, &x, &y);
@@ -287,6 +301,7 @@ Java_cx_hell_android_pdfview_PDF_find(
                         x-2, y-2,
                         x+2, y+2
                     );
+                */
             }
             __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "adding find result to list");
             add_find_result_to_list(env, &results, find_result);
@@ -295,7 +310,8 @@ Java_cx_hell_android_pdfview_PDF_find(
         free(textlinechars);
     }
 
-    pdf_droptextline(textlines);
+    fz_freedevice(dev);
+    fz_freetextspan(textspan);
 
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "releasing text back to jvm");
     (*env)->ReleaseStringUTFChars(env, text, ctext);
@@ -528,7 +544,7 @@ pdf_t* create_pdf_t() {
     pdf->outline = NULL;
     pdf->fileno = -1;
     pdf->pages = NULL;
-    pdf->renderer = NULL;
+    pdf->drawcache = NULL;
 }
 
 
@@ -590,53 +606,52 @@ pdf_t* parse_pdf_file(const char *filename, int fileno) {
     pdf_t *pdf;
     fz_error error;
 
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "parse_pdf_file(%s, %d)", filename, fileno);
+
     pdf = create_pdf_t();
 
-    pdf->xref = pdf_newxref();
     if (filename) {
-        error = pdf_loadxref(pdf->xref, (char*)filename); /* mupdf doesn't store nor modify filename; TODO: patch mupdf to use const or pass copy of filename */
-        if (error) {
-            __android_log_print(ANDROID_LOG_INFO, "cx.hell.android.pdfview", "error from pdf_loadxref, trying to repair");
-            error = pdf_repairxref(pdf->xref, (char*)filename);
-            if (error) {
-                __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "got err from pdf_loadxref: %d", (int)error);
-                __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "fz errors:\n%s", fz_errorbuf);
+        /*
+        error = pdf_loadxref(pdf->xref, (char*)filename);
+        */
+        pdf->xref = pdf_openxref((char*)filename);
+        if (!pdf->xref) {
+                __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "got NULL from pdf_openxref");
+                __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "fz errors:\n%s", fz_errorbuf);
                 return NULL;
-            }
         }
     } else {
         pdf->fileno = dup(fileno);
-        error = pdf_loadxref_fileno(pdf->xref, pdf->fileno);
-        if (error) {
-            __android_log_print(ANDROID_LOG_INFO, "cx.hell.android.pdfview", "error from pdf_loadxref_fileno, trying to repair");
-            error = pdf_repairxref_fileno(pdf->xref, fileno);
-            if (error) {
-                __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "got err from pdf_loadxref_fileno: %d", (int)error);
-                __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "fz errors:\n%s", fz_errorbuf);
+        pdf->xref = pdf_openxref_fileno(pdf->fileno);
+        if (!pdf->xref) {
+                __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "got NULL from pdf_openxref_fileno");
+                __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "fz errors:\n%s", fz_errorbuf);
                 return NULL;
-            }
         }
     }
 
+    /*
     error = pdf_decryptxref(pdf->xref);
     if (error) {
         return NULL;
     }
+    */
 
     if (pdf_needspassword(pdf->xref)) {
         int authenticated = 0;
         authenticated = pdf_authenticatepassword(pdf->xref, "");
         if (!authenticated) {
             /* TODO: ask for password */
-            __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "failed to authenticate with empty password");
+            __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "failed to authenticate with empty password");
             return NULL;
         }
     }
 
-    pdf->xref->root = fz_resolveindirect(fz_dictgets(pdf->xref->trailer, "Root"));
+    /* pdf->xref->root = fz_resolveindirect(fz_dictgets(pdf->xref->trailer, "Root"));
     fz_keepobj(pdf->xref->root);
     pdf->xref->info = fz_resolveindirect(fz_dictgets(pdf->xref->trailer, "Info"));
     if (pdf->xref->info) fz_keepobj(pdf->xref->info);
+    */
     pdf->outline = pdf_loadoutline(pdf->xref);
     return pdf;
 }
@@ -747,16 +762,17 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
     pdf_page *page = NULL;
     fz_pixmap *image = NULL;
     static int runs = 0;
+    fz_device *dev = NULL;
 
     zoom = (double)zoom_pmil / 1000.0;
 
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "get_page_image_bitmap(pageno: %d) start", (int)pageno);
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "get_page_image_bitmap(pageno: %d) start", (int)pageno);
 
-    /* TODO: save renderer in pdf_t */
-    if (!pdf->renderer) {
-        error = fz_newrenderer(&(pdf->renderer), pdf_devicergb, 0, 1024 * 512);
-        if (error) {
-            __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "failed to create renderer");
+    if (!pdf->drawcache) {
+        pdf->drawcache = fz_newglyphcache();
+        if (!pdf->drawcache) {
+            __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "failed to create glyphcache");
+            return NULL;
         }
     }
 
@@ -770,7 +786,7 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
     ctm = fz_concat(ctm, fz_scale(zoom, -zoom));
     rotation = page->rotate + rotation * -90;
     if (rotation != 0) ctm = fz_concat(ctm, fz_rotate(rotation));
-    bbox = fz_transformaabb(ctm, page->mediabox);
+    bbox = fz_transformrect(ctm, page->mediabox);
 
     /* not bbox holds page after transform, but we only need tile at (left,right) from top-left corner */
 
@@ -779,14 +795,29 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
     bbox.x1 = bbox.x0 + *width;
     bbox.y1 = bbox.y0 + *height;
 
+
+#if 0
     error = fz_rendertree(&image, pdf->renderer, page->tree, ctm, fz_roundrect(bbox), 1);
     if (error) {
         fz_rethrow(error, "rendering failed");
         /* TODO: cleanup mem on error, so user can try to open many files without causing memleaks; also report errors nicely to user */
         return NULL;
     }
+#endif
 
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "got image %d x %d, asked for %d x %d",
+    image = fz_newpixmap(pdf_devicergb, bbox.x0, bbox.y0, *width, *height);
+    fz_clearpixmap(image, 0xff);
+    memset(image->samples, 0xff, image->h * image->w * image->n);
+    dev = fz_newdrawdevice(pdf->drawcache, image);
+    error = pdf_runcontentstream(dev, ctm, pdf->xref, page->resources, page->contents);
+    if (error) {
+        __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "pdf_runcontentstream failed: %s", (int)error);
+        /* TODO: free resources, report errors */
+        return NULL;
+    }
+    fz_freedevice(dev);
+
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "got image %d x %d, asked for %d x %d",
             (int)(image->w), (int)(image->h),
             *width, *height);
 
@@ -808,6 +839,7 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
 /**
  * Reorder bytes in image data - convert from mupdf image to android image.
  * TODO: make it portable across different architectures (when they're released).
+ * TODO: make mupdf write pixels in correct format
  */
 void fix_samples(unsigned char *bytes, unsigned int w, unsigned int h) {
         unsigned char r,g,b,a;
@@ -863,7 +895,7 @@ int get_page_size(pdf_t *pdf, int pageno, int *width, int *height) {
 
 
 /**
- * Convert coordinates from pdf convetion to APVs conventions.
+ * Convert coordinates from pdf to APVs.
  * TODO: faster? lazy?
  * @return error code, 0 means ok
  */
@@ -900,7 +932,7 @@ int convert_point_pdf_to_apv(pdf_t *pdf, int page, int *x, int *y) {
     if (rotate != 0) {
         fz_matrix m;
         m = fz_rotate(-rotate);
-        bbox = fz_transformaabb(m, bbox);
+        bbox = fz_transformrect(m, bbox);
         p = fz_transformpoint(m, p);
     }
 
@@ -911,6 +943,66 @@ int convert_point_pdf_to_apv(pdf_t *pdf, int page, int *x, int *y) {
     *y = MAX(bbox.y1, bbox.y0) - p.y;
 
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "result is: %d, %d", *x, *y);
+
+    return 0;
+}
+
+
+/**
+ * Convert coordinates from pdf to APV.
+ * Result is stored in location pointed to by bbox param.
+ * This function has to get page MediaBox relative to which bbox is located.
+ * This function should not allocate any memory.
+ * @return error code, 0 means ok
+ */
+int convert_box_pdf_to_apv(pdf_t *pdf, int page, fz_bbox *bbox) {
+    fz_error error = 0;
+    fz_obj *pageobj = NULL;
+    fz_obj *rotateobj = NULL;
+    fz_obj *sizeobj = NULL;
+    fz_rect page_bbox;
+    fz_rect param_bbox;
+    int rotate = 0;
+
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "convert_box_pdf_to_apv()");
+
+    /* copying field by field becuse param_bbox is fz_rect (floats) and *bbox is fz_bbox (ints) */
+    param_bbox.x0 = bbox->x0;
+    param_bbox.y0 = bbox->y0;
+    param_bbox.x1 = bbox->x1;
+    param_bbox.y1 = bbox->y1;
+
+    pageobj = pdf_getpageobject(pdf->xref, page+1);
+    if (!pageobj) return -1;
+    sizeobj = fz_dictgets(pageobj, "MediaBox");
+    if (!sizeobj) return -1;
+    page_bbox = pdf_torect(sizeobj);
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "page bbox is %.1f, %.1f, %.1f, %.1f", page_bbox.x0, page_bbox.y0, page_bbox.x1, page_bbox.y1);
+    rotateobj = fz_dictgets(pageobj, "Rotate");
+    if (fz_isint(rotateobj)) {
+        rotate = fz_toint(rotateobj);
+    } else {
+        rotate = 0;
+    }
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "rotate is %d", (int)rotate);
+
+    if (rotate != 0) {
+        fz_matrix m;
+        m = fz_rotate(-rotate);
+        param_bbox = fz_transformrect(m, param_bbox);
+        page_bbox = fz_transformrect(m, page_bbox);
+    }
+
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "after rotate page bbox is: %.1f, %.1f, %.1f, %.1f", page_bbox.x0, page_bbox.y0, page_bbox.x1, page_bbox.y1);
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "after rotate param bbox is: %.1f, %.1f, %.1f, %.1f", param_bbox.x0, param_bbox.y0, param_bbox.x1, param_bbox.y1);
+
+    /* set result: param bounding box relative to left-top corner of page bounding box */
+    bbox->x0 = MIN(param_bbox.x0, param_bbox.x1) - MIN(page_bbox.x0, page_bbox.x1);
+    bbox->y0 = MIN(param_bbox.y0, param_bbox.y1) - MIN(page_bbox.y0, page_bbox.y1);
+    bbox->x1 = MAX(param_bbox.x0, param_bbox.x1) - MIN(page_bbox.x0, page_bbox.x1);
+    bbox->y1 = MAX(param_bbox.y0, param_bbox.y1) - MIN(page_bbox.y0, page_bbox.y1);
+
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "result: %d, %d, %d, %d", bbox->x0, bbox->y0, bbox->x1, bbox->y1);
 
     return 0;
 }

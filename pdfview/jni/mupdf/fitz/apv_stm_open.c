@@ -2,8 +2,7 @@
  * Creation and destruction.
  */
 
-#include "fitz_base.h"
-#include "fitz_stream.h"
+#include "fitz.h"
 
 static fz_stream *
 newstm(int kind)
@@ -84,16 +83,13 @@ fz_error fz_openrfile(fz_stream **stmp, char *path)
 
 fz_error fz_openrfileno(fz_stream **stmp, int fileno)
 {
-	fz_stream *stm;
+       fz_stream *stm;
 
-	stm = newstm(FZ_SFILE);
-
-	stm->buffer = fz_newbuffer(FZ_BUFSIZE);
-
-	stm->file = fileno;
-
-	*stmp = stm;
-	return fz_okay;
+       stm = newstm(FZ_SFILE);
+       stm->buffer = fz_newbuffer(FZ_BUFSIZE);
+       stm->file = fileno;
+       *stmp = stm;
+       return fz_okay;
 }
 
 fz_stream * fz_openrfilter(fz_filter *flt, fz_stream *src)
