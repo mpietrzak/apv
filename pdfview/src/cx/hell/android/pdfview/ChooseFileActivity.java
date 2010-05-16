@@ -10,6 +10,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,9 +26,12 @@ import android.widget.AdapterView.OnItemClickListener;
  */
 public class ChooseFileActivity extends Activity implements OnItemClickListener {
 	
+	/**
+	 * Logging tag.
+	 */
 	private final static String TAG = "cx.hell.android.pdfview";
 	
-	private String currentPath = "/sdcard";
+	private String currentPath = Environment.getExternalStorageDirectory().getAbsolutePath();
 	
 	private TextView pathTextView = null;
 	private ListView filesListView = null;

@@ -27,7 +27,7 @@ LOCAL_SRC_FILES := \
 	\
 	stm_buffer.c \
 	stm_filter.c \
-	apv_stm_open.c \
+	stm_open.c \
 	stm_read.c \
 	stm_misc.c \
 	\
@@ -54,7 +54,8 @@ LOCAL_SRC_FILES := \
 	\
 	dev_draw.c \
 	dev_null.c \
-	dev_text.c
+	dev_text.c \
+	dev_bbox.c
 
 
 include $(BUILD_STATIC_LIBRARY)

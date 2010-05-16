@@ -22,7 +22,15 @@ syntax: regexp
 syntax: regexp
 ^pdfview/jni/mupdf/fitz(?!.*(apv|\.mk)$).+
 syntax: regexp
-^pdfview/jni/mupdf/fitzdraw(?!.*(apv|\.mk)$).+
+^pdfview/jni/mupdf/draw(?!.*(apv|\.mk)$).+
+syntax: regexp
+^pdfview/jni/mupdf/debian(?!.*(apv|\.mk)$).+
+syntax: regexp
+^pdfview/jni/mupdf/win32(?!.*(apv|\.mk)$).+
+syntax: regexp
+^pdfview/jni/openjpeg(?!.*(apv|\.mk|config.h)$).+
+syntax: regexp
+^pdfview/jni/jbig2dec(?!.*(apv|\.mk)$).+
 
 
 syntax: regexp
