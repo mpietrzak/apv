@@ -6,8 +6,6 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/../mupdf $(LOCAL_PATH)/../fitz
 LOCAL_CFLAGS := -Drestrict=
 LOCAL_MODULE    := fitzdraw
 LOCAL_SRC_FILES := \
-        archppc.c \
-        archsparc.c \
         archx86.c \
         blendmodes.c \
         glyphcache.c \
@@ -18,8 +16,6 @@ LOCAL_SRC_FILES := \
         pathfill.c \
         pathscan.c \
         pathstroke.c \
-        pixmap.c \
-        porterduff.c \
-        render.c
+        porterduff.c
 
 include $(BUILD_STATIC_LIBRARY)
