@@ -50,8 +50,7 @@ glob:pdfview/jni/mupdf/Jamfile
 glob:pdfview/jni/mupdf/README
 glob:pdfview/jni/mupdf/Jamrules
 glob:pdfview/res/drawable/Thumbs.db
+glob:.DS_Store
 
-syntax: regexp
-^pdfview/jni/mupdf/Makefile$
-syntax: regexp
-^pdfview/\.settings$
+regexp:^pdfview/jni/mupdf/Makefile$
+regexp:^pdfview/\.settings$
