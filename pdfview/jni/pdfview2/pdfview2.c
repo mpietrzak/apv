@@ -605,29 +605,29 @@ pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len) {
 pdf_t* parse_pdf_file(const char *filename, int fileno) {
     pdf_t *pdf;
     fz_error error;
+    int fd;
+    fz_stream *file;
 
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "parse_pdf_file(%s, %d)", filename, fileno);
 
     pdf = create_pdf_t();
 
     if (filename) {
-        /*
-        error = pdf_loadxref(pdf->xref, (char*)filename);
-        */
-        pdf->xref = pdf_openxref((char*)filename);
-        if (!pdf->xref) {
-                __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "got NULL from pdf_openxref");
-                __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "fz errors:\n%s", fz_errorbuf);
-                return NULL;
+        fd = open(filename, O_BINARY | O_RDONLY, 0666);
+        if (fd < 0) {
+            return NULL;
         }
     } else {
         pdf->fileno = dup(fileno);
-        pdf->xref = pdf_openxref_fileno(pdf->fileno);
-        if (!pdf->xref) {
-                __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "got NULL from pdf_openxref_fileno");
-                __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "fz errors:\n%s", fz_errorbuf);
+        fd = pdf->fileno;
+    }
+
+    file = fz_openfile(fd);
+    pdf->xref = pdf_openxref(file);
+    if (!pdf->xref) {
+        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "got NULL from pdf_openxref");
+        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "fz errors:\n%s", fz_errorbuf);
                 return NULL;
-        }
     }
 
     /*
@@ -1013,3 +1013,5 @@ void pdf_android_loghandler(const char *m) {
 }
 
 
+
+/* vim: set sts=4 ts=4 sw=4 et: */

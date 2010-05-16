@@ -8,7 +8,7 @@
 
 
 #include "fitz.h"
-#include "apv_mupdf.h"
+#include "mupdf.h"
 
 
 /**
