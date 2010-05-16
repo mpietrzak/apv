@@ -8,16 +8,16 @@
 
 
 #define PDFVIEW_LOG_TAG "cx.hell.android.pdfview"
-#define PDFVIEW_MAX_PAGES_LOADED 8
+#define PDFVIEW_MAX_PAGES_LOADED 16
 
 
 
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *jvm, void *reserved) {
-    __android_log_print(ANDROID_LOG_INFO, "cx.hell.android.pdfview", "JNI_OnLoad");
+    __android_log_print(ANDROID_LOG_INFO, PDFVIEW_LOG_TAG, "JNI_OnLoad");
     fz_cpudetect();
     fz_accelerate();
-    pdf_setloghandler(pdf_android_loghandler);
+    /* pdf_setloghandler(pdf_android_loghandler); */
     return JNI_VERSION_1_2;
 }
 
@@ -894,6 +894,7 @@ int get_page_size(pdf_t *pdf, int pageno, int *width, int *height) {
 }
 
 
+#if 0
 /**
  * Convert coordinates from pdf to APVs.
  * TODO: faster? lazy?
@@ -946,6 +947,7 @@ int convert_point_pdf_to_apv(pdf_t *pdf, int page, int *x, int *y) {
 
     return 0;
 }
+#endif
 
 
 /**
@@ -963,8 +965,10 @@ int convert_box_pdf_to_apv(pdf_t *pdf, int page, fz_bbox *bbox) {
     fz_rect page_bbox;
     fz_rect param_bbox;
     int rotate = 0;
+    float height = 0;
+    float width = 0;
 
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "convert_box_pdf_to_apv()");
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "convert_box_pdf_to_apv(page: %d, bbox: %d %d %d %d)", page, bbox->x0, bbox->y0, bbox->x1, bbox->y1);
 
     /* copying field by field becuse param_bbox is fz_rect (floats) and *bbox is fz_bbox (ints) */
     param_bbox.x0 = bbox->x0;
@@ -997,12 +1001,23 @@ int convert_box_pdf_to_apv(pdf_t *pdf, int page, fz_bbox *bbox) {
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "after rotate param bbox is: %.1f, %.1f, %.1f, %.1f", param_bbox.x0, param_bbox.y0, param_bbox.x1, param_bbox.y1);
 
     /* set result: param bounding box relative to left-top corner of page bounding box */
+
+    /*
     bbox->x0 = MIN(param_bbox.x0, param_bbox.x1) - MIN(page_bbox.x0, page_bbox.x1);
     bbox->y0 = MIN(param_bbox.y0, param_bbox.y1) - MIN(page_bbox.y0, page_bbox.y1);
     bbox->x1 = MAX(param_bbox.x0, param_bbox.x1) - MIN(page_bbox.x0, page_bbox.x1);
     bbox->y1 = MAX(param_bbox.y0, param_bbox.y1) - MIN(page_bbox.y0, page_bbox.y1);
+    */
 
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "result: %d, %d, %d, %d", bbox->x0, bbox->y0, bbox->x1, bbox->y1);
+    width = ABS(page_bbox.x0 - page_bbox.x1);
+    height = ABS(page_bbox.y0 - page_bbox.y1);
+
+    bbox->x0 = (MIN(param_bbox.x0, param_bbox.x1) - MIN(page_bbox.x0, page_bbox.x1));
+    bbox->y1 = height - (MIN(param_bbox.y0, param_bbox.y1) - MIN(page_bbox.y0, page_bbox.y1));
+    bbox->x1 = (MAX(param_bbox.x0, param_bbox.x1) - MIN(page_bbox.x0, page_bbox.x1));
+    bbox->y0 = height - (MAX(param_bbox.y0, param_bbox.y1) - MIN(page_bbox.y0, page_bbox.y1));
+
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "result after transformations: %d, %d, %d, %d", bbox->x0, bbox->y0, bbox->x1, bbox->y1);
 
     return 0;
 }
