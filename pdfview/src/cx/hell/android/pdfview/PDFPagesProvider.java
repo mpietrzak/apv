@@ -179,6 +179,11 @@ public class PDFPagesProvider extends PagesProvider {
 	
 	private static class RendererWorker implements Runnable {
 		
+		/**
+		 * Worker stops rendering if error was encountered.
+		 */
+		private boolean isFailed = false;
+		
 		private PDFPagesProvider pdfPagesProvider;
 		
 		private Collection<Tile> tiles;
@@ -249,12 +254,17 @@ public class PDFPagesProvider extends PagesProvider {
 		 */
 		public void run() {
 			while(true) {
+				if (this.isFailed) {
+					Log.i(TAG, "RendererWorker is failed, exiting");
+					break;
+				}
 				Collection<Tile> tiles = this.popTiles(); /* this can't block */
 				if (tiles == null || tiles.size() == 0) break;
 				try {
 					Map<Tile,Bitmap> renderedTiles = this.pdfPagesProvider.renderTiles(tiles);
 					this.pdfPagesProvider.publishBitmaps(renderedTiles);
 				} catch (RenderingException e) {
+					this.isFailed = true;
 					this.pdfPagesProvider.publishRenderingException(e);
 				}
 			}
