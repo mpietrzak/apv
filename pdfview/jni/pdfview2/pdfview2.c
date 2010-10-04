@@ -11,11 +11,12 @@
 #define PDFVIEW_MAX_PAGES_LOADED 16
 
 
+extern char fz_errorbuf[150*20]; /* defined in fitz/apv_base_error.c */
+
 
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *jvm, void *reserved) {
     __android_log_print(ANDROID_LOG_INFO, PDFVIEW_LOG_TAG, "JNI_OnLoad");
-    fz_cpudetect();
     fz_accelerate();
     /* pdf_setloghandler(pdf_android_loghandler); */
     return JNI_VERSION_1_2;
@@ -82,7 +83,10 @@ Java_cx_hell_android_pdfview_PDF_getPageCount(
 		jobject this) {
 	pdf_t *pdf = NULL;
     pdf = get_pdf_from_this(env, this);
-	if (pdf == NULL) return -1;
+	if (pdf == NULL) {
+        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "pdf is null");
+        return -1;
+    }
 	return pdf_getpagecount(pdf->xref);
 }
 
@@ -171,6 +175,7 @@ Java_cx_hell_android_pdfview_PDF_freeMemory(
 	pdf = (pdf_t*) (*env)->GetIntField(env, this, pdf_field_id);
 	(*env)->SetIntField(env, this, pdf_field_id, 0);
 
+    /*
     if (pdf->pages) {
         int i;
         int pagecount;
@@ -183,6 +188,7 @@ Java_cx_hell_android_pdfview_PDF_freeMemory(
         free(pdf->pages);
         pdf->pages = NULL;
     }
+    */
 
     /*
     if (pdf->textlines) {
@@ -238,17 +244,15 @@ Java_cx_hell_android_pdfview_PDF_find(
     pdf = get_pdf_from_this(env, this);
     page = get_page(pdf, pageno);
 
-    /*
-    error = pdf_loadtextfromtree(&textlines, page->tree, fz_identity());
-    if (error) {
-        __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "pdf_loadtextfromtree failed");
-        (*env)->ReleaseStringUTFChars(env, text, ctext);
-        return NULL;
-    }
-    */
     textspan = fz_newtextspan();
     dev = fz_newtextdevice(textspan);
-    error = pdf_runcontentstream(dev, fz_identity(), pdf->xref, page->resources, page->contents);
+    error = pdf_runpage(pdf->xref, page, dev, fz_identity);
+    if (error)
+    {
+        /* TODO: cleanup */
+        fz_rethrow(error, "text extraction failed");
+        return NULL;
+    }
 
     for(ln = textspan; ln; ln = ln->next) {
         textlinechars = (char*)malloc(ln->len + 1);
@@ -623,7 +627,7 @@ pdf_t* parse_pdf_file(const char *filename, int fileno) {
     }
 
     file = fz_openfile(fd);
-    pdf->xref = pdf_openxref(file);
+    error = pdf_openxrefwithstream(&(pdf->xref), file, NULL);
     if (!pdf->xref) {
         __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "got NULL from pdf_openxref");
         __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "fz errors:\n%s", fz_errorbuf);
@@ -653,6 +657,20 @@ pdf_t* parse_pdf_file(const char *filename, int fileno) {
     if (pdf->xref->info) fz_keepobj(pdf->xref->info);
     */
     pdf->outline = pdf_loadoutline(pdf->xref);
+
+    error = pdf_loadpagetree(pdf->xref);
+    if (error) {
+        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "pdf_loadpagetree failed: %d", error);
+        /* TODO: clean resources */
+        return NULL;
+    }
+
+    {
+        int c = 0;
+        c = pdf_getpagecount(pdf->xref);
+        __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "page count: %d", c);
+    }
+
     return pdf;
 }
 
@@ -711,6 +729,7 @@ pdf_page* get_page(pdf_t *pdf, int pageno) {
             if (pdf->pages[i]) loaded_pages++;
         }
 
+        #if 0
         if (loaded_pages >= PDFVIEW_MAX_PAGES_LOADED) {
             int page_to_drop = 0; /* not the page number */
             int j = 0;
@@ -732,6 +751,7 @@ pdf_page* get_page(pdf_t *pdf, int pageno) {
                 }
             }
         }
+        #endif
 
         obj = pdf_getpageobject(pdf->xref, pageno+1);
         error = pdf_loadpage(&page, pdf->xref, obj);
@@ -776,12 +796,14 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
         }
     }
 
+    /*
     pdf_flushxref(pdf->xref, 0);
+    */
 
     page = get_page(pdf, pageno);
     if (!page) return NULL; /* TODO: handle/propagate errors */
 
-    ctm = fz_identity();
+    ctm = fz_identity;
     ctm = fz_concat(ctm, fz_translate(-page->mediabox.x0, -page->mediabox.y1));
     ctm = fz_concat(ctm, fz_scale(zoom, -zoom));
     rotation = page->rotate + rotation * -90;
@@ -805,14 +827,15 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
     }
 #endif
 
-    image = fz_newpixmap(pdf_devicergb, bbox.x0, bbox.y0, *width, *height);
+    image = fz_newpixmap(fz_devicergb, bbox.x0, bbox.y0, *width, *height);
     fz_clearpixmap(image, 0xff);
     memset(image->samples, 0xff, image->h * image->w * image->n);
     dev = fz_newdrawdevice(pdf->drawcache, image);
-    error = pdf_runcontentstream(dev, ctm, pdf->xref, page->resources, page->contents);
-    if (error) {
-        __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "pdf_runcontentstream failed: %s", (int)error);
-        /* TODO: free resources, report errors */
+    error = pdf_runpage(pdf->xref, page, dev, ctm);
+    if (error)
+    {
+        /* TODO: cleanup */
+        fz_rethrow(error, "rendering failed");
         return NULL;
     }
     fz_freedevice(dev);
@@ -846,10 +869,17 @@ void fix_samples(unsigned char *bytes, unsigned int w, unsigned int h) {
         unsigned i = 0;
         for (i = 0; i < (w*h); ++i) {
                 unsigned int o = i*4;
+                /*
                 a = bytes[o+0];
                 r = bytes[o+1];
                 g = bytes[o+2];
                 b = bytes[o+3];
+                */
+                r = bytes[o+0];
+                g = bytes[o+1];
+                b = bytes[o+2];
+                a = bytes[o+3];
+
                 bytes[o+0] = b; /* b */
                 bytes[o+1] = g; /* g */
                 bytes[o+2] = r; /* r */
