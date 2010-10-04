@@ -54,3 +54,5 @@ glob:.DS_Store
 
 regexp:^pdfview/jni/mupdf/Makefile$
 regexp:^pdfview/\.settings$
+
+glob:pdfview/obj
