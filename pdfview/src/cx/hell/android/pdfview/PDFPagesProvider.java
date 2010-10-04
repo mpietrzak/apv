@@ -36,7 +36,7 @@ public class PDFPagesProvider extends PagesProvider {
 	private static class BitmapCache {
 
 		/**
-		 * Max size of bitmap cache.
+		 * Max size of bitmap cache in bytes.
 		 */
 		private static final int MAX_CACHE_SIZE_BYTES = 4*1024*1024;
 		
@@ -45,11 +45,11 @@ public class PDFPagesProvider extends PagesProvider {
 		 */
 		private static class BitmapCacheValue {
 			public Bitmap bitmap;
-			public long millisAdded;
+			/* public long millisAdded; */
 			public long millisAccessed;
 			public BitmapCacheValue(Bitmap bitmap, long millisAdded) {
 				this.bitmap = bitmap;
-				this.millisAdded = millisAdded;
+				/* this.millisAdded = millisAdded; */
 				this.millisAccessed = millisAdded;
 			}
 		}
@@ -303,7 +303,7 @@ public class PDFPagesProvider extends PagesProvider {
 	 * Really render bitmap. Takes time, should be done in background thread. Calls native code (through PDF object).
 	 */
 	private Bitmap renderBitmap(Tile tile) throws RenderingException {
-		Bitmap b, btmp;
+		Bitmap b;
 		PDF.Size size = new PDF.Size(PagesView.TILE_SIZE, PagesView.TILE_SIZE);
 		int[] pagebytes = null;
 		pagebytes = pdf.renderPage(tile.getPage(), tile.getZoom(), tile.getX(), tile.getY(), tile.getRotation(), size); /* native */
@@ -311,8 +311,9 @@ public class PDFPagesProvider extends PagesProvider {
 		
 		b = Bitmap.createBitmap(pagebytes, size.width, size.height, Bitmap.Config.ARGB_8888);
 
-		/* TODO: analyze if it's really needed - I'm trying to convert 8888 to 565 to save mem */
-		btmp = b.copy(Bitmap.Config.RGB_565, true);
+		/* simple tests show that this indeed works - memory usage is smaller with this extra copy */
+		/* TODO: make mupdf write directly to RGB_565 bitmap */ 
+		Bitmap btmp = b.copy(Bitmap.Config.RGB_565, true);
 		if (btmp == null) throw new RuntimeException("bitmap copy failed");
 		b.recycle();
 		b = btmp;
@@ -360,10 +361,14 @@ public class PDFPagesProvider extends PagesProvider {
 		return null;
 	}
 
+	/**
+	 * Get page count.
+	 * @return number of pages
+	 */
 	@Override
 	public int getPageCount() {
 		int c = this.pdf.getPageCount();
-		if (c <= 0) throw new RuntimeException("failed to load pdf file");
+		if (c <= 0) throw new RuntimeException("failed to load pdf file: getPageCount returned " + c);
 		return c;
 	}
 	

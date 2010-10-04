@@ -9,6 +9,9 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.webkit.WebView;
 
+/**
+ * Displays "About..." info.
+ */
 public class AboutPDFViewActivity extends Activity {
 	
 	@Override

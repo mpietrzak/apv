@@ -42,7 +42,6 @@ public class PDF {
 	/**
 	 * Holds pointer to native pdf_t struct.
 	 */
-	@SuppressWarnings("unused")
 	private int pdf_ptr = 0;
 
 	/**

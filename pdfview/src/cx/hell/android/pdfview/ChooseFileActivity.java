@@ -65,20 +65,34 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
      */
     private void update() {
     	this.pathTextView.setText(this.currentPath);
-    	File files[] = new File(this.currentPath).listFiles(this.fileFilter);
-    	Arrays.sort(files, new Comparator<File>() {
-    		public int compare(File f1, File f2) {
-    			return f1.getName().toLowerCase().compareTo(f2.getName().toLowerCase());
-			}
-    	});
-    	
     	this.fileListAdapter.clear();
     	this.fileListAdapter.add("..");
-    	for(int i = 0; i < files.length; ++i) this.fileListAdapter.add(files[i].getName());
+    	
+    	File files[] = new File(this.currentPath).listFiles(this.fileFilter);
+    	if (files != null) {
+	    	try {
+		    	Arrays.sort(files, new Comparator<File>() {
+		    		public int compare(File f1, File f2) {
+		    			if (f1 == null) throw new RuntimeException("f1 is null inside sort");
+		    			if (f2 == null) throw new RuntimeException("f2 is null inside sort");
+		    			try {
+		    				return f1.getName().toLowerCase().compareTo(f2.getName().toLowerCase());
+		    			} catch (NullPointerException e) {
+		    				throw new RuntimeException("failed to compare " + f1 + " and " + f2, e);
+		    			}
+					}
+		    	});
+	    	} catch (NullPointerException e) {
+	    		throw new RuntimeException("failed to sort file list " + files + " for path " + this.currentPath, e);
+	    	}
+	    	
+	    	for(int i = 0; i < files.length; ++i) this.fileListAdapter.add(files[i].getName());
+    	}
+    	
     	this.filesListView.setSelection(0);
     }
     
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
 	public void onItemClick(AdapterView parent, View v, int position, long id) {
     	String filename = (String) this.filesListView.getItemAtPosition(position);
     	File clickedFile = null;

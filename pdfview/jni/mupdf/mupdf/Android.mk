@@ -10,7 +10,6 @@ LOCAL_SRC_FILES := \
 	apv_pdf_debug.c \
 	pdf_lex.c \
 	pdf_nametree.c \
-	pdf_open.c \
 	pdf_parse.c \
 	pdf_repair.c \
 	pdf_stream.c \
@@ -43,9 +42,9 @@ LOCAL_SRC_FILES := \
  	font_misc.c \
  	font_mono.c \
  	font_sans.c \
- 	font_serif.c
+ 	font_serif.c \
 
-# 	cmap_tounicode.c \
+#	cmap_tounicode.c \
 # 	font_cjk.c \
 # 	cmap_cns.c \
 # 	cmap_gb.c cmap_japan.c cmap_korea.c
