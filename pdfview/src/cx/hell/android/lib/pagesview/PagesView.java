@@ -26,7 +26,7 @@ import cx.hell.android.pdfview.R;
  * TODO: use more floats for better align, or use more ints for performance ;) (that is, really analyse what should be used when)
  */
 public class PagesView extends View implements View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
-	
+
 	/**
 	 * Tile size.
 	 */
@@ -156,6 +156,11 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * hold the currently displayed page 
 	 */
 	private int currentPage = 0;
+	
+	/**
+	 * avoid too much allocations in rectsintersect()
+	 */
+	private static Rect r1 = new Rect();
 	
 	/**
 	 * Construct this view.
@@ -620,12 +625,10 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	/**
 	 * Test if specified rectangles intersect with each other.
 	 * Uses Androids standard Rect class.
-	 * TODO: avoid creating Rect instance
 	 */
 	private static boolean rectsintersect(
 			int r1x0, int r1y0, int r1x1, int r1y1,
 			int r2x0, int r2y0, int r2x1, int r2y1) {
-		Rect r1 = new Rect();
 		r1.set(r1x0, r1y0, r1x1, r1y1);
 		return r1.intersects(r2x0, r2y0, r2x1, r2y1);
 	}
@@ -810,7 +813,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	/**
 	 * Get the current page number
 	 * 
-	 * @return the current page. 0-based
+	 * @return the current page. 0-based
 	 */
 	public int getCurrentPage() {
 		return currentPage;
