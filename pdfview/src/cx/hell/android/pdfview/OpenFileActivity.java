@@ -25,7 +25,9 @@ import android.view.Window;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import cx.hell.android.lib.pagesview.FindResult;
 import cx.hell.android.lib.pagesview.PagesView;
@@ -64,6 +66,8 @@ public class OpenFileActivity extends Activity {
 	private Integer currentFindResultPage = null;
 	private Integer currentFindResultNumber = null;
 
+	private ImageButton testButton;
+
     /**
      * Called when the activity is first created.
      * TODO: initialize dialog fast, then move file loading to other thread
@@ -76,8 +80,14 @@ public class OpenFileActivity extends Activity {
         
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
+        // use a relative layout to stack the views
+        RelativeLayout layout = new RelativeLayout(this);
+
+        this.pagesView = new PagesView(this);
+        this.pdf = this.getPDF();
+        this.pdfPagesProvider = new PDFPagesProvider(pdf);
+        pagesView.setPagesProvider(pdfPagesProvider);
+        layout.addView(pagesView);
         
         this.findButtonsLayout = new LinearLayout(this);
         this.findButtonsLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -93,14 +103,16 @@ public class OpenFileActivity extends Activity {
         this.findHideButton.setText("Hide");
         this.findButtonsLayout.addView(this.findHideButton);
         this.setFindButtonHandlers();
-        layout.addView(this.findButtonsLayout);
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
+        		RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        lp.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        layout.addView(this.findButtonsLayout, lp);
+
+		//testButton = new ImageButton(this);
+		//testButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_down));
+        //lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+		//layout.addView(testButton,lp);		
         
-        this.pagesView = new PagesView(this);
-        this.pdf = this.getPDF();
-        this.pdfPagesProvider = new PDFPagesProvider(pdf);
-        pagesView.setPagesProvider(pdfPagesProvider);
-        layout.addView(pagesView);
-       
         this.setContentView(layout);
         // go to last viewed page
         gotoLastPage();
