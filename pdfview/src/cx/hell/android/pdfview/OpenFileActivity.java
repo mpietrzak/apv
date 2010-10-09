@@ -12,6 +12,7 @@ import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -66,7 +67,8 @@ public class OpenFileActivity extends Activity {
 	private Integer currentFindResultPage = null;
 	private Integer currentFindResultNumber = null;
 
-	private ImageButton testButton;
+	private ImageButton zoomDownButton;
+	private ImageButton zoomUpButton;
 
     /**
      * Called when the activity is first created.
@@ -83,12 +85,14 @@ public class OpenFileActivity extends Activity {
         // use a relative layout to stack the views
         RelativeLayout layout = new RelativeLayout(this);
 
+        // the PDF view
         this.pagesView = new PagesView(this);
         this.pdf = this.getPDF();
         this.pdfPagesProvider = new PDFPagesProvider(pdf);
         pagesView.setPagesProvider(pdfPagesProvider);
         layout.addView(pagesView);
         
+        // the find buttons
         this.findButtonsLayout = new LinearLayout(this);
         this.findButtonsLayout.setOrientation(LinearLayout.HORIZONTAL);
         this.findButtonsLayout.setVisibility(View.GONE);
@@ -108,14 +112,27 @@ public class OpenFileActivity extends Activity {
         lp.addRule(RelativeLayout.CENTER_HORIZONTAL);
         layout.addView(this.findButtonsLayout, lp);
 
-		//testButton = new ImageButton(this);
-		//testButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_down));
-        //lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-		//layout.addView(testButton,lp);		
+        // the zoom buttons
+        LinearLayout zoomLayout = new LinearLayout(this);
+        zoomLayout.setOrientation(LinearLayout.HORIZONTAL);
+		zoomDownButton = new ImageButton(this);
+		zoomDownButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_down));
+		zoomDownButton.setBackgroundColor(Color.TRANSPARENT);
+		zoomLayout.addView(zoomDownButton, 80, 50);	// TODO: remove hardcoded values
+		zoomUpButton = new ImageButton(this);
+		zoomUpButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_up));
+		zoomUpButton.setBackgroundColor(Color.TRANSPARENT);
+		zoomLayout.addView(zoomUpButton, 80, 50);
+        lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        setZoomButtonHandlers();
+		layout.addView(zoomLayout,lp);		
         
+		// display this
         this.setContentView(layout);
+        
         // go to last viewed page
         gotoLastPage();
+        
         // send keyboard events to this view
         pagesView.setFocusable(true);
         pagesView.setFocusableInTouchMode(true);
@@ -150,6 +167,23 @@ public class OpenFileActivity extends Activity {
 			}
     	});
     }
+    
+    /**
+     * Set handlers on zoom level buttons
+     */
+    private void setZoomButtonHandlers() {
+    	this.zoomDownButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				pagesView.zoomDown();
+			}
+    	});
+    	this.zoomUpButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				pagesView.zoomUp();
+			}
+    	});
+    }
+
     
     /**
      * Return PDF instance wrapping file referenced by Intent.
