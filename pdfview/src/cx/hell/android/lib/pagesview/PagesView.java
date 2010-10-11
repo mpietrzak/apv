@@ -13,12 +13,10 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
-import cx.hell.android.pdfview.R;
 
 /**
  * View that simplifies displaying of paged documents.
@@ -37,16 +35,6 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 */
 	private static final String TAG = "cx.hell.android.pdfview";
 	
-	/**
-	 * When fade starts.
-	 */
-	private final static long CONTROLS_FADE_START = 3000;
-	
-	/**
-	 * How long should fade be visible..
-	 */
-	private final static long CONTROLS_FADE_DURATION = 1000;
-	
 //	private final static int MAX_ZOOM = 4000;
 //	private final static int MIN_ZOOM = 100;
 	
@@ -54,9 +42,6 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Space between screen edge and page and between pages.
 	 */
 	private final static int MARGIN = 10;
-
-	private Drawable zoomMinusDrawable = null;
-	private Drawable zoomPlusDrawable = null;
 	
 	private Activity activity = null;
 	

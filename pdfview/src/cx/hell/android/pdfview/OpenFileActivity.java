@@ -21,9 +21,12 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.View.OnClickListener;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -67,9 +70,12 @@ public class OpenFileActivity extends Activity {
 	private Integer currentFindResultPage = null;
 	private Integer currentFindResultNumber = null;
 
+	// zoom buttons, layout and fade animation
 	private ImageButton zoomDownButton;
 	private ImageButton zoomUpButton;
-
+	private Animation zoomAnim;
+	private LinearLayout zoomLayout;
+	
     /**
      * Called when the activity is first created.
      * TODO: initialize dialog fast, then move file loading to other thread
@@ -113,7 +119,7 @@ public class OpenFileActivity extends Activity {
         layout.addView(this.findButtonsLayout, lp);
 
         // the zoom buttons
-        LinearLayout zoomLayout = new LinearLayout(this);
+        zoomLayout = new LinearLayout(this);
         zoomLayout.setOrientation(LinearLayout.HORIZONTAL);
 		zoomDownButton = new ImageButton(this);
 		zoomDownButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_down));
@@ -123,6 +129,7 @@ public class OpenFileActivity extends Activity {
 		zoomUpButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_up));
 		zoomUpButton.setBackgroundColor(Color.TRANSPARENT);
 		zoomLayout.addView(zoomUpButton, 80, 50);
+		zoomAnim = AnimationUtils.loadAnimation(this, R.anim.zoom);
         lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         setZoomButtonHandlers();
 		layout.addView(zoomLayout,lp);		
@@ -239,6 +246,22 @@ public class OpenFileActivity extends Activity {
     	return false;
     }
     
+    /**
+     * Intercept touch events to handle the zoom buttons animation
+     */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+    	int action = event.getAction();
+    	if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN) {
+    		zoomAnim.setFillAfter(true);
+    		zoomLayout.startAnimation(zoomAnim);
+    	}
+		return super.dispatchTouchEvent(event);    	
+    };
+    
+    /**
+     * Hide the find buttons
+     */
     private void clearFind() {
 		this.currentFindResultPage = null;
 		this.currentFindResultNumber = null;
