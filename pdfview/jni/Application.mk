@@ -1,0 +1,1 @@
+APP_MODULES := mupdf fitz fitzdraw jpeg pdfview2 jbig2dec openjpeg
