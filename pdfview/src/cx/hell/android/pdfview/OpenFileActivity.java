@@ -12,6 +12,7 @@ import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,12 +21,17 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.View.OnClickListener;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import cx.hell.android.lib.pagesview.FindResult;
 import cx.hell.android.lib.pagesview.PagesView;
@@ -64,6 +70,12 @@ public class OpenFileActivity extends Activity {
 	private Integer currentFindResultPage = null;
 	private Integer currentFindResultNumber = null;
 
+	// zoom buttons, layout and fade animation
+	private ImageButton zoomDownButton;
+	private ImageButton zoomUpButton;
+	private Animation zoomAnim;
+	private LinearLayout zoomLayout;
+	
     /**
      * Called when the activity is first created.
      * TODO: initialize dialog fast, then move file loading to other thread
@@ -76,9 +88,17 @@ public class OpenFileActivity extends Activity {
         
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
+        // use a relative layout to stack the views
+        RelativeLayout layout = new RelativeLayout(this);
+
+        // the PDF view
+        this.pagesView = new PagesView(this);
+        this.pdf = this.getPDF();
+        this.pdfPagesProvider = new PDFPagesProvider(pdf);
+        pagesView.setPagesProvider(pdfPagesProvider);
+        layout.addView(pagesView);
         
+        // the find buttons
         this.findButtonsLayout = new LinearLayout(this);
         this.findButtonsLayout.setOrientation(LinearLayout.HORIZONTAL);
         this.findButtonsLayout.setVisibility(View.GONE);
@@ -93,17 +113,33 @@ public class OpenFileActivity extends Activity {
         this.findHideButton.setText("Hide");
         this.findButtonsLayout.addView(this.findHideButton);
         this.setFindButtonHandlers();
-        layout.addView(this.findButtonsLayout);
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
+        		RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        lp.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        layout.addView(this.findButtonsLayout, lp);
+
+        // the zoom buttons
+        zoomLayout = new LinearLayout(this);
+        zoomLayout.setOrientation(LinearLayout.HORIZONTAL);
+		zoomDownButton = new ImageButton(this);
+		zoomDownButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_down));
+		zoomDownButton.setBackgroundColor(Color.TRANSPARENT);
+		zoomLayout.addView(zoomDownButton, 80, 50);	// TODO: remove hardcoded values
+		zoomUpButton = new ImageButton(this);
+		zoomUpButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_up));
+		zoomUpButton.setBackgroundColor(Color.TRANSPARENT);
+		zoomLayout.addView(zoomUpButton, 80, 50);
+		zoomAnim = AnimationUtils.loadAnimation(this, R.anim.zoom);
+        lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        setZoomButtonHandlers();
+		layout.addView(zoomLayout,lp);		
         
-        this.pagesView = new PagesView(this);
-        this.pdf = this.getPDF();
-        this.pdfPagesProvider = new PDFPagesProvider(pdf);
-        pagesView.setPagesProvider(pdfPagesProvider);
-        layout.addView(pagesView);
-       
+		// display this
         this.setContentView(layout);
+        
         // go to last viewed page
         gotoLastPage();
+        
         // send keyboard events to this view
         pagesView.setFocusable(true);
         pagesView.setFocusableInTouchMode(true);
@@ -138,6 +174,23 @@ public class OpenFileActivity extends Activity {
 			}
     	});
     }
+    
+    /**
+     * Set handlers on zoom level buttons
+     */
+    private void setZoomButtonHandlers() {
+    	this.zoomDownButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				pagesView.zoomDown();
+			}
+    	});
+    	this.zoomUpButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				pagesView.zoomUp();
+			}
+    	});
+    }
+
     
     /**
      * Return PDF instance wrapping file referenced by Intent.
@@ -193,6 +246,22 @@ public class OpenFileActivity extends Activity {
     	return false;
     }
     
+    /**
+     * Intercept touch events to handle the zoom buttons animation
+     */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+    	int action = event.getAction();
+    	if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN) {
+    		zoomAnim.setFillAfter(true);
+    		zoomLayout.startAnimation(zoomAnim);
+    	}
+		return super.dispatchTouchEvent(event);    	
+    };
+    
+    /**
+     * Hide the find buttons
+     */
     private void clearFind() {
 		this.currentFindResultPage = null;
 		this.currentFindResultNumber = null;
