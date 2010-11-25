@@ -439,8 +439,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			Log.d(TAG, "onTouch(ACTION_DOWN)");
 			int x = (int)event.getX();
 			int y = (int)event.getY();
-			this.dragx = x;
-			this.dragy = y;
+			this.dragx = this.dragx1 = x;
+			this.dragy = this.dragy1 = y;
 			this.inDrag = true;
 		} else if (event.getAction() == MotionEvent.ACTION_UP) {
 			if (this.inDrag) {
@@ -462,6 +462,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Handle keyboard events
 	 */
 	public boolean onKey(View v, int keyCode, KeyEvent event) {
+		float step = 1.1f;
+
 		if (event.getAction() == KeyEvent.ACTION_DOWN) {
 			switch (keyCode) {
 			case KeyEvent.KEYCODE_DPAD_UP:
@@ -489,6 +491,18 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				return true;
 			case KeyEvent.KEYCODE_DPAD_RIGHT:
 				scrollToPage(currentPage + 1);
+				return true;
+			case KeyEvent.KEYCODE_O:
+				this.zoomLevel /= step;
+				this.left /= step;
+				this.top /= step;
+				this.invalidate();
+				return true;
+			case KeyEvent.KEYCODE_P:
+				this.zoomLevel *= step;
+				this.left *= step;
+				this.top *= step;
+				this.invalidate();
 				return true;
 			}
 		}
