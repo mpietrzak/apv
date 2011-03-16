@@ -4,8 +4,8 @@
 	android:versionName="0.2.8">
 	<uses-sdk android:minSdkVersion="3" />
 	<!-- 3 is 1.5 or later, that's more than 99% of devices -->
-	<supports-screens android:normalScreens="true" 
-		android:largeScreens="true" android:smallScreens="true">
+	<supports-screens android:smallScreens="true" android:normalScreens="true" 
+		android:largeScreens="true" android:anyDensity="true" android:resizeable="true">
 	</supports-screens>
 
 	<!-- <uses-permission android:name="android.permission.INTERNET" /> -->

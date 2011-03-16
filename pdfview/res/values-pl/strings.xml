@@ -13,6 +13,6 @@
 	<string name="find_cancel_button">Anuluj</string>
 	<string name="clear_find_text">Wyczyść wyniki</string>
 	<string name="cancel">Anuluj</string>
-	<string name="searching_for">Wyszukiwanie "%1"</string>
-	<string name="page_of">Strona %1 z %2</string>
+	<string name="searching_for">Wyszukiwanie "%1$s"</string>
+	<string name="page_of">Strona %1$d z %2$d</string>
 </resources>
