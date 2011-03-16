@@ -121,6 +121,7 @@ public class OpenFileActivity extends Activity {
         RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
         		RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         lp.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        lp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
         layout.addView(this.findButtonsLayout, lp);
 
         // the zoom buttons
@@ -135,7 +136,10 @@ public class OpenFileActivity extends Activity {
 		zoomUpButton.setBackgroundColor(Color.TRANSPARENT);
 		zoomLayout.addView(zoomUpButton, (int)(80 * metrics.density), (int)(50 * metrics.density));
 		zoomAnim = AnimationUtils.loadAnimation(this, R.anim.zoom);
-        lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+		lp = new RelativeLayout.LayoutParams(
+        		RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        lp.addRule(RelativeLayout.CENTER_HORIZONTAL);
+		lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         setZoomButtonHandlers();
 		layout.addView(zoomLayout,lp);		
         
