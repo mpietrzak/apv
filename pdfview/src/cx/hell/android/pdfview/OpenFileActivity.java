@@ -17,6 +17,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.InputType;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
@@ -88,6 +89,10 @@ public class OpenFileActivity extends Activity {
         
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         
+        // Get display metrics
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        
         // use a relative layout to stack the views
         RelativeLayout layout = new RelativeLayout(this);
 
@@ -124,11 +129,11 @@ public class OpenFileActivity extends Activity {
 		zoomDownButton = new ImageButton(this);
 		zoomDownButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_down));
 		zoomDownButton.setBackgroundColor(Color.TRANSPARENT);
-		zoomLayout.addView(zoomDownButton, 80, 50);	// TODO: remove hardcoded values
+		zoomLayout.addView(zoomDownButton, (int)(80 * metrics.density), (int)(50 * metrics.density));	// TODO: remove hardcoded values
 		zoomUpButton = new ImageButton(this);
 		zoomUpButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_up));
 		zoomUpButton.setBackgroundColor(Color.TRANSPARENT);
-		zoomLayout.addView(zoomUpButton, 80, 50);
+		zoomLayout.addView(zoomUpButton, (int)(80 * metrics.density), (int)(50 * metrics.density));
 		zoomAnim = AnimationUtils.loadAnimation(this, R.anim.zoom);
         lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         setZoomButtonHandlers();
