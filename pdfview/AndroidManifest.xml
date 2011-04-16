@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="cx.hell.android.pdfview" android:versionCode="208"
-	android:versionName="0.2.8">
+	package="cx.hell.android.pdfview" android:versionCode="209"
+	android:versionName="0.2.9">
+
+    <!-- 3 is 1.5 or later, that's more than 99% of devices -->
 	<uses-sdk android:minSdkVersion="3" />
-	<!-- 3 is 1.5 or later, that's more than 99% of devices -->
-	<supports-screens android:smallScreens="true" android:normalScreens="true" 
-		android:largeScreens="true" android:anyDensity="true" android:resizeable="true">
-	</supports-screens>
+
+	<supports-screens
+            android:smallScreens="true"
+            android:normalScreens="true" 
+            android:largeScreens="true"
+            android:anyDensity="true"
+            android:resizeable="true"/>
 
 	<!-- <uses-permission android:name="android.permission.INTERNET" /> -->
 	<application android:icon="@drawable/pdfviewer"
