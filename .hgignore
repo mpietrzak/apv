@@ -13,12 +13,24 @@ glob:pdfview/libs
 syntax: regexp
 ^pdfview/jni/mupdf/apps$
 syntax: regexp
+^pdfview/jni/mupdf/android$
+syntax: regexp
+^pdfview/jni/mupdf/xps$
+syntax: regexp
+^pdfview/jni/mupdf/scripts$
+syntax: regexp
+^pdfview/jni/mupdf/build$
+syntax: regexp
+^pdfview/jni/mupdf/generated$
+syntax: regexp
+^pdfview/jni/mupdf/\.git.*$
+syntax: regexp
 ^pdfview/jni/mupdf/fonts/droid$
 syntax: regexp
 ^pdfview/jni/mupdf/fonts$
 glob:pdfview/jni/mupdf/cmaps
 syntax: regexp
-^pdfview/jni/mupdf/mupdf(?!.*(apv|\.mk)$).+
+^pdfview/jni/mupdf/pdf(?!.*(apv|\.mk)$).+
 syntax: regexp
 ^pdfview/jni/mupdf/fitz(?!.*(apv|\.mk)$).+
 syntax: regexp
@@ -31,6 +43,8 @@ syntax: regexp
 ^pdfview/jni/openjpeg(?!.*(apv|\.mk|config.h)$).+
 syntax: regexp
 ^pdfview/jni/jbig2dec(?!.*(apv|\.mk)$).+
+syntax: regexp
+^pdfview/jni/freetype(?!.*\.mk$).+
 
 
 syntax: regexp
