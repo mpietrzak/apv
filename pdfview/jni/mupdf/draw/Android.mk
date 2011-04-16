@@ -5,18 +5,17 @@ include $(CLEAR_VARS)
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../mupdf $(LOCAL_PATH)/../fitz
 LOCAL_MODULE    := fitzdraw
 LOCAL_SRC_FILES := \
-	archport.c \
-	archarm.c \
-        blendmodes.c \
-        glyphcache.c \
-        imagedraw.c \
-        imagescale.c \
-        imageunpack.c \
-        meshdraw.c \
-        pathfill.c \
-        pathscan.c \
-        pathstroke.c \
-        porterduff.c \
-	imagesmooth.c
+	draw_device.c \
+	arch_port.c \
+	arch_arm.c \
+        draw_blend.c \
+        draw_glyph.c \
+        draw_affine.c \
+        draw_scale.c \
+        draw_unpack.c \
+        draw_mesh.c \
+	draw_path.c \
+        draw_paint.c \
+	draw_edge.c
 
 include $(BUILD_STATIC_LIBRARY)

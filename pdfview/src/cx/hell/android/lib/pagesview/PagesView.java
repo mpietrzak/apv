@@ -49,6 +49,9 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Source of page bitmaps.
 	 */
 	private PagesProvider pagesProvider = null;
+	
+	
+	@SuppressWarnings("unused")
 	private long lastControlsUseMillis = 0;
 	
 	/**

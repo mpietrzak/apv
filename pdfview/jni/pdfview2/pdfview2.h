@@ -19,7 +19,7 @@ typedef struct {
 	pdf_outline *outline;
     int fileno; /* used only when opening by file descriptor */
     pdf_page **pages; /* lazy-loaded pages */
-    fz_glyphcache *drawcache;
+    fz_glyph_cache *glyph_cache;
 } pdf_t;
 
 
