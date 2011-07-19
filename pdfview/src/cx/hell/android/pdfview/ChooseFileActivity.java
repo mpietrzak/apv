@@ -13,9 +13,11 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -46,6 +48,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 	
 	private MenuItem aboutMenuItem = null;
 	private MenuItem setAsHomeMenuItem = null;
+	private MenuItem deleteMenuItem = null;
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -66,6 +69,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	this.fileListAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
     	this.filesListView.setAdapter(this.fileListAdapter);
     	this.filesListView.setOnItemClickListener(this);
+    	registerForContextMenu(this.filesListView);
     }
     
     /**
@@ -212,4 +216,37 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	super.onResume();
     	this.update();
     }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+    	int position =  
+    		((AdapterView.AdapterContextMenuInfo)item.getMenuInfo()).position;
+    	if (item == deleteMenuItem) {
+    		if (recent != null && RECENT_START <= position && 
+    				position < RECENT_START + recent.size()) {
+    			recent.remove(position - RECENT_START);
+    			recent.commit();
+    			update();
+    		}
+    		else if (position != HOME_POSITION) {
+    			File clickedFile = new File(this.currentPath, 
+    					(String) this.filesListView.getItemAtPosition(position));
+    			if (! clickedFile.isDirectory()) {
+    				clickedFile.delete();
+    				update();
+    			}
+    		}
+    		
+    		return true;
+    	}
+    	return false;
+    }
+    	
+    
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+    	super.onCreateContextMenu(menu, v, menuInfo);
+		deleteMenuItem = menu.add("Delete");
+    }
+    
 }
