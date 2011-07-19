@@ -94,7 +94,7 @@ public class PDF {
 	/**
 	 * Render a page.
 	 * @param n page number, starting from 0
-	 * @param zoom page size scalling
+	 * @param zoom page size scaling
 	 * @param left left edge
 	 * @param right right edge
 	 * @param passes requested size, used for size of resulting bitmap

@@ -11,7 +11,7 @@ cmapdump: cmapdump.c pdf_debug.c
 	gcc -o cmapdump cmapdump.c pdf_debug.c -I../fitz
 
 
-fonttump: fontdump.c
+fontdump: fontdump.c
 	gcc -o fontdump fontdump.c
 
 
