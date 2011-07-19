@@ -5,11 +5,17 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import cx.hell.android.pdfview.ChooseFileActivity;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -43,6 +49,11 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 */
 	private final static int MARGIN = 10;
 	
+	/* zoom steps */
+	private final static float fineStep = 1.1f;
+	private final static float normalStep = 1.414f;
+	private boolean fineZoom = false;
+	
 	private Activity activity = null;
 	
 	/**
@@ -53,6 +64,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	
 	@SuppressWarnings("unused")
 	private long lastControlsUseMillis = 0;
+	
+	private boolean invert = false;
 	
 	/**
 	 * Current width of this view.
@@ -369,7 +382,21 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 									}
 									
 									//this.fixOfscreen(dst, src);
-									canvas.drawBitmap(b, src, dst, null);
+									if (invert) {
+										Paint paint = new Paint();
+										float[] inverter = {
+											-1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+											0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+											0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+											1.0f, 1.0f, 1.0f, 1.0f, 0.0f 
+										};
+										paint.setColorFilter(new 
+												ColorMatrixColorFilter(new ColorMatrix(inverter)));
+										canvas.drawBitmap(b, src, dst, paint);
+									}
+									else {
+										canvas.drawBitmap(b, src, dst, null);
+									}
 								}
 								visibleTiles.add(tile);
 							}
@@ -465,10 +492,28 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Handle keyboard events
 	 */
 	public boolean onKey(View v, int keyCode, KeyEvent event) {
-		float step = 1.1f;
-
+		if (event.getAction() == KeyEvent.ACTION_UP) {
+			/* repeat is a little too fast sometimes, so trap these on up */
+			switch(keyCode) {
+				case KeyEvent.KEYCODE_VOLUME_UP:
+					this.top -= this.getHeight() - 16;
+					this.invalidate();
+					return true;
+				case KeyEvent.KEYCODE_VOLUME_DOWN:
+					this.top += this.getHeight() - 16;
+					this.invalidate();
+					return true;
+			}
+		}
+		
 		if (event.getAction() == KeyEvent.ACTION_DOWN) {
 			switch (keyCode) {
+			case KeyEvent.KEYCODE_VOLUME_DOWN:
+				return true;
+
+			case KeyEvent.KEYCODE_VOLUME_UP:
+				return true;
+
 			case KeyEvent.KEYCODE_DPAD_UP:
 			case KeyEvent.KEYCODE_DEL:
 			case KeyEvent.KEYCODE_K:
@@ -496,15 +541,15 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				scrollToPage(currentPage + 1);
 				return true;
 			case KeyEvent.KEYCODE_O:
-				this.zoomLevel /= step;
-				this.left /= step;
-				this.top /= step;
+				this.zoomLevel /= fineStep;
+				this.left /= fineStep;
+				this.top /= fineStep;
 				this.invalidate();
 				return true;
 			case KeyEvent.KEYCODE_P:
-				this.zoomLevel *= step;
-				this.left *= step;
-				this.top *= step;
+				this.zoomLevel *= fineStep;
+				this.left *= fineStep;
+				this.top *= fineStep;
 				this.invalidate();
 				return true;
 			}
@@ -710,6 +755,15 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	}
 	
 	/**
+	 * Get the current zoom level
+	 * 
+	 * @return the current zoom level
+	 */
+	public int getCurrentZoom() {
+		return zoomLevel;
+	}
+	
+	/**
 	 * Get page count.
 	 */
 	public int getPageCount() {
@@ -734,7 +788,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Zoom down one level
 	 */
 	public void zoomDown() {
-		float step = 1f/1.414f;
+		float step = 1f / (fineZoom ? fineStep : normalStep);
 		this.zoomLevel *= step;
 		this.left *= step;
 		this.top *= step;
@@ -746,13 +800,33 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Zoom up one level
 	 */
 	public void zoomUp() {
-		float step = 1.414f;
+		float step = fineZoom ? fineStep : normalStep;
 		this.zoomLevel *= step;
 		this.left *= step;
 		this.top *= step;
 		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
 		this.invalidate();
 	}
+
+	/**
+	 * Zoom up one level
+	 */
+	public void setZoomLevel(int zoomLevel) {
+		if (this.zoomLevel == zoomLevel)
+			return;
+		this.zoomLevel = zoomLevel;
+		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
+		this.invalidate();
+	}
+	
+	
+	public void setInvert(boolean invert) {
+		this.invert = invert;
+		this.invalidate();
+	}
+
+
+	public void setFineZoom(boolean fineZoom) {
+		this.fineZoom = fineZoom;
+	}
 }
-
-

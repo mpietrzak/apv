@@ -11,6 +11,7 @@ import android.app.Dialog;
 import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
@@ -44,6 +45,9 @@ import cx.hell.android.lib.pagesview.PagesView;
 public class OpenFileActivity extends Activity {
 	
 	private final static String TAG = "cx.hell.android.pdfview";
+	private final static String PREF_TAG = "OpenFileActivity";
+	private final static String PREF_INVERT = "invert";
+	private final static String PREF_FINE_ZOOM = "fineZoom";
 	
 	private PDF pdf = null;
 	private PagesView pagesView = null;
@@ -55,6 +59,9 @@ public class OpenFileActivity extends Activity {
 	private MenuItem rotateRightMenuItem = null;
 	private MenuItem findTextMenuItem = null;
 	private MenuItem clearFindTextMenuItem = null;
+	private MenuItem chooseFileMenuItem = null;
+	private MenuItem toggleInvertMenuItem = null;
+	private MenuItem toggleFineZoomMenuItem = null;
 	
 	private EditText pageNumberInputField = null;
 	private EditText findTextInputField = null;
@@ -98,6 +105,8 @@ public class OpenFileActivity extends Activity {
 
         // the PDF view
         this.pagesView = new PagesView(this);
+        this.pagesView.setInvert(getSharedPreferences(PREF_TAG, 0)
+        		.getBoolean(PREF_INVERT, false));
         this.pdf = this.getPDF();
         this.pdfPagesProvider = new PDFPagesProvider(pdf);
         pagesView.setPagesProvider(pdfPagesProvider);
@@ -213,7 +222,10 @@ public class OpenFileActivity extends Activity {
 		Uri uri = intent.getData();    	
 		filePath = uri.getPath();
 		if (uri.getScheme().equals("file")) {
-    		return new PDF(new File(filePath));
+			Recent recent = new Recent(this);
+			recent.add(0, filePath);
+			recent.commit();
+			return new PDF(new File(filePath));
     	} else if (uri.getScheme().equals("content")) {
     		ContentResolver cr = this.getContentResolver();
     		FileDescriptor fileDescriptor;
@@ -250,8 +262,27 @@ public class OpenFileActivity extends Activity {
     		this.showFindDialog();
     	} else if (menuItem == this.clearFindTextMenuItem) {
     		this.clearFind();
-
-    	}
+    	} else if (menuItem == this.chooseFileMenuItem) {
+    		startActivity(new Intent(this, ChooseFileActivity.class));
+    	} else if (menuItem == this.toggleInvertMenuItem) {
+    		Boolean newValue;
+    		
+    		SharedPreferences pref = getSharedPreferences(PREF_TAG, 0);
+    		newValue = !pref.getBoolean(PREF_INVERT, false);
+    		SharedPreferences.Editor edit = pref.edit();
+    		edit.putBoolean(PREF_INVERT, newValue);
+    		edit.commit();    		
+    		this.pagesView.setInvert(newValue);
+		} else if (menuItem == this.toggleFineZoomMenuItem) {
+			Boolean newValue;
+			
+			SharedPreferences pref = getSharedPreferences(PREF_TAG, 0);
+			newValue = !pref.getBoolean(PREF_FINE_ZOOM, false);
+			SharedPreferences.Editor edit = pref.edit();
+			edit.putBoolean(PREF_FINE_ZOOM, newValue);
+			edit.commit();    		
+			this.pagesView.setFineZoom(newValue);
+		}
     	return false;
     }
     
@@ -333,27 +364,36 @@ public class OpenFileActivity extends Activity {
     	d.show();
     }
     
+    private void gotoPage(int page, int zoom) {
+    	Log.i(TAG, "rewind to page " + page);
+    	if (this.pagesView != null) {
+    		this.pagesView.scrollToPage(page);
+    		if (zoom > 0)
+    			this.pagesView.setZoomLevel(zoom);
+    	}
+    }
+    
     /**
      * Called after submitting go to page dialog.
      * @param page page number, 0-based
      */
     private void gotoPage(int page) {
-    	Log.i(TAG, "rewind to page " + page);
-    	if (this.pagesView != null) {
-    		this.pagesView.scrollToPage(page);
-    	}
+    	gotoPage(page, this.pagesView.getCurrentZoom());
     }
     
     /**
      * Goto the last open page if possible
      */
     private void gotoLastPage() {
+    	Log.v(TAG, "getting last page for "+filePath);
         Bookmark b = new Bookmark(this.getApplicationContext()).open();
-        int lastpage = b.getLast(filePath);
+        int lastpage = b.getLastPage(filePath);
+        int zoom = b.getLastZoom(filePath);
         b.close();
         if (lastpage > 0) {
+        	Log.v(TAG, "found last page for "+filePath+", namely "+lastpage);
         	Handler mHandler = new Handler();
-        	Runnable mUpdateTimeTask = new GotoPageThread(lastpage);
+        	Runnable mUpdateTimeTask = new GotoPageThread(lastpage, zoom);
         	mHandler.postDelayed(mUpdateTimeTask, 2000);
         }    	
     }
@@ -363,7 +403,7 @@ public class OpenFileActivity extends Activity {
      */
     private void saveLastPage() {
         Bookmark b = new Bookmark(this.getApplicationContext()).open();
-        b.setLast(filePath, pagesView.getCurrentPage());
+        b.setLast(filePath, pagesView.getCurrentPage(), pagesView.getCurrentZoom());
         b.close();
         Log.i(TAG, "last page saved for "+filePath);    
     }
@@ -376,11 +416,15 @@ public class OpenFileActivity extends Activity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
     	super.onCreateOptionsMenu(menu);
+    	
     	this.gotoPageMenuItem = menu.add(R.string.goto_page);
     	this.rotateRightMenuItem = menu.add(R.string.rotate_page_left);
     	this.rotateLeftMenuItem = menu.add(R.string.rotate_page_right);
 		this.findTextMenuItem = menu.add(R.string.find_text);
     	this.clearFindTextMenuItem = menu.add(R.string.clear_find_text);
+    	this.chooseFileMenuItem = menu.add(R.string.choose_file);
+    	this.toggleInvertMenuItem = menu.add(R.string.toggle_invert);
+    	this.toggleFineZoomMenuItem = menu.add(R.string.toggle_fine_zoom);
     	this.aboutMenuItem = menu.add(R.string.about);
     	return true;
     }
@@ -390,13 +434,15 @@ public class OpenFileActivity extends Activity {
 	 */
 	private class GotoPageThread implements Runnable {
 		int page;
+		int zoom;
 
-		public GotoPageThread(int page) {
+		public GotoPageThread(int page, int zoom) {
 			this.page = page;
+			this.zoom = zoom;
 		}
 
 		public void run() {
-			gotoPage(page);
+			gotoPage(page, zoom);
 		}
 	}
 

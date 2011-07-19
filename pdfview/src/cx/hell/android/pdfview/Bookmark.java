@@ -18,6 +18,7 @@
 
 package cx.hell.android.pdfview;
 
+import java.io.File;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -43,13 +44,14 @@ public class Bookmark {
 	public static final String KEY_PAGE = "page";
 	public static final String KEY_COMMENT = "comment";
 	public static final String KEY_TIME = "time";
+	public static final String KEY_ZOOM = "zoom";
 
-	private static final int DB_VERSION = 2;
+	private static final int DB_VERSION = 3;
 
 	private static final String DATABASE_CREATE = "create table bookmark "
 			+ "(_id integer primary key autoincrement, "
 			+ "book text not null, name text not null, "
-			+ "page integer, comment text, time integer);";
+			+ "page integer, zoom integer, comment text, time integer);";
 
 	private final Context context;
 
@@ -82,8 +84,11 @@ public class Bookmark {
 
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-			if (oldVersion == 1) {
-				db.execSQL("ALTER TABLE bookmark ADD COLUMN time integer");
+			if (oldVersion < 2) {
+				db.execSQL("ALTER TABLE bookmark ADD COLUMN " + KEY_TIME + " integer");
+			}
+			if (oldVersion < 3) {
+				db.execSQL("ALTER TABLE bookmark ADD COLUMN " + KEY_ZOOM + " integer");
 			}
 		}
 	}
@@ -114,11 +119,12 @@ public class Bookmark {
 	 * @param page
 	 *            last page
 	 */
-	public void setLast(String file, int page) {
+	public void setLast(String file, int page, int zoomLevel) {
 		String md5 = nameToMD5(file);
 		ContentValues cv = new ContentValues();
 		cv.put(KEY_BOOK, md5);
 		cv.put(KEY_PAGE, page);
+		cv.put(KEY_ZOOM, zoomLevel);
 		cv.put(KEY_NAME, "last");
 		cv.put(KEY_TIME, System.currentTimeMillis() / 1000);
 		if (db.update("bookmark", cv, KEY_BOOK + "='" + md5 + "' AND "
@@ -133,7 +139,7 @@ public class Bookmark {
 	 * @param file
 	 * @return page number (0-based) or 0 if not found
 	 */
-	public int getLast(String file) {
+	public int getLastPage(String file) {
 		int page = 0;
 		String md5 = nameToMD5(file);
 
@@ -150,8 +156,30 @@ public class Bookmark {
 	}
 
 	/**
+	 * Get the last recorded zoom for the given file
+	 * 
+	 * @param file
+	 * @return zoom level or 0 if not found
+	 */
+	public int getLastZoom(String file) {
+		int page = 0;
+		String md5 = nameToMD5(file);
+
+		Cursor cur = db.query(true, "bookmark", new String[] { KEY_ZOOM },
+				KEY_BOOK + "='" + md5 + "' AND " + KEY_NAME + "= 'last'", null,
+				null, null, null, "1");
+		if (cur != null) {
+			if (cur.moveToFirst()) {
+				page = cur.getInt(0);
+			}
+		}
+		cur.close();
+		return page;
+	}
+
+	/**
 	 * Hash the file name to be sure that no strange characters will be in the
-	 * DB Can also later add the file size to the hash.
+	 * DB, and include file length.
 	 * 
 	 * @param file
 	 *            path
@@ -167,8 +195,10 @@ public class Bookmark {
 			e.printStackTrace();
 			return "";
 		}
+		
+		String message = file + ":" + (new File(file)).length();
 
-		digest.update(file.getBytes());
+		digest.update(message.getBytes());
 		byte messageDigest[] = digest.digest();
 		StringBuffer hexString = new StringBuffer();
 		for (int i = 0; i < messageDigest.length; i++)

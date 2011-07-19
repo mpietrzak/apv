@@ -12,6 +12,11 @@
 	<string name="find_go_button">Find</string>
 	<string name="find_cancel_button">Cancel</string>
 	<string name="clear_find_text">Clear find</string>
+	<string name="choose_file">Open...</string>
+	<string name="toggle_invert">Invert</string>
+	<string name="toggle_fine_zoom">Toggle fine zoom</string>
+	<string name="set_as_home">Set directory as home</string>
+	<string name="go_home">Home</string>
 	<string name="cancel">Cancel</string>
 	<string name="searching_for">Searching for "%1$s"</string>
 	<string name="page_of">Page %1$d of %2$d</string>
