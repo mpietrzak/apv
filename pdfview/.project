@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>pdfview2</name>
+	<name>PDFView-ARP</name>
 	<comment></comment>
 	<projects>
 		<project>native-pdfview2</project>

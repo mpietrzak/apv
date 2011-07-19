@@ -8,11 +8,14 @@
 	<string name="rotate_page_left">Obróć w lewo</string>
 	<string name="rotate_page_right">Obróć w prawo</string>
 	<string name="find_text">Szukaj...</string>
+	<string name="choose_file">Otwórz...</string>
 	<string name="find_dialog_title">Wyszukiwanie</string>
 	<string name="find_go_button">Szukaj</string>
 	<string name="find_cancel_button">Anuluj</string>
 	<string name="clear_find_text">Wyczyść wyniki</string>
 	<string name="cancel">Anuluj</string>
+	<string name="set_as_home">Ustanów katalogiem własnym</string>
+	<string name="go_home">Katalog własny</string>
 	<string name="searching_for">Wyszukiwanie "%1$s"</string>
 	<string name="page_of">Strona %1$d z %2$d</string>
 </resources>
