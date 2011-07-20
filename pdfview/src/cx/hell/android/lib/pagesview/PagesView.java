@@ -50,9 +50,10 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	private final static int MARGIN = 10;
 	
 	/* zoom steps */
-	private final static float fineStep = 1.1f;
-	private final static float normalStep = 1.414f;
-	private boolean fineZoom = false;
+	float step = 1.414f;
+	
+	/* volume keys page */
+	boolean pageWithVolume = true;
 	
 	private Activity activity = null;
 	
@@ -178,6 +179,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		this.findResultsPaint.setStrokeWidth(3);
 		this.setOnTouchListener(this);
 		this.setOnKeyListener(this);
+		activity.setDefaultKeyMode(Activity.DEFAULT_KEYS_SEARCH_LOCAL);
 	}
 		
 	/**
@@ -492,10 +494,10 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Handle keyboard events
 	 */
 	public boolean onKey(View v, int keyCode, KeyEvent event) {
-		if (event.getAction() == KeyEvent.ACTION_UP) {
+		if (this.pageWithVolume && event.getAction() == KeyEvent.ACTION_UP) {
 			/* repeat is a little too fast sometimes, so trap these on up */
 			switch(keyCode) {
-				case KeyEvent.KEYCODE_VOLUME_UP:
+				case KeyEvent.KEYCODE_VOLUME_UP:					
 					this.top -= this.getHeight() - 16;
 					this.invalidate();
 					return true;
@@ -508,12 +510,13 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		
 		if (event.getAction() == KeyEvent.ACTION_DOWN) {
 			switch (keyCode) {
+			case KeyEvent.KEYCODE_SEARCH:
+				((cx.hell.android.pdfview.OpenFileActivity)activity).showFindDialog();
+				return true;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
-				return true;
-
+				return this.pageWithVolume;
 			case KeyEvent.KEYCODE_VOLUME_UP:
-				return true;
-
+				return this.pageWithVolume;
 			case KeyEvent.KEYCODE_DPAD_UP:
 			case KeyEvent.KEYCODE_DEL:
 			case KeyEvent.KEYCODE_K:
@@ -541,15 +544,15 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				scrollToPage(currentPage + 1);
 				return true;
 			case KeyEvent.KEYCODE_O:
-				this.zoomLevel /= fineStep;
-				this.left /= fineStep;
-				this.top /= fineStep;
+				this.zoomLevel /= 1.1f;
+				this.left /= 1.1f;
+				this.top /= 1.1f;
 				this.invalidate();
 				return true;
 			case KeyEvent.KEYCODE_P:
-				this.zoomLevel *= fineStep;
-				this.left *= fineStep;
-				this.top *= fineStep;
+				this.zoomLevel *= 1.1f;
+				this.left *= 1.1f;
+				this.top *= 1.1f;
 				this.invalidate();
 				return true;
 			}
@@ -788,7 +791,6 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Zoom down one level
 	 */
 	public void zoomDown() {
-		float step = 1f / (fineZoom ? fineStep : normalStep);
 		this.zoomLevel *= step;
 		this.left *= step;
 		this.top *= step;
@@ -800,7 +802,6 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Zoom up one level
 	 */
 	public void zoomUp() {
-		float step = fineZoom ? fineStep : normalStep;
 		this.zoomLevel *= step;
 		this.left *= step;
 		this.top *= step;
@@ -826,7 +827,11 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	}
 
 
-	public void setFineZoom(boolean fineZoom) {
-		this.fineZoom = fineZoom;
+	public void setZoomIncrement(float step) {
+		this.step = step;
+	}
+
+	public void setPageWithVolume(boolean pageWithVolume) {
+		this.pageWithVolume = pageWithVolume;
 	}
 }
