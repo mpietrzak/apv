@@ -20,4 +20,39 @@
 	<string name="cancel">Cancel</string>
 	<string name="searching_for">Searching for "%1$s"</string>
 	<string name="page_of">Page %1$d of %2$d</string>
+	<string name="options">Options</string>
+	<string name="page_with_volume">Page with volume keys</string>
+	<string name="zoom_animation">Zoom buttons</string>
+	<string-array name="zoom_animations">
+		<item>0</item>
+		<item>1</item>
+		<item>2</item>
+	</string-array>
+	<string-array name="zoom_animation_labels">
+		<item>disappear</item>
+		<item>almost disappear</item>
+		<item>fade</item>
+	</string-array>
+	<string name="default_zoom_animation">2</string> 
+	<string name="zoom_increment">Zoom increment</string>
+	<string name="default_zoom_increment">1.414</string>
+	<string-array name="zoom_increment_labels">
+	<item>2%</item>
+	<item>5%</item>
+	<item>10%</item>
+	<item>20%</item>
+	<item>41.4%</item>
+	<item>50%</item>
+	<item>100%</item>
+	</string-array>
+	<string-array name="zoom_increments">
+	<item>1.02</item>
+	<item>1.05</item>
+	<item>1.1</item>
+	<item>1.2</item>
+	<item>1.414</item>
+	<item>1.5</item>
+	<item>2</item>
+	</string-array>
+	<string name="invert">Invert colors</string>
 </resources>

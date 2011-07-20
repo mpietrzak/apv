@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <CheckBoxPreference
+    	android:title="@string/page_with_volume"
+    	android:defaultValue="true"
+    	android:key="pageWithVolume"/>
+    <CheckBoxPreference
+    	android:title="@string/invert"
+    	android:defaultValue="false"
+    	android:key="invert"/>
+    <ListPreference
+    	android:title="@string/zoom_increment"
+    	android:defaultValue="@string/default_zoom_increment"
+    	android:entries="@array/zoom_increment_labels"
+    	android:entryValues="@array/zoom_increments"
+    	android:key="zoomIncrement"/>
+    <ListPreference
+    	android:title="@string/zoom_animation"
+    	android:defaultValue="@string/default_zoom_animation"
+    	android:entries="@array/zoom_animation_labels"
+    	android:entryValues="@array/zoom_animations"
+    	android:key="zoomAnimation"
+    	/>
+</PreferenceScreen>

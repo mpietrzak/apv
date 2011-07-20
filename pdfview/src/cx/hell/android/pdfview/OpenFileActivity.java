@@ -17,6 +17,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.text.InputType;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -45,9 +46,10 @@ import cx.hell.android.lib.pagesview.PagesView;
 public class OpenFileActivity extends Activity {
 	
 	private final static String TAG = "cx.hell.android.pdfview";
-	private final static String PREF_TAG = "OpenFileActivity";
-	private final static String PREF_INVERT = "invert";
-	private final static String PREF_FINE_ZOOM = "fineZoom";
+	
+	private final static int[] zoomAnimations = {
+		R.anim.zoom_disappear, R.anim.zoom_almost_disappear, R.anim.zoom
+	};
 	
 	private PDF pdf = null;
 	private PagesView pagesView = null;
@@ -60,8 +62,7 @@ public class OpenFileActivity extends Activity {
 	private MenuItem findTextMenuItem = null;
 	private MenuItem clearFindTextMenuItem = null;
 	private MenuItem chooseFileMenuItem = null;
-	private MenuItem toggleInvertMenuItem = null;
-	private MenuItem toggleFineZoomMenuItem = null;
+	private MenuItem optionsMenuItem = null;
 	
 	private EditText pageNumberInputField = null;
 	private EditText findTextInputField = null;
@@ -105,8 +106,6 @@ public class OpenFileActivity extends Activity {
 
         // the PDF view
         this.pagesView = new PagesView(this);
-        this.pagesView.setInvert(getSharedPreferences(PREF_TAG, 0)
-        		.getBoolean(PREF_INVERT, false));
         this.pdf = this.getPDF();
         this.pdfPagesProvider = new PDFPagesProvider(pdf);
         pagesView.setPagesProvider(pdfPagesProvider);
@@ -144,7 +143,6 @@ public class OpenFileActivity extends Activity {
 		zoomUpButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_up));
 		zoomUpButton.setBackgroundColor(Color.TRANSPARENT);
 		zoomLayout.addView(zoomUpButton, (int)(80 * metrics.density), (int)(50 * metrics.density));
-		zoomAnim = AnimationUtils.loadAnimation(this, R.anim.zoom);
 		lp = new RelativeLayout.LayoutParams(
         		RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         lp.addRule(RelativeLayout.CENTER_HORIZONTAL);
@@ -170,6 +168,27 @@ public class OpenFileActivity extends Activity {
 	protected void onPause() {
 		saveLastPage();
 		super.onPause();
+	}
+	
+	@Override
+	protected void onResume() {
+		super.onResume();
+		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
+		Log.e(TAG, "hello");
+		Log.e(TAG, options.getString(Options.PREF_ZOOM_INCREMENT, "1.414"));
+		Log.e(TAG, "hello");
+		pagesView.setZoomIncrement(
+				Float.parseFloat(options.getString(Options.PREF_ZOOM_INCREMENT, "1.414")));
+		Log.e(TAG, "Hello");
+		pagesView.setInvert(options.getBoolean(Options.PREF_INVERT, false));
+		Log.e(TAG, "Hello");
+		pagesView.setPageWithVolume(options.getBoolean(Options.PREF_PAGE_WITH_VOLUME, true));
+		Log.e(TAG, "Hello");
+		pagesView.invalidate();
+		Log.e(TAG, "Hello");
+		zoomAnim = AnimationUtils.loadAnimation(this,
+				zoomAnimations[
+				    Integer.parseInt(options.getString(Options.PREF_ZOOM_ANIMATION, "0"))]);
 	}
 
     /**
@@ -264,25 +283,9 @@ public class OpenFileActivity extends Activity {
     		this.clearFind();
     	} else if (menuItem == this.chooseFileMenuItem) {
     		startActivity(new Intent(this, ChooseFileActivity.class));
-    	} else if (menuItem == this.toggleInvertMenuItem) {
-    		Boolean newValue;
-    		
-    		SharedPreferences pref = getSharedPreferences(PREF_TAG, 0);
-    		newValue = !pref.getBoolean(PREF_INVERT, false);
-    		SharedPreferences.Editor edit = pref.edit();
-    		edit.putBoolean(PREF_INVERT, newValue);
-    		edit.commit();    		
-    		this.pagesView.setInvert(newValue);
-		} else if (menuItem == this.toggleFineZoomMenuItem) {
-			Boolean newValue;
-			
-			SharedPreferences pref = getSharedPreferences(PREF_TAG, 0);
-			newValue = !pref.getBoolean(PREF_FINE_ZOOM, false);
-			SharedPreferences.Editor edit = pref.edit();
-			edit.putBoolean(PREF_FINE_ZOOM, newValue);
-			edit.commit();    		
-			this.pagesView.setFineZoom(newValue);
-		}
+    	} else if (menuItem == this.optionsMenuItem) {
+    		startActivity(new Intent(this, Options.class));
+		} 
     	return false;
     }
     
@@ -420,11 +423,13 @@ public class OpenFileActivity extends Activity {
     	this.gotoPageMenuItem = menu.add(R.string.goto_page);
     	this.rotateRightMenuItem = menu.add(R.string.rotate_page_left);
     	this.rotateLeftMenuItem = menu.add(R.string.rotate_page_right);
-		this.findTextMenuItem = menu.add(R.string.find_text);
     	this.clearFindTextMenuItem = menu.add(R.string.clear_find_text);
     	this.chooseFileMenuItem = menu.add(R.string.choose_file);
-    	this.toggleInvertMenuItem = menu.add(R.string.toggle_invert);
-    	this.toggleFineZoomMenuItem = menu.add(R.string.toggle_fine_zoom);
+    	this.optionsMenuItem = menu.add(R.string.options);
+    	/* The following appear on the second page.  The find item can safely be kept
+    	 * there since it can also be accessed from the search key on most devices.
+    	 */
+		this.findTextMenuItem = menu.add(R.string.find_text);
     	this.aboutMenuItem = menu.add(R.string.about);
     	return true;
     }
@@ -469,7 +474,7 @@ public class OpenFileActivity extends Activity {
      * Show find dialog.
      * Very pretty UI code ;)
      */
-    private void showFindDialog() {
+    public void showFindDialog() {
     	Log.d(TAG, "find dialog...");
     	final Dialog dialog = new Dialog(this);
     	dialog.setTitle(R.string.find_dialog_title);
