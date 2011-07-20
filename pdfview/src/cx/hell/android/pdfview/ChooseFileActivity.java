@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -49,7 +50,10 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 	private MenuItem aboutMenuItem = null;
 	private MenuItem setAsHomeMenuItem = null;
 	private MenuItem deleteMenuItem = null;
+	private MenuItem optionsMenuItem = null;
 	
+	private Boolean dirsFirst = false;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -83,6 +87,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     		this.fileListAdapter.add("..");
     	
     	File files[] = new File(this.currentPath).listFiles(this.fileFilter);
+
     	if (files != null) {
 	    	try {
 		    	Arrays.sort(files, new Comparator<File>() {
@@ -90,6 +95,12 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 		    			if (f1 == null) throw new RuntimeException("f1 is null inside sort");
 		    			if (f2 == null) throw new RuntimeException("f2 is null inside sort");
 		    			try {
+		    				if (dirsFirst && f1.isDirectory() != f2.isDirectory()) {
+		    					if (f1.isDirectory())
+		    						return -1;
+		    					else
+		    						return 1;
+		    				}
 		    				return f1.getName().toLowerCase().compareTo(f2.getName().toLowerCase());
 		    			} catch (NullPointerException e) {
 		    				throw new RuntimeException("failed to compare " + f1 + " and " + f2, e);
@@ -201,12 +212,16 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     		edit.commit();
     		return true;
     	}
+    	else if (menuItem == this.optionsMenuItem){
+    		startActivity(new Intent(this, Options.class));
+    	}
     	return false;
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
     	this.setAsHomeMenuItem = menu.add(R.string.set_as_home);
+    	this.optionsMenuItem = menu.add(R.string.options);
     	this.aboutMenuItem = menu.add("About");
     	return true;
     }
@@ -214,6 +229,10 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     @Override
     public void onResume() {
     	super.onResume();
+    	
+		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);		
+		dirsFirst = options.getBoolean(Options.PREF_DIRS_FIRST, false);
+    	
     	this.update();
     }
 

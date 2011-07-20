@@ -9,6 +9,7 @@ public class Options extends PreferenceActivity {
 	final static String PREF_ZOOM_INCREMENT = "zoomIncrement";
 	final static String PREF_INVERT = "invert";
 	final static String PREF_ZOOM_ANIMATION = "zoomAnimation";
+	final static String PREF_DIRS_FIRST = "dirsFirst";
 	
 	@Override
 	public void onCreate(Bundle icicle) {

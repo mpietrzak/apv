@@ -55,4 +55,5 @@
 	<item>2</item>
 	</string-array>
 	<string name="invert">Invert colors</string>
+	<string name="dirs_first">List directories first</string>
 </resources>

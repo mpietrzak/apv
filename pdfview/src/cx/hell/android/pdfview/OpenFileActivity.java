@@ -174,18 +174,11 @@ public class OpenFileActivity extends Activity {
 	protected void onResume() {
 		super.onResume();
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
-		Log.e(TAG, "hello");
-		Log.e(TAG, options.getString(Options.PREF_ZOOM_INCREMENT, "1.414"));
-		Log.e(TAG, "hello");
 		pagesView.setZoomIncrement(
 				Float.parseFloat(options.getString(Options.PREF_ZOOM_INCREMENT, "1.414")));
-		Log.e(TAG, "Hello");
 		pagesView.setInvert(options.getBoolean(Options.PREF_INVERT, false));
-		Log.e(TAG, "Hello");
 		pagesView.setPageWithVolume(options.getBoolean(Options.PREF_PAGE_WITH_VOLUME, true));
-		Log.e(TAG, "Hello");
 		pagesView.invalidate();
-		Log.e(TAG, "Hello");
 		zoomAnim = AnimationUtils.loadAnimation(this,
 				zoomAnimations[
 				    Integer.parseInt(options.getString(Options.PREF_ZOOM_ANIMATION, "0"))]);
@@ -690,6 +683,3 @@ public class OpenFileActivity extends Activity {
     	finderThread.start();
     }
 }
-
-
-
