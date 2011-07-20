@@ -43,7 +43,7 @@
 				<category android:name="android.intent.category.DEFAULT"></category>
 				<category android:name="android.intent.category.BROWSABLE"></category>
 				<data android:host="*" android:scheme="file"
-					android:pathPattern=".*\.pdf" />
+					android:pathPattern=".*\.[pP][dD][fF]" />
 			</intent-filter>
 		</activity>
 
