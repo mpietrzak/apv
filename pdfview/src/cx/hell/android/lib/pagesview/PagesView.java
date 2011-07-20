@@ -791,9 +791,9 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Zoom down one level
 	 */
 	public void zoomDown() {
-		this.zoomLevel *= step;
-		this.left *= step;
-		this.top *= step;
+		this.zoomLevel /= step;
+		this.left /= step;
+		this.top /= step;
 		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
 		this.invalidate();		
 	}

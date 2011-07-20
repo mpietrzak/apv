@@ -22,4 +22,8 @@
     	android:entryValues="@array/zoom_animations"
     	android:key="zoomAnimation"
     	/>
+    <CheckBoxPreference
+    	android:title="@string/dirs_first"
+    	android:defaultValue="false"
+    	android:key="dirsFirst"/>
 </PreferenceScreen>
