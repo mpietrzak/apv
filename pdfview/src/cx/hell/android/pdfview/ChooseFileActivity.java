@@ -6,29 +6,26 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ContextMenu;
-import android.view.Gravity;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.AdapterView.OnItemClickListener;
 
 /**
  * Minimalistic file browser.
@@ -59,6 +56,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 	private MenuItem optionsMenuItem = null;
 	
 	private Boolean dirsFirst = false;
+	private Boolean showExtension = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -78,7 +76,6 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	this.filesListView = (ListView) this.findViewById(R.id.files);
     	final Activity activity = this;
     	this.fileList = new ArrayList<String>();
-    	Log.v(TAG, "adapter");
     	this.fileListAdapter = new ArrayAdapter<String>(this, 
 				R.layout.onelinewithicon, fileList) {
 			public View getView(int position, View convertView, ViewGroup parent) {
@@ -91,10 +88,21 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 					v = convertView;
 				}
 				
+				String label = fileList.get(position);
+				
+				if (!showExtension && label.length() > 4 &&
+						isFilePosition(position) && 
+						label.substring(label.length()-4, label.length()).equalsIgnoreCase(".pdf")) {
+					label = label.substring(0, label.length()-4);
+				}
+				
 				v.findViewById(R.id.home).setVisibility(
 						position==HOME_POSITION?View.VISIBLE:View.GONE );
+				v.findViewById(R.id.upfolder).setVisibility(
+						fileList.get(position).equals("..")?View.VISIBLE:View.GONE );
 				v.findViewById(R.id.folder).setVisibility(
-						isDirPosition(position)?View.VISIBLE:View.GONE );
+						(isDirPosition(position) && !
+								fileList.get(position).equals(".."))?View.VISIBLE:View.GONE );
 				v.findViewById(R.id.recent1).setVisibility(
 						(isRecentPosition(position)&&position==RECENT_START+0)
 						?View.VISIBLE:View.GONE );
@@ -110,14 +118,13 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 				v.findViewById(R.id.recent5).setVisibility(
 						(isRecentPosition(position)&&position==RECENT_START+4)
 						?View.VISIBLE:View.GONE ); 
-
-				((TextView)v.findViewById(R.id.text)).setText(fileList.get(position));
+			
+				((TextView)v.findViewById(R.id.text)).setText(label);
 
 				return v;
 			}				
     	};
-    	Log.v(TAG, "-adapter");
-    	this.filesListView.setAdapter(this.fileListAdapter);
+       	this.filesListView.setAdapter(this.fileListAdapter);
     	this.filesListView.setOnItemClickListener(this);
     	registerForContextMenu(this.filesListView);
     }
@@ -189,6 +196,11 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     		return RECENT_START <= position;
     	else
     		return RECENT_START+recent.size() <= position;
+    }
+    
+    private boolean isFilePosition(int position) {
+    	return isRecentPosition(position) ||
+    			(isRegularPosition(position) && ! isDirPosition(position));     	
     }
     
     private boolean isDirPosition(int position) {
@@ -295,6 +307,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);		
 		dirsFirst = options.getBoolean(Options.PREF_DIRS_FIRST, false);
+		showExtension = options.getBoolean(Options.PREF_SHOW_EXTENSION, false);
     	
     	this.update();
     }

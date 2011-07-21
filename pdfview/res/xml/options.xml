@@ -26,4 +26,8 @@
     	android:title="@string/dirs_first"
     	android:defaultValue="false"
     	android:key="dirsFirst"/>
+    <CheckBoxPreference
+    	android:title="@string/show_extension"
+    	android:defaultValue="false"
+    	android:key="showExtension"/>
 </PreferenceScreen>
