@@ -173,6 +173,8 @@ public class OpenFileActivity extends Activity {
 	@Override
 	protected void onResume() {
 		super.onResume();
+		Options.setOrientation(this);
+		
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
 		pagesView.setZoomIncrement(
 				Float.parseFloat(options.getString(Options.PREF_ZOOM_INCREMENT, "1.414")));
