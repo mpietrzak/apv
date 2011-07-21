@@ -56,4 +56,5 @@
 	</string-array>
 	<string name="invert">Invert colors</string>
 	<string name="dirs_first">List directories first</string>
+	<string name="show_extension">Show .pdf extension</string>
 </resources>
