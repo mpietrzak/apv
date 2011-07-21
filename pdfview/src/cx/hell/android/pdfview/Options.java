@@ -6,6 +6,7 @@ import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 public class Options extends PreferenceActivity {
 	final static String PREF_TAG = "Options";
@@ -36,7 +37,7 @@ public class Options extends PreferenceActivity {
 		int orientation = Integer.parseInt(options.getString(PREF_ORIENTATION, "0"));
 		switch(orientation) {
 		case 0: 
-			activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
+			activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
 			break;
 		case 1:
 			activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
