@@ -3,21 +3,26 @@ package cx.hell.android.pdfview;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ContextMenu;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -45,6 +50,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 	private ListView filesListView = null;
 	private FileFilter fileFilter = null;
 	private ArrayAdapter<String> fileListAdapter = null;
+	private ArrayList<String> fileList = null;
 	private Recent recent = null;
 	
 	private MenuItem aboutMenuItem = null;
@@ -70,7 +76,47 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 
     	this.pathTextView = (TextView) this.findViewById(R.id.path);
     	this.filesListView = (ListView) this.findViewById(R.id.files);
-    	this.fileListAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
+    	final Activity activity = this;
+    	this.fileList = new ArrayList<String>();
+    	Log.v(TAG, "adapter");
+    	this.fileListAdapter = new ArrayAdapter<String>(this, 
+				R.layout.onelinewithicon, fileList) {
+			public View getView(int position, View convertView, ViewGroup parent) {
+				View v;				
+				
+				if (convertView == null) {
+	                v = View.inflate(activity, R.layout.onelinewithicon, null);
+	            }
+				else {
+					v = convertView;
+				}
+				
+				v.findViewById(R.id.home).setVisibility(
+						position==HOME_POSITION?View.VISIBLE:View.GONE );
+				v.findViewById(R.id.folder).setVisibility(
+						isDirPosition(position)?View.VISIBLE:View.GONE );
+				v.findViewById(R.id.recent1).setVisibility(
+						(isRecentPosition(position)&&position==RECENT_START+0)
+						?View.VISIBLE:View.GONE );
+				v.findViewById(R.id.recent2).setVisibility(
+						(isRecentPosition(position)&&position==RECENT_START+1)
+						?View.VISIBLE:View.GONE );
+				v.findViewById(R.id.recent3).setVisibility(
+						(isRecentPosition(position)&&position==RECENT_START+2)
+						?View.VISIBLE:View.GONE );
+				v.findViewById(R.id.recent4).setVisibility(
+						(isRecentPosition(position)&&position==RECENT_START+3)
+						?View.VISIBLE:View.GONE );
+				v.findViewById(R.id.recent5).setVisibility(
+						(isRecentPosition(position)&&position==RECENT_START+4)
+						?View.VISIBLE:View.GONE ); 
+
+				((TextView)v.findViewById(R.id.text)).setText(fileList.get(position));
+
+				return v;
+			}				
+    	};
+    	Log.v(TAG, "-adapter");
     	this.filesListView.setAdapter(this.fileListAdapter);
     	this.filesListView.setOnItemClickListener(this);
     	registerForContextMenu(this.filesListView);
@@ -82,7 +128,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     private void update() {
     	this.pathTextView.setText(this.currentPath);
     	this.fileListAdapter.clear();
-    	this.fileListAdapter.add("["+getResources().getString(R.string.go_home)+"]");
+    	this.fileListAdapter.add(getResources().getString(R.string.go_home));
     	if (!this.currentPath.equals("/"))
     		this.fileListAdapter.add("..");
     	
@@ -118,7 +164,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     		recent = new Recent(this);
     		
         	for (int i = 0; i < recent.size(); i++) {
-        		this.fileListAdapter.insert(""+(i+1)+": "+(new File(recent.get(i))).getName(), 
+        		this.fileListAdapter.insert((new File(recent.get(i))).getName(), 
         				RECENT_START+i);
         	}
     	}
@@ -138,6 +184,23 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 		this.startActivity(intent);
     }
     
+    private boolean isRegularPosition(int position) {
+    	if (recent == null)
+    		return RECENT_START <= position;
+    	else
+    		return RECENT_START+recent.size() <= position;
+    }
+    
+    private boolean isDirPosition(int position) {
+    	return isRegularPosition(position) &&
+    			(new File(currentPath, fileList.get(position))).isDirectory();
+    }
+    
+    private boolean isRecentPosition(int position) {
+    	return recent != null && RECENT_START <= position &&
+    			position < RECENT_START+recent.size();
+    }
+
     private boolean isHome(String path) {
     	File pathFile = new File(path);
     	File homeFile = new File(getHome());
@@ -171,7 +234,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	if (position == HOME_POSITION) {
     		clickedFile = new File(getHome());
     	}
-    	else if (recent != null && position < RECENT_START + recent.size()) {
+    	else if (isRecentPosition(position)) {
     		clickedFile = new File(recent.get(position-RECENT_START));
     	}
     	else {
@@ -241,8 +304,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	int position =  
     		((AdapterView.AdapterContextMenuInfo)item.getMenuInfo()).position;
     	if (item == deleteMenuItem) {
-    		if (recent != null && RECENT_START <= position && 
-    				position < RECENT_START + recent.size()) {
+    		if (isRecentPosition(position)) {
     			recent.remove(position - RECENT_START);
     			recent.commit();
     			update();
@@ -267,5 +329,4 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	super.onCreateContextMenu(menu, v, menuInfo);
 		deleteMenuItem = menu.add("Delete");
     }
-    
 }
