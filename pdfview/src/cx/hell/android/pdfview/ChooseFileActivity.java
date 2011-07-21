@@ -305,6 +305,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     public void onResume() {
     	super.onResume();
     	
+    	Options.setOrientation(this);
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);		
 		dirsFirst = options.getBoolean(Options.PREF_DIRS_FIRST, false);
 		showExtension = options.getBoolean(Options.PREF_SHOW_EXTENSION, false);
