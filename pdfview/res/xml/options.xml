@@ -32,6 +32,20 @@
     	android:entryValues="@array/zoom_animations"
     	android:key="zoomAnimation"
     	/>
+    <ListPreference
+    	android:title="@string/page_animation"
+    	android:defaultValue="@string/default_page_animation"
+    	android:entries="@array/page_animation_labels"
+    	android:entryValues="@array/page_animations"
+    	android:key="pageAnimation"
+    	/>
+    <ListPreference
+    	android:title="@string/fade_speed"
+    	android:defaultValue="@string/default_fade_speed"
+    	android:entries="@array/fade_speed_labels"
+    	android:entryValues="@array/fade_speeds"
+    	android:key="fadeSpeed"
+    	/>
     </PreferenceCategory>
     <PreferenceCategory
     android:title="@string/selector">

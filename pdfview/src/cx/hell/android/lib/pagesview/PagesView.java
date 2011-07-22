@@ -5,13 +5,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import cx.hell.android.pdfview.ChooseFileActivity;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorMatrix;

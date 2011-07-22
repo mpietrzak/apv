@@ -18,6 +18,8 @@ public class Options extends PreferenceActivity {
 	final static String PREF_SHOW_EXTENSION = "showExtension";
 	final static String PREF_ORIENTATION = "orientation";
 	final static String PREF_FULLSCREEN = "fullscreen";
+	final static String PREF_PAGE_ANIMATION = "pageAnimation";
+	final static String PREF_FADE_SPEED = "fadeSpeed";
 	
 	@Override
 	public void onCreate(Bundle icicle) {
