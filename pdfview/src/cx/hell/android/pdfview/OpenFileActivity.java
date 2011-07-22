@@ -27,6 +27,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -184,6 +185,10 @@ public class OpenFileActivity extends Activity {
 		zoomAnim = AnimationUtils.loadAnimation(this,
 				zoomAnimations[
 				    Integer.parseInt(options.getString(Options.PREF_ZOOM_ANIMATION, "0"))]);
+		if (options.getBoolean(Options.PREF_FULLSCREEN, false))
+			getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		else
+			getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 	}
 
     /**

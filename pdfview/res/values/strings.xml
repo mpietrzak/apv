@@ -69,4 +69,7 @@
 	<item>1</item>
 	<item>2</item>
 	</string-array>
+	<string name="viewer">PDF Viewer</string>
+	<string name="selector">File Chooser</string>
+	<string name="fullscreen">Fullscreen</string>
 </resources>

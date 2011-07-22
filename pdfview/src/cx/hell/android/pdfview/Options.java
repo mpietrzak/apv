@@ -17,6 +17,7 @@ public class Options extends PreferenceActivity {
 	final static String PREF_DIRS_FIRST = "dirsFirst";
 	final static String PREF_SHOW_EXTENSION = "showExtension";
 	final static String PREF_ORIENTATION = "orientation";
+	final static String PREF_FULLSCREEN = "fullscreen";
 	
 	@Override
 	public void onCreate(Bundle icicle) {

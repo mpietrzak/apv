@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen
   xmlns:android="http://schemas.android.com/apk/res/android">
-  	<ListPreference
-  		android:title="@string/orientation"
+  	<ListPreference		android:title="@string/orientation"
   		android:defaultValue="@string/default_orientation"
   		android:entries="@array/orientation_labels"
   		android:entryValues="@array/orientations"
   		android:key="orientation"/>
+  	<PreferenceCategory android:title="@string/viewer">
+    <CheckBoxPreference
+    	android:title="@string/fullscreen"
+    	android:defaultValue="false"
+    	android:key="fullscreen"/>
     <CheckBoxPreference
     	android:title="@string/page_with_volume"
     	android:defaultValue="true"
@@ -28,6 +32,9 @@
     	android:entryValues="@array/zoom_animations"
     	android:key="zoomAnimation"
     	/>
+    </PreferenceCategory>
+    <PreferenceCategory
+    android:title="@string/selector">
     <CheckBoxPreference
     	android:title="@string/dirs_first"
     	android:defaultValue="false"
@@ -35,5 +42,6 @@
     <CheckBoxPreference
     	android:title="@string/show_extension"
     	android:defaultValue="false"
-    	android:key="showExtension"/>    	
+    	android:key="showExtension"/>
+    </PreferenceCategory>    	
 </PreferenceScreen>
