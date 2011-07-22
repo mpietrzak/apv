@@ -22,6 +22,7 @@ import android.text.InputType;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -52,6 +53,11 @@ public class OpenFileActivity extends Activity {
 		R.anim.zoom_disappear, R.anim.zoom_almost_disappear, R.anim.zoom
 	};
 	
+	private final static int[] pageNumberAnimations = {
+		R.anim.page_disappear, R.anim.page_almost_disappear, R.anim.page, 
+		R.anim.page_show_always
+	};
+	
 	private PDF pdf = null;
 	private PagesView pagesView = null;
 	private PDFPagesProvider pdfPagesProvider = null;
@@ -72,6 +78,7 @@ public class OpenFileActivity extends Activity {
 	private Button findPrevButton = null;
 	private Button findNextButton = null;
 	private Button findHideButton = null;
+	
 
 	// currently opened file path
 	private String filePath = "/";
@@ -85,6 +92,14 @@ public class OpenFileActivity extends Activity {
 	private ImageButton zoomUpButton;
 	private Animation zoomAnim;
 	private LinearLayout zoomLayout;
+
+	// page number display
+	private TextView pageNumberTextView;
+	private Animation pageNumberAnim;
+
+	private int fadeStartOffset = 7000; 
+	
+	private Boolean invert = false;
 	
     /**
      * Called when the activity is first created.
@@ -145,11 +160,24 @@ public class OpenFileActivity extends Activity {
 		zoomUpButton.setBackgroundColor(Color.TRANSPARENT);
 		zoomLayout.addView(zoomUpButton, (int)(80 * metrics.density), (int)(50 * metrics.density));
 		lp = new RelativeLayout.LayoutParams(
-        		RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        		RelativeLayout.LayoutParams.WRAP_CONTENT, 
+        		RelativeLayout.LayoutParams.WRAP_CONTENT);
         lp.addRule(RelativeLayout.CENTER_HORIZONTAL);
 		lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         setZoomButtonHandlers();
-		layout.addView(zoomLayout,lp);		
+		layout.addView(zoomLayout,lp);
+		
+        this.pageNumberTextView = new TextView(this);
+        this.pageNumberTextView.setBackgroundColor(invert ? Color.BLACK : Color.WHITE);
+        this.pageNumberTextView.setTextColor(invert ? Color.WHITE : Color.BLACK);
+        this.pageNumberTextView.setTextSize(8f*metrics.density);
+        this.pageNumberTextView.setVisibility(View.GONE);
+        lp = new RelativeLayout.LayoutParams(
+        		RelativeLayout.LayoutParams.WRAP_CONTENT, 
+        		RelativeLayout.LayoutParams.WRAP_CONTENT);
+        lp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+        lp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        layout.addView(this.pageNumberTextView, lp);
         
 		// display this
         this.setContentView(layout);
@@ -179,16 +207,24 @@ public class OpenFileActivity extends Activity {
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
 		pagesView.setZoomIncrement(
 				Float.parseFloat(options.getString(Options.PREF_ZOOM_INCREMENT, "1.414")));
-		pagesView.setInvert(options.getBoolean(Options.PREF_INVERT, false));
+		this.invert = options.getBoolean(Options.PREF_INVERT, false);
+		pagesView.setInvert(this.invert);
 		pagesView.setPageWithVolume(options.getBoolean(Options.PREF_PAGE_WITH_VOLUME, true));
 		pagesView.invalidate();
 		zoomAnim = AnimationUtils.loadAnimation(this,
 				zoomAnimations[
-				    Integer.parseInt(options.getString(Options.PREF_ZOOM_ANIMATION, "0"))]);
+				    Integer.parseInt(options.getString(Options.PREF_ZOOM_ANIMATION, "2"))]);		
+		pageNumberAnim = AnimationUtils.loadAnimation(this,
+				pageNumberAnimations[
+				    Integer.parseInt(options.getString(Options.PREF_PAGE_ANIMATION, "3"))]);
+		fadeStartOffset = 1000 * Integer.parseInt(options.getString(Options.PREF_FADE_SPEED, "7"));
+		
 		if (options.getBoolean(Options.PREF_FULLSCREEN, false))
 			getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		else
 			getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        
+        showAnimated();
 	}
 
     /**
@@ -296,11 +332,34 @@ public class OpenFileActivity extends Activity {
     public boolean dispatchTouchEvent(MotionEvent event) {
     	int action = event.getAction();
     	if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN) {
-    		zoomAnim.setFillAfter(true);
-    		zoomLayout.startAnimation(zoomAnim);
+    		showAnimated();
     	}
 		return super.dispatchTouchEvent(event);    	
     };
+    
+    public boolean dispatchKeyEvent(KeyEvent event) {
+    	int action = event.getAction();
+    	if (action == KeyEvent.ACTION_UP || action == KeyEvent.ACTION_DOWN) {
+    		showAnimated();
+    	}
+		return super.dispatchKeyEvent(event);    	
+    };
+    
+    /**
+     * Show zoom buttons and page number
+     */
+    private void showAnimated() {
+    	zoomAnim.setStartOffset(fadeStartOffset);
+		zoomAnim.setFillAfter(true);
+		zoomLayout.startAnimation(zoomAnim);
+
+    	pageNumberAnim.setStartOffset(fadeStartOffset);
+		pageNumberAnim.setFillAfter(true);
+		pageNumberTextView.setText(""+(this.pagesView.getCurrentPage()+1)+"/"+
+				this.pdfPagesProvider.getPageCount());
+        pageNumberTextView.setVisibility(View.VISIBLE);
+		pageNumberTextView.startAnimation(pageNumberAnim);     	
+    }
     
     /**
      * Hide the find buttons
@@ -373,6 +432,7 @@ public class OpenFileActivity extends Activity {
     		this.pagesView.scrollToPage(page);
     		if (zoom > 0)
     			this.pagesView.setZoomLevel(zoom);
+            showAnimated();
     	}
     }
     
@@ -394,7 +454,6 @@ public class OpenFileActivity extends Activity {
         int zoom = b.getLastZoom(filePath);
         b.close();
         if (lastpage > 0) {
-        	Log.v(TAG, "found last page for "+filePath+", namely "+lastpage);
         	Handler mHandler = new Handler();
         	Runnable mUpdateTimeTask = new GotoPageThread(lastpage, zoom);
         	mHandler.postDelayed(mUpdateTimeTask, 2000);
@@ -657,7 +716,7 @@ public class OpenFileActivity extends Activity {
 					Finder.this.parent.pagesView.setFindResults(findResults);
 					Finder.this.parent.pagesView.setFindMode(true);
 					Finder.this.parent.pagesView.scrollToFindResult(fn);
-					Finder.this.parent.findButtonsLayout.setVisibility(View.VISIBLE);
+					Finder.this.parent.findButtonsLayout.setVisibility(View.VISIBLE);					
 					Finder.this.parent.pagesView.invalidate();
 				}
 			});

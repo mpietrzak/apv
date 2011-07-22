@@ -34,6 +34,40 @@
 		<item>fade</item>
 	</string-array>
 	<string name="default_zoom_animation">2</string> 
+	<string name="page_animation">Page number/count</string>
+	<string-array name="page_animations">
+		<item>0</item>
+		<item>1</item>
+		<item>2</item>
+		<item>3</item>
+	</string-array>
+	<string-array name="page_animation_labels">
+		<item>disappear</item>
+		<item>almost disappear</item>
+		<item>fade</item>
+		<item>show always</item>
+	</string-array>
+	<string name="default_page_animation">2</string> 
+	<string name="fade_speed">Zoom and page fade wait</string>
+	<string-array name="fade_speeds">
+		<item>1</item>
+		<item>2</item>
+		<item>3</item>
+		<item>4</item>
+		<item>5</item>
+		<item>6</item>
+		<item>7</item>
+	</string-array>
+	<string-array name="fade_speed_labels">
+		<item>1 second</item>
+		<item>2 seconds</item>
+		<item>3 seconds</item>
+		<item>4 seconds</item>
+		<item>5 seconds</item>
+		<item>6 seconds</item>
+		<item>7 seconds</item>
+	</string-array>
+	<string name="default_fade_speed">7</string> 
 	<string name="zoom_increment">Zoom increment</string>
 	<string name="default_zoom_increment">1.414</string>
 	<string-array name="zoom_increment_labels">
