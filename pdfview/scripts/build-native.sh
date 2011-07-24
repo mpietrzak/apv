@@ -23,7 +23,7 @@ fi
 
 
 cd $DEPSDIR
-MUPDFSRC="mupdf-latest.tar.gz"
+MUPDFSRC="mupdf-0.8.165-source.tar.gz"
 FTSRC="freetype-2.3.11.tar.bz2"
 JPEGSRC="jpegsrc.v8a.tar.gz"
 MUPDF=$DEPSDIR/mupdf
