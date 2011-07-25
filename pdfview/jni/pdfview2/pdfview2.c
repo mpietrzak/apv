@@ -872,22 +872,17 @@ void fix_samples(unsigned char *bytes, unsigned int w, unsigned int h) {
         unsigned char r,g,b,a;
         unsigned i = 0;
         for (i = 0; i < (w*h); ++i) {
-                unsigned int o = i*4;
-                /*
-                a = bytes[o+0];
-                r = bytes[o+1];
-                g = bytes[o+2];
-                b = bytes[o+3];
-                */
-                r = bytes[o+0];
-                g = bytes[o+1];
-                b = bytes[o+2];
-                a = bytes[o+3];
+                unsigned int in = i*4;
 
-                bytes[o+0] = b; /* b */
-                bytes[o+1] = g; /* g */
-                bytes[o+2] = r; /* r */
-                bytes[o+3] = a;
+                r = bytes[in+0];
+                g = bytes[in+1];
+                b = bytes[in+2];
+//                a = bytes[in+3];
+
+                bytes[in+0] = b;
+                bytes[in+1] = g;
+                bytes[in+2] = r;
+//                bytes[in+3] = a;
         }
 }
 
