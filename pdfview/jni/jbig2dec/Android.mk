@@ -2,8 +2,10 @@ LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
 
+LOCAL_ARM_MODE := arm
+
 LOCAL_MODULE := jbig2dec
-LOCAL_CFLAGS := -DHAVE_CONFIG_H
+LOCAL_CFLAGS := -O3 -DHAVE_CONFIG_H
 LOCAL_SRC_FILES := \
 	jbig2.c \
 	jbig2_arith.c \
