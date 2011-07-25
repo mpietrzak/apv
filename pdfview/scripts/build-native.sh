@@ -6,7 +6,8 @@ SCRIPTDIR=`dirname $0`
 cd $SCRIPTDIR/../deps
 tar xvf freetype-2.3.11.tar.bz2
 tar xvf jpegsrc.v8a.tar.gz
-tar xvf mupdf-04-16-2011.tar.gz
+tar xvf mupdf-0.8.165-source.tar.gz
+mv mupdf-0.8.165 mupdf
 tar xvf openjpeg_v1_4_sources_r697.tgz
 tar xvf jbig2dec-0.11.tar.gz
 cp openjpeg_v1_4_sources_r697/libopenjpeg/*.[ch] ../jni/openjpeg/
