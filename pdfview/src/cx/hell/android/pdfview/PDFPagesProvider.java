@@ -308,15 +308,9 @@ public class PDFPagesProvider extends PagesProvider {
 		int[] pagebytes = null;
 		pagebytes = pdf.renderPage(tile.getPage(), tile.getZoom(), tile.getX(), tile.getY(), tile.getRotation(), size); /* native */
 		if (pagebytes == null) throw new RenderingException("Couldn't render page " + tile.getPage());
-		
-		b = Bitmap.createBitmap(pagebytes, size.width, size.height, Bitmap.Config.ARGB_8888);
 
-		/* simple tests show that this indeed works - memory usage is smaller with this extra copy */
-		/* TODO: make mupdf write directly to RGB_565 bitmap */ 
-		Bitmap btmp = b.copy(Bitmap.Config.RGB_565, true);
-		if (btmp == null) throw new RuntimeException("bitmap copy failed");
-		b.recycle();
-		b = btmp;
+		/* create a 16-bit bitmap from the 32-bit color array */
+		b = Bitmap.createBitmap(pagebytes, size.width, size.height, Bitmap.Config.RGB_565);
 		
 		this.bitmapCache.put(tile, b);
 		return b;
