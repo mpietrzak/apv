@@ -869,20 +869,18 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
  * TODO: make mupdf write pixels in correct format
  */
 void fix_samples(unsigned char *bytes, unsigned int w, unsigned int h) {
-        unsigned char r,g,b,a;
-        unsigned i = 0;
-        for (i = 0; i < (w*h); ++i) {
-                unsigned int in = i*4;
+        unsigned char tmp;
+        unsigned i;
+        unsigned pos;   
+        unsigned count = w*h;
 
-                r = bytes[in+0];
-                g = bytes[in+1];
-                b = bytes[in+2];
-//                a = bytes[in+3];
+        for (pos = i = 0; i < count; ++i, pos+=4) {
+                // translate rgba to bgra by swapping bytes[pos+0] and
+                // bytes[pos+2]
 
-                bytes[in+0] = b;
-                bytes[in+1] = g;
-                bytes[in+2] = r;
-//                bytes[in+3] = a;
+                tmp = bytes[pos];
+                bytes[pos] = bytes[pos+2];
+                bytes[pos+2] = tmp;
         }
 }
 
