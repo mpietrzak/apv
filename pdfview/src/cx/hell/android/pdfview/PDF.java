@@ -100,7 +100,8 @@ public class PDF {
 	 * @param passes requested size, used for size of resulting bitmap
 	 * @return bytes of bitmap in Androids format
 	 */
-	synchronized public native int[] renderPage(int n, int zoom, int left, int top, int rotation, PDF.Size rect);
+	synchronized public native int[] renderPage(int n, int zoom, int left, int top, 
+			int rotation, PDF.Size rect);
 	
 	/**
 	 * Get PDF page size, store it in size struct, return error code.

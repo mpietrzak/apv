@@ -379,7 +379,6 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 										dst.bottom = (int)(y + pageHeight);
 									}
 									
-									//this.fixOfscreen(dst, src);
 									if (invert) {
 										Paint paint = new Paint();
 										float[] inverter = {
