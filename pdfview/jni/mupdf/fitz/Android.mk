@@ -2,6 +2,9 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
+LOCAL_CFLAGS := -O3
+LOCAL_ARM_MODE := arm
+
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../mupdf $(LOCAL_PATH)/../../jpeg \
 	$(LOCAL_PATH)/../../freetype-overlay/include $(LOCAL_PATH)/../../freetype/include \
 	$(LOCAL_PATH)/../../jbig2dec $(LOCAL_PATH)/../../openjpeg

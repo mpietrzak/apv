@@ -3,10 +3,12 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
+LOCAL_ARM_MODE := arm
+
 LOCAL_MODULE := freetype
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../freetype-overlay/include $(LOCAL_PATH)/include
 LOCAL_LDLIBS := -lz
-LOCAL_CFLAGS := -DFT2_BUILD_LIBRARY
+LOCAL_CFLAGS := -DFT2_BUILD_LIBRARY -O3
 
 LOCAL_SRC_FILES := \
         src/base/ftsystem.c \
