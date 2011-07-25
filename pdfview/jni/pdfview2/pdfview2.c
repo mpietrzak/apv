@@ -124,7 +124,7 @@ Java_cx_hell_android_pdfview_PDF_renderPage(
     save_size(env, size, width, height);
 
     /* TODO: learn jni and avoid copying bytes ;) */
-    jints = (*env)->NewIntArray(env, blen);
+    jints = (*env)->NewIntArray(env, (blen+3)/4);
 	jbuf = (*env)->GetIntArrayElements(env, jints, NULL);
     memcpy(jbuf, buf, blen);
     (*env)->ReleaseIntArrayElements(env, jints, jbuf, 0);
@@ -775,7 +775,8 @@ pdf_page* get_page(pdf_t *pdf, int pageno) {
  * Page size is currently MediaBox size: http://www.prepressure.com/pdf/basics/page_boxes, but probably shuld be TrimBox.
  * pageno is 0-based.
  */
-jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation, int *blen, int *width, int *height) {
+jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
+      int *blen, int *width, int *height) {
     unsigned char *bytes = NULL;
     fz_matrix ctm;
     double zoom;
@@ -871,7 +872,7 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
 void fix_samples(unsigned char *bytes, unsigned int w, unsigned int h) {
         unsigned char tmp;
         unsigned i;
-        unsigned pos;   
+        unsigned pos;
         unsigned count = w*h;
 
         for (pos = i = 0; i < count; ++i, pos+=4) {

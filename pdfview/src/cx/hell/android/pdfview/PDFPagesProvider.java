@@ -306,10 +306,11 @@ public class PDFPagesProvider extends PagesProvider {
 		Bitmap b;
 		PDF.Size size = new PDF.Size(PagesView.TILE_SIZE, PagesView.TILE_SIZE);
 		int[] pagebytes = null;
+
 		pagebytes = pdf.renderPage(tile.getPage(), tile.getZoom(), tile.getX(), tile.getY(), 
 				tile.getRotation(), size); /* native */
 		if (pagebytes == null) throw new RenderingException("Couldn't render page " + tile.getPage());
-
+		
 		/* create a 16-bit bitmap from the 32-bit color array */
 		b = Bitmap.createBitmap(pagebytes, size.width, size.height, Bitmap.Config.RGB_565);
 		
