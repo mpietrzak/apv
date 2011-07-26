@@ -32,8 +32,6 @@ typedef struct {
 
 pdf_t* create_pdf_t();
 pdf_t* parse_pdf_file(const char *filename, int fileno);
-jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
-      int *blen, int *width, int *height);
 pdf_t* get_pdf_from_this(JNIEnv *env, jobject this);
 void get_size(JNIEnv *env, jobject size, int *width, int *height);
 void save_size(JNIEnv *env, jobject size, int width, int height);
