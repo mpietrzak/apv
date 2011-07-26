@@ -10,6 +10,10 @@
 #define PDFVIEW_LOG_TAG "cx.hell.android.pdfview"
 #define PDFVIEW_MAX_PAGES_LOADED 16
 
+static jintArray get_page_image_bitmap(JNIEnv *env,
+      pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
+      int *width, int *height);
+
 
 extern char fz_errorbuf[150*20]; /* defined in fitz/apv_base_error.c */
 
@@ -102,10 +106,8 @@ Java_cx_hell_android_pdfview_PDF_renderPage(
         jint rotation,
         jobject size) {
 
-    int blen;
     jint *buf; /* rendered page, freed before return, as bitmap */
     jintArray jints; /* return value */
-    int *jbuf; /* pointer to internal jint */
     pdf_t *pdf; /* parsed pdf data, extracted from java's "this" object */
     int width, height;
 
@@ -117,18 +119,12 @@ Java_cx_hell_android_pdfview_PDF_renderPage(
             (int)width, (int)height);
 
     pdf = get_pdf_from_this(env, this);
-    buf = get_page_image_bitmap(pdf, pageno, zoom, left, top, rotation, &blen, &width, &height);
 
-    if (buf == NULL) return NULL;
+    jints = get_page_image_bitmap(env, pdf, pageno, zoom, left, top, rotation, &width, &height);
 
-    save_size(env, size, width, height);
+    if (jints != NULL)
+        save_size(env, size, width, height);
 
-    /* TODO: learn jni and avoid copying bytes ;) */
-    jints = (*env)->NewIntArray(env, (blen+3)/4);
-	jbuf = (*env)->GetIntArrayElements(env, jints, NULL);
-    memcpy(jbuf, buf, blen);
-    (*env)->ReleaseIntArrayElements(env, jints, jbuf, 0);
-    free(buf);
     return jints;
 }
 
@@ -775,8 +771,9 @@ pdf_page* get_page(pdf_t *pdf, int pageno) {
  * Page size is currently MediaBox size: http://www.prepressure.com/pdf/basics/page_boxes, but probably shuld be TrimBox.
  * pageno is 0-based.
  */
-jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
-      int *blen, int *width, int *height) {
+static jintArray get_page_image_bitmap(JNIEnv *env,
+      pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
+      int *width, int *height) {
     unsigned char *bytes = NULL;
     fz_matrix ctm;
     double zoom;
@@ -786,6 +783,9 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
     fz_pixmap *image = NULL;
     static int runs = 0;
     fz_device *dev = NULL;
+    int num_pixels;
+    jintArray jints; /* return value */
+    int *jbuf; /* pointer to internal jint */
 
     zoom = (double)zoom_pmil / 1000.0;
 
@@ -851,16 +851,20 @@ jint* get_page_image_bitmap(pdf_t *pdf, int pageno, int zoom_pmil, int left, int
 
     fix_samples(image->samples, image->w, image->h);
 
-    /* TODO: shouldn't malloc so often; but in practice, those temp malloc-memcpy pairs don't cost that much */
-    bytes = (unsigned char*)malloc(image->w * image->h * 4);
-    memcpy(bytes, image->samples, image->w * image->h * 4);
-    *blen = image->w * image->h * 4;
+    /* TODO: learn jni and avoid copying bytes ;) */
+    num_pixels = image->w * image->h;
+
+    jints = (*env)->NewIntArray(env, num_pixels);
+	jbuf = (*env)->GetIntArrayElements(env, jints, NULL);
+    memcpy(jbuf, image->samples, num_pixels * 4);
+    (*env)->ReleaseIntArrayElements(env, jints, jbuf, 0);
+
     *width = image->w;
     *height = image->h;
     fz_drop_pixmap(image);
 
     runs += 1;
-    return (jint*)bytes;
+    return jints;
 }
 
 
