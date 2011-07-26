@@ -106,4 +106,6 @@
 	<string name="viewer">PDF Viewer</string>
 	<string name="selector">File Chooser</string>
 	<string name="fullscreen">Fullscreen</string>
+	<string name="render_ahead">Render ahead</string>
+	<string name="render_ahead_sub">Uses more memory but better forward scrolling.</string>
 </resources>

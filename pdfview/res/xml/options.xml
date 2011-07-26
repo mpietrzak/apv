@@ -46,6 +46,11 @@
     	android:entryValues="@array/fade_speeds"
     	android:key="fadeSpeed"
     	/>
+    <CheckBoxPreference
+    	android:title="@string/render_ahead"
+    	android:summary="@string/render_ahead_sub"
+    	android:defaultValue="true"
+    	android:key="renderAhead"/>
     </PreferenceCategory>
     <PreferenceCategory
     android:title="@string/selector">

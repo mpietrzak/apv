@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import android.graphics.Bitmap;
+import android.os.SystemClock;
 import android.util.Log;
 import cx.hell.android.lib.pagesview.OnImageRenderedListener;
 import cx.hell.android.lib.pagesview.PagesProvider;
@@ -292,10 +293,12 @@ public class PDFPagesProvider extends PagesProvider {
 		Map<Tile,Bitmap> renderedTiles = new HashMap<Tile,Bitmap>();
 		Iterator<Tile> i = tiles.iterator();
 		Tile tile = null;
+
 		while(i.hasNext()) {
 			tile = i.next();
 			renderedTiles.put(tile, this.renderBitmap(tile));
 		}
+		
 		return renderedTiles;
 	}
 	
