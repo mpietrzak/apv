@@ -369,42 +369,44 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 							dst.bottom = dst.top + tileSizes[1];	
 						
 							if (dst.intersects(0, 0, this.width, (int)(renderAhead*this.height))) {
-								/* tile is visible */
+
 								Tile tile = new Tile(i, (int)(this.zoomLevel * scalling0), 
 										tileix*tileSizes[0], tileiy*tileSizes[1], this.rotation,
 										tileSizes[0], tileSizes[1]);
-								Bitmap b = this.pagesProvider.getPageBitmap(tile);
-								if (b != null) {
-									//Log.d(TAG, "  have bitmap: " + b + ", size: " + b.getWidth() + " x " + b.getHeight());
-									src.left = 0;
-									src.top = 0;
-									src.right = b.getWidth();
-									src.bottom = b.getHeight();
-									
-									if (dst.right > x + pageWidth) {
-										src.right = (int)(b.getWidth() * (float)((x+pageWidth)-dst.left) / (float)(dst.right - dst.left));
-										dst.right = (int)(x + pageWidth);
-									}
-									
-									if (dst.bottom > y + pageHeight) {
-										src.bottom = (int)(b.getHeight() * (float)((y+pageHeight)-dst.top) / (float)(dst.bottom - dst.top));
-										dst.bottom = (int)(y + pageHeight);
-									}
-									
-									if (invert) {
-										Paint paint = new Paint();
-										float[] inverter = {
-											-1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-											0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-											0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
-											1.0f, 1.0f, 1.0f, 1.0f, 0.0f 
-										};
-										paint.setColorFilter(new 
-												ColorMatrixColorFilter(new ColorMatrix(inverter)));
-										canvas.drawBitmap(b, src, dst, paint);
-									}
-									else {
-										canvas.drawBitmap(b, src, dst, null);
+								if (dst.intersects(0, 0, this.width, this.height)) {
+									Bitmap b = this.pagesProvider.getPageBitmap(tile);
+									if (b != null) {
+										//Log.d(TAG, "  have bitmap: " + b + ", size: " + b.getWidth() + " x " + b.getHeight());
+										src.left = 0;
+										src.top = 0;
+										src.right = b.getWidth();
+										src.bottom = b.getHeight();
+										
+										if (dst.right > x + pageWidth) {
+											src.right = (int)(b.getWidth() * (float)((x+pageWidth)-dst.left) / (float)(dst.right - dst.left));
+											dst.right = (int)(x + pageWidth);
+										}
+										
+										if (dst.bottom > y + pageHeight) {
+											src.bottom = (int)(b.getHeight() * (float)((y+pageHeight)-dst.top) / (float)(dst.bottom - dst.top));
+											dst.bottom = (int)(y + pageHeight);
+										}
+										
+										if (invert) {
+											Paint paint = new Paint();
+											float[] inverter = {
+												-1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+												0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+												0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+												1.0f, 1.0f, 1.0f, 1.0f, 0.0f 
+											};
+											paint.setColorFilter(new 
+													ColorMatrixColorFilter(new ColorMatrix(inverter)));
+											canvas.drawBitmap(b, src, dst, paint);
+										}
+										else {
+											canvas.drawBitmap(b, src, dst, null);
+										}
 									}
 								}
 								visibleTiles.add(tile);
