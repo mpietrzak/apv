@@ -21,9 +21,14 @@ public class Tile {
 	private int page;
 	private int rotation;
 	
+	private int prefXSize;
+	private int prefYSize;
+	
 	int _hashCode;
 	
-	public Tile(int page, int zoom, int x, int y, int rotation) {
+	public Tile(int page, int zoom, int x, int y, int rotation, int prefXSize, int prefYSize) {
+		this.prefXSize = prefXSize;
+		this.prefYSize = prefYSize;
 		this.page = page;
 		this.zoom = zoom;
 		this.x = x;
@@ -75,5 +80,13 @@ public class Tile {
 
 	public int getRotation() {
 		return this.rotation;
+	}
+	
+	public int getPrefXSize() {
+		return this.prefXSize;
+	}
+
+	public int getPrefYSize() {
+		return this.prefYSize;
 	}
 }
