@@ -207,6 +207,7 @@ public class OpenFileActivity extends Activity {
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
 		pagesView.setZoomIncrement(
 				Float.parseFloat(options.getString(Options.PREF_ZOOM_INCREMENT, "1.414")));
+		pagesView.setRenderAhead(options.getBoolean(Options.PREF_RENDER_AHEAD, true));
 		this.invert = options.getBoolean(Options.PREF_INVERT, false);
 		pagesView.setInvert(this.invert);
 		pagesView.setPageWithVolume(options.getBoolean(Options.PREF_PAGE_WITH_VOLUME, true));

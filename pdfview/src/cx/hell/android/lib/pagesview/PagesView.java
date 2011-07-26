@@ -15,6 +15,7 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -26,12 +27,17 @@ import android.view.View;
  * TODO: use more floats for better align, or use more ints for performance ;) (that is, really analyse what should be used when)
  */
 public class PagesView extends View implements View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
-
 	/**
 	 * Logging tag.
 	 */
 	private static final String TAG = "cx.hell.android.pdfview";
+	
+	/* render a little more than twice the screen height, so the next page will be ready */
+	private float renderAhead = 2.1f; 
 
+	/* Experiments show that larger tiles are faster, but the gains do drop off,
+	 * and must be balanced against the size of memory chunks being requested.
+	 */
 	private static final int MIN_TILE_WIDTH = 256;
 	private static final int MAX_TILE_WIDTH = 640;
 	private static final int MIN_TILE_HEIGHT = 128;
@@ -332,9 +338,6 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				pageWidth = this.getCurrentPageWidth(i);
 				pageHeight = (int) this.getCurrentPageHeight(i);
 				
-				int[] tileSizes = new int[2];
-				getGoodTileSizes(tileSizes, pageWidth, pageHeight);
-				
 				pagex0 = currentMargin;
 				pagex1 = (int)(currentMargin + pageWidth);
 				pagey0 = currpageoff;
@@ -342,7 +345,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				
 				if (rectsintersect(
 							(int)pagex0, (int)pagey0, (int)pagex1, (int)pagey1, // page rect in doc
-							viewx0, viewy0, viewx0 + this.width, viewy0 + this.height // viewport rect in doc 
+							viewx0, viewy0, viewx0 + this.width, 
+							viewy0 + (int)(renderAhead*this.height) // viewport rect in doc, or close enough to it 
 						))
 				{
 					if (this.currentPage == -1)  {
@@ -353,6 +357,9 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 					x = pagex0 - viewx0;
 					y = pagey0 - viewy0;
 					
+					int[] tileSizes = new int[2];
+					getGoodTileSizes(tileSizes, pageWidth, pageHeight);
+					
 					for(int tileix = 0; tileix < (pageWidth + tileSizes[0]-1) / tileSizes[0]; ++tileix)
 						for(int tileiy = 0; tileiy < (pageHeight + tileSizes[1]-1) / tileSizes[1]; ++tileiy) {
 							
@@ -361,7 +368,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 							dst.right = dst.left + tileSizes[0];
 							dst.bottom = dst.top + tileSizes[1];	
 						
-							if (dst.intersects(0, 0, this.width, this.height)) {
+							if (dst.intersects(0, 0, this.width, (int)(renderAhead*this.height))) {
 								/* tile is visible */
 								Tile tile = new Tile(i, (int)(this.zoomLevel * scalling0), 
 										tileix*tileSizes[0], tileiy*tileSizes[1], this.rotation,
@@ -404,6 +411,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 							}
 						}
 				}
+				
 				
 				/* move to next page */
 				currpageoff += currentMargin + this.getCurrentPageHeight(i);
@@ -505,11 +513,9 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			switch(keyCode) {
 				case KeyEvent.KEYCODE_VOLUME_UP:					
 					this.top -= this.getHeight() - 16;
-					Log.v("UP", ""+this.top);
 					if (this.top < 0) {
 						this.top = 0;
 					}
-					Log.v("UP", ""+this.top);
 					this.invalidate();
 					return true;
 				case KeyEvent.KEYCODE_VOLUME_DOWN:
@@ -841,6 +847,11 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	public void setZoomIncrement(float step) {
 		this.step = step;
 	}
+	
+	public void setRenderAhead(boolean ahead) {
+		/* The 1.0001 instead of 1 is to avoid roundoff issues */
+		this.renderAhead = ahead ? 2.1f : 1.0001f; 
+	}
 
 	public void setPageWithVolume(boolean pageWithVolume) {
 		this.pageWithVolume = pageWithVolume;
@@ -848,9 +859,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	
 
 	private void getGoodTileSizes(int[] sizes, int pageWidth, int pageHeight) {
-// Currently due to a bug, the two dimensions must be the same.		
 		sizes[0] = getGoodTileSize(pageWidth, MIN_TILE_WIDTH, MAX_TILE_WIDTH);		
-		sizes[1] = getGoodTileSize(pageHeight, MIN_TILE_HEIGHT, MAX_TILE_PIXELS / sizes[0]);
+		sizes[1] = getGoodTileSize(pageHeight, MIN_TILE_HEIGHT, MAX_TILE_PIXELS / sizes[0]); 
 	}
 	
 	private int getGoodTileSize(int pageSize, int minSize, int maxSize) {
