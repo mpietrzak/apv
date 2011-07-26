@@ -304,7 +304,7 @@ public class PDFPagesProvider extends PagesProvider {
 	 */
 	private Bitmap renderBitmap(Tile tile) throws RenderingException {
 		Bitmap b;
-		PDF.Size size = new PDF.Size(PagesView.TILE_SIZE, PagesView.TILE_SIZE);
+		PDF.Size size = new PDF.Size(tile.getPrefXSize(), tile.getPrefYSize());
 		int[] pagebytes = null;
 
 		pagebytes = pdf.renderPage(tile.getPage(), tile.getZoom(), tile.getX(), tile.getY(), 

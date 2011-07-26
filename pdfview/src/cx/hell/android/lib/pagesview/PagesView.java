@@ -28,14 +28,14 @@ import android.view.View;
 public class PagesView extends View implements View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 
 	/**
-	 * Tile size.
-	 */
-	public static final int TILE_SIZE = 256;
-
-	/**
 	 * Logging tag.
 	 */
 	private static final String TAG = "cx.hell.android.pdfview";
+
+	private static final int MIN_TILE_WIDTH = 256;
+	private static final int MAX_TILE_WIDTH = 640;
+	private static final int MIN_TILE_HEIGHT = 128;
+	private static final int MAX_TILE_PIXELS = 640*256;
 	
 //	private final static int MAX_ZOOM = 4000;
 //	private final static int MIN_ZOOM = 100;
@@ -332,6 +332,9 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				pageWidth = this.getCurrentPageWidth(i);
 				pageHeight = (int) this.getCurrentPageHeight(i);
 				
+				int[] tileSizes = new int[2];
+				getGoodTileSizes(tileSizes, pageWidth, pageHeight);
+				
 				pagex0 = currentMargin;
 				pagex1 = (int)(currentMargin + pageWidth);
 				pagey0 = currpageoff;
@@ -350,24 +353,26 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 					x = pagex0 - viewx0;
 					y = pagey0 - viewy0;
 					
-					for(int tileix = 0; tileix < pageWidth / TILE_SIZE + 1; ++tileix)
-						for(int tileiy = 0; tileiy < pageHeight / TILE_SIZE + 1; ++tileiy) {
+					for(int tileix = 0; tileix < (pageWidth + tileSizes[0]-1) / tileSizes[0]; ++tileix)
+						for(int tileiy = 0; tileiy < (pageHeight + tileSizes[1]-1) / tileSizes[1]; ++tileiy) {
 							
-							dst.left = (int)(x + tileix*TILE_SIZE);
-							dst.top = (int)(y + tileiy*TILE_SIZE);
-							dst.right = dst.left + TILE_SIZE;
-							dst.bottom = dst.top + TILE_SIZE;	
+							dst.left = (int)(x + tileix*tileSizes[0]);
+							dst.top = (int)(y + tileiy*tileSizes[1]);
+							dst.right = dst.left + tileSizes[0];
+							dst.bottom = dst.top + tileSizes[1];	
 						
 							if (dst.intersects(0, 0, this.width, this.height)) {
 								/* tile is visible */
-								Tile tile = new Tile(i, (int)(this.zoomLevel * scalling0), tileix*TILE_SIZE, tileiy*TILE_SIZE, this.rotation);
+								Tile tile = new Tile(i, (int)(this.zoomLevel * scalling0), 
+										tileix*tileSizes[0], tileiy*tileSizes[1], this.rotation,
+										tileSizes[0], tileSizes[1]);
 								Bitmap b = this.pagesProvider.getPageBitmap(tile);
 								if (b != null) {
 									//Log.d(TAG, "  have bitmap: " + b + ", size: " + b.getWidth() + " x " + b.getHeight());
 									src.left = 0;
 									src.top = 0;
 									src.right = b.getWidth();
-									src.bottom = b.getWidth();
+									src.bottom = b.getHeight();
 									
 									if (dst.right > x + pageWidth) {
 										src.right = (int)(b.getWidth() * (float)((x+pageWidth)-dst.left) / (float)(dst.right - dst.left));
@@ -474,6 +479,12 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				this.inDrag = false;
 				this.left -= (this.dragx1 - this.dragx);
 				this.top -= (this.dragy1 - this.dragy);
+				if (this.top < 0) {
+					this.top = 0;
+				}
+				if (this.left < 0) {
+					this.left = 0;
+				}
 			}
 		} else if (event.getAction() == MotionEvent.ACTION_MOVE) {
 			if (this.inDrag) {
@@ -494,6 +505,11 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			switch(keyCode) {
 				case KeyEvent.KEYCODE_VOLUME_UP:					
 					this.top -= this.getHeight() - 16;
+					Log.v("UP", ""+this.top);
+					if (this.top < 0) {
+						this.top = 0;
+					}
+					Log.v("UP", ""+this.top);
 					this.invalidate();
 					return true;
 				case KeyEvent.KEYCODE_VOLUME_DOWN:
@@ -828,5 +844,25 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 
 	public void setPageWithVolume(boolean pageWithVolume) {
 		this.pageWithVolume = pageWithVolume;
+	}
+	
+
+	private void getGoodTileSizes(int[] sizes, int pageWidth, int pageHeight) {
+// Currently due to a bug, the two dimensions must be the same.		
+		sizes[0] = getGoodTileSize(pageWidth, MIN_TILE_WIDTH, MAX_TILE_WIDTH);		
+		sizes[1] = getGoodTileSize(pageHeight, MIN_TILE_HEIGHT, MAX_TILE_PIXELS / sizes[0]);
+	}
+	
+	private int getGoodTileSize(int pageSize, int minSize, int maxSize) {
+		if (pageSize <= 2)
+			return 2;
+		if (pageSize < maxSize)
+			return maxSize;
+		int numInPageSize = (pageSize + maxSize - 1) / maxSize;
+		int proposedSize = (pageSize + numInPageSize - 1) / numInPageSize;
+		if (proposedSize < minSize)
+			return minSize;
+		else
+			return proposedSize;
 	}
 }
