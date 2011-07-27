@@ -110,4 +110,5 @@
 	<string name="render_ahead_sub">Uses more memory but faster forward scrolling.</string>
 	<string name="gray">Grayscale</string>
 	<string name="gray_sub">No colors, slightly slower, but uses less memory.</string>
+	<string name="page">Page</string>
 </resources>
