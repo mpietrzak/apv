@@ -107,5 +107,7 @@
 	<string name="selector">File Chooser</string>
 	<string name="fullscreen">Fullscreen</string>
 	<string name="render_ahead">Render ahead</string>
-	<string name="render_ahead_sub">Uses more memory but better forward scrolling.</string>
+	<string name="render_ahead_sub">Uses more memory but faster forward scrolling.</string>
+	<string name="gray">Grayscale</string>
+	<string name="gray_sub">No colors, slightly slower, but uses less memory.</string>
 </resources>

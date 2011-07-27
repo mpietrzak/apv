@@ -12,9 +12,10 @@
     	android:defaultValue="false"
     	android:key="fullscreen"/>
     <CheckBoxPreference
-    	android:title="@string/page_with_volume"
-    	android:defaultValue="true"
-    	android:key="pageWithVolume"/>
+    	android:title="@string/gray"
+    	android:summary="@string/gray_sub"
+    	android:defaultValue="false"
+    	android:key="gray"/>
     <CheckBoxPreference
     	android:title="@string/invert"
     	android:defaultValue="false"
@@ -51,6 +52,10 @@
     	android:summary="@string/render_ahead_sub"
     	android:defaultValue="true"
     	android:key="renderAhead"/>
+    <CheckBoxPreference
+    	android:title="@string/page_with_volume"
+    	android:defaultValue="true"
+    	android:key="pageWithVolume"/>
     </PreferenceCategory>
     <PreferenceCategory
     android:title="@string/selector">

@@ -21,6 +21,7 @@ public class Options extends PreferenceActivity {
 	final static String PREF_PAGE_ANIMATION = "pageAnimation";
 	final static String PREF_FADE_SPEED = "fadeSpeed";
 	final static String PREF_RENDER_AHEAD = "renderAhead";
+	final static String PREF_GRAY = "gray";
 	
 	@Override
 	public void onCreate(Bundle icicle) {

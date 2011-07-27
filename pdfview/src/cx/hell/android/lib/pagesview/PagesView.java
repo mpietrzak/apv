@@ -166,6 +166,28 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 */
 	private static Rect r1 = new Rect();
 	
+	
+	private static final float[] rgbInvertMatrix = {
+				-1.0f, 0.0f, 0.0f, 0.0f, 255.0f,
+				0.0f, -1.0f, 0.0f, 0.0f, 255.0f,
+				0.0f, 0.0f, -1.0f, 0.0f, 255.0f,
+				0.0f, 0.0f, 0.0f, 0.0f, 255.0f 
+	};
+	
+	private static final float[] grayDrawMatrix = {
+		0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
+	};
+	
+	private static final float[] grayInvertMatrix = {
+		0.0f, 0.0f, 0.0f, -1.0f, 255.0f,
+		0.0f, 0.0f, 0.0f, -1.0f, 255.0f,
+		0.0f, 0.0f, 0.0f, -1.0f, 255.0f,
+		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
+	};
+	
 	/**
 	 * Construct this view.
 	 * @param activity parent activity
@@ -392,21 +414,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 											dst.bottom = (int)(y + pageHeight);
 										}
 										
-										if (invert) {
-											Paint paint = new Paint();
-											float[] inverter = {
-												-1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-												0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-												0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
-												1.0f, 1.0f, 1.0f, 1.0f, 0.0f 
-											};
-											paint.setColorFilter(new 
-													ColorMatrixColorFilter(new ColorMatrix(inverter)));
-											canvas.drawBitmap(b, src, dst, paint);
-										}
-										else {
-											canvas.drawBitmap(b, src, dst, null);
-										}
+										drawBitmap(canvas, b, src, dst);
+										
 									}
 								}
 								visibleTiles.add(tile);
@@ -422,6 +431,28 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		}
 	}
 		
+	private void drawBitmap(Canvas canvas, Bitmap b, Rect src, Rect dst) {
+		if (invert || b.getConfig() == Bitmap.Config.ALPHA_8) {
+			Paint paint = new Paint();
+
+			float[] matrix;
+			
+			b=b.copy(Bitmap.Config.ARGB_8888, false);
+	
+//			if (b.getConfig() == Bitmap.Config.ALPHA_8)
+				matrix = invert ? grayInvertMatrix : grayDrawMatrix;
+//			else
+//				matrix = rgbInvertMatrix;
+			
+			paint.setColorFilter(new 
+					ColorMatrixColorFilter(new ColorMatrix(matrix)));
+			canvas.drawBitmap(b, src, dst, paint);
+		}
+		else {
+			canvas.drawBitmap(b, src, dst, null);
+		}
+	}
+
 	/**
 	 * Draw find results.
 	 * TODO prettier icons

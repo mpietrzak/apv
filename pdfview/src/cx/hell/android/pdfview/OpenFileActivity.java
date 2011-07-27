@@ -1,4 +1,4 @@
-package cx.hell.android.pdfview;
+ package cx.hell.android.pdfview;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -123,7 +123,8 @@ public class OpenFileActivity extends Activity {
         // the PDF view
         this.pagesView = new PagesView(this);
         this.pdf = this.getPDF();
-        this.pdfPagesProvider = new PDFPagesProvider(pdf);
+        this.pdfPagesProvider = new PDFPagesProvider(pdf, 
+        		PreferenceManager.getDefaultSharedPreferences(this).getBoolean(Options.PREF_GRAY, false));
         pagesView.setPagesProvider(pdfPagesProvider);
         layout.addView(pagesView);
         
@@ -148,6 +149,7 @@ public class OpenFileActivity extends Activity {
         lp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
         layout.addView(this.findButtonsLayout, lp);
 
+        Log.v("start", "go4");
         // the zoom buttons
         zoomLayout = new LinearLayout(this);
         zoomLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -202,9 +204,13 @@ public class OpenFileActivity extends Activity {
 	@Override
 	protected void onResume() {
 		super.onResume();
+		
 		Options.setOrientation(this);
 		
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
+
+		this.pdfPagesProvider.setGray(options.getBoolean(Options.PREF_GRAY, false));
+		
 		pagesView.setZoomIncrement(
 				Float.parseFloat(options.getString(Options.PREF_ZOOM_INCREMENT, "1.414")));
 		pagesView.setRenderAhead(options.getBoolean(Options.PREF_RENDER_AHEAD, true));
