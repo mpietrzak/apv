@@ -437,12 +437,10 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 
 			float[] matrix;
 			
-			b=b.copy(Bitmap.Config.ARGB_8888, false);
-	
-//			if (b.getConfig() == Bitmap.Config.ALPHA_8)
+			if (b.getConfig() == Bitmap.Config.ALPHA_8)
 				matrix = invert ? grayInvertMatrix : grayDrawMatrix;
-//			else
-//				matrix = rgbInvertMatrix;
+			else
+				matrix = rgbInvertMatrix;
 			
 			paint.setColorFilter(new 
 					ColorMatrixColorFilter(new ColorMatrix(matrix)));
