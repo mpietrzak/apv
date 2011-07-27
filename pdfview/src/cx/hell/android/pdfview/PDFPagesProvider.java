@@ -27,6 +27,8 @@ public class PDFPagesProvider extends PagesProvider {
 	 */
 	private final static String TAG = "cx.hell.android.pdfview";
 
+	private boolean gray;
+
 	/**
 	 * Smart page-bitmap cache.
 	 * Stores up to approx MAX_CACHE_SIZE_BYTES of images.
@@ -34,6 +36,19 @@ public class PDFPagesProvider extends PagesProvider {
 	 * TODO: Return high resolution bitmaps if no exact res is available.
 	 * Bitmap images are tiled - tile size is specified in PagesView.TILE_SIZE.
 	 */
+	
+	public void setGray(boolean gray) {
+		if (this.gray == gray)
+			return;
+		this.gray = gray;
+		
+		if (this.bitmapCache != null) {
+			Log.v("ClearCache", "yes");
+			this.bitmapCache.clearCache();
+		}
+	}
+	
+
 	private static class BitmapCache {
 
 		/**
@@ -126,8 +141,13 @@ public class PDFPagesProvider extends PagesProvider {
 		 * This is just a guess.
 		 */
 		private static int getBitmapSizeInCache(Bitmap bitmap) {
-			assert bitmap.getConfig() == Bitmap.Config.RGB_565;
-			return bitmap.getWidth() * bitmap.getHeight() * 2;
+			int numPixels = bitmap.getWidth() * bitmap.getHeight(); 
+			if (bitmap.getConfig() == Bitmap.Config.RGB_565) 
+				return numPixels * 2;
+			else if (bitmap.getConfig() == Bitmap.Config.ALPHA_8)
+				return numPixels;
+			else
+				return numPixels * 4;
 		}
 		
 		/**
@@ -175,6 +195,17 @@ public class PDFPagesProvider extends PagesProvider {
 			BitmapCacheValue v = this.bitmaps.get(oldest);
 			v.bitmap.recycle();
 			this.bitmaps.remove(oldest);
+		}
+		
+		synchronized public void clearCache() {
+			Iterator<Tile> i = this.bitmaps.keySet().iterator();
+
+			while(i.hasNext()) {
+				Tile k = i.next();
+				Log.v("Deleting", k.toString());
+				this.bitmaps.get(k).bitmap.recycle();
+				i.remove();
+			}			
 		}
 	}
 	
@@ -271,13 +302,14 @@ public class PDFPagesProvider extends PagesProvider {
 			}
 		}
 	}
-	
+
 	private PDF pdf = null;
 	private BitmapCache bitmapCache = null;
 	private RendererWorker rendererWorker = null;
 	private OnImageRenderedListener onImageRendererListener = null;
 	
-	public PDFPagesProvider(PDF pdf) {
+	public PDFPagesProvider(PDF pdf, boolean gray) {
+		this.gray = gray;
 		this.pdf = pdf;
 		this.bitmapCache = new BitmapCache();
 		this.rendererWorker = new RendererWorker(this);
@@ -306,19 +338,29 @@ public class PDFPagesProvider extends PagesProvider {
 	 * Really render bitmap. Takes time, should be done in background thread. Calls native code (through PDF object).
 	 */
 	private Bitmap renderBitmap(Tile tile) throws RenderingException {
-		Bitmap b;
 		PDF.Size size = new PDF.Size(tile.getPrefXSize(), tile.getPrefYSize());
 		int[] pagebytes = null;
 
 		pagebytes = pdf.renderPage(tile.getPage(), tile.getZoom(), tile.getX(), tile.getY(), 
-				tile.getRotation(), size); /* native */
+				tile.getRotation(), gray, size); /* native */
 		if (pagebytes == null) throw new RenderingException("Couldn't render page " + tile.getPage());
 		
-		/* create a 16-bit bitmap from the 32-bit color array */
-		b = Bitmap.createBitmap(pagebytes, size.width, size.height, Bitmap.Config.RGB_565);
-		
-		this.bitmapCache.put(tile, b);
-		return b;
+		/* create a bitmap from the 32-bit color array */			
+
+		if (gray) {
+			Bitmap b = Bitmap.createBitmap(pagebytes, size.width, size.height, 
+					Bitmap.Config.ARGB_8888);
+			Bitmap b2 = b.copy(Bitmap.Config.ALPHA_8, false);
+			b.recycle();
+			this.bitmapCache.put(tile, b2);
+			return b2;
+		}
+		else {
+			Bitmap b = Bitmap.createBitmap(pagebytes, size.width, size.height, 
+					Bitmap.Config.RGB_565);
+			this.bitmapCache.put(tile, b);
+			return b;
+		}
 	}
 	
 	/**
@@ -410,4 +452,6 @@ public class PDFPagesProvider extends PagesProvider {
 			this.rendererWorker.setTiles(newtiles);
 		}
 	}
+	
+	
 }

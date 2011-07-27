@@ -12,7 +12,9 @@
 
 static jintArray get_page_image_bitmap(JNIEnv *env,
       pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
+      int gray,
       int *width, int *height);
+static void copy_alpha(unsigned char* out, unsigned char *in, unsigned int w, unsigned int h);
 
 
 extern char fz_errorbuf[150*20]; /* defined in fitz/apv_base_error.c */
@@ -104,6 +106,7 @@ Java_cx_hell_android_pdfview_PDF_renderPage(
         jint left,
         jint top,
         jint rotation,
+        jboolean gray,
         jobject size) {
 
     jint *buf; /* rendered page, freed before return, as bitmap */
@@ -120,7 +123,7 @@ Java_cx_hell_android_pdfview_PDF_renderPage(
 
     pdf = get_pdf_from_this(env, this);
 
-    jints = get_page_image_bitmap(env, pdf, pageno, zoom, left, top, rotation, &width, &height);
+    jints = get_page_image_bitmap(env, pdf, pageno, zoom, left, top, rotation, gray, &width, &height);
 
     if (jints != NULL)
         save_size(env, size, width, height);
@@ -773,6 +776,7 @@ pdf_page* get_page(pdf_t *pdf, int pageno) {
  */
 static jintArray get_page_image_bitmap(JNIEnv *env,
       pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
+      int gray,
       int *width, int *height) {
     unsigned char *bytes = NULL;
     fz_matrix ctm;
@@ -830,11 +834,11 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     }
 #endif
 
-    image = fz_new_pixmap(fz_device_rgb, *width, *height);
+    image = fz_new_pixmap(gray ? fz_device_gray : fz_device_bgr, *width, *height);
     image->x = bbox.x0;
     image->y = bbox.y0;
-    fz_clear_pixmap_with_color(image, 0xff);
-    memset(image->samples, 0xff, image->h * image->w * image->n);
+    fz_clear_pixmap_with_color(image, gray ? 0 : 0xff);
+    memset(image->samples, gray ? 0 : 0xff, image->h * image->w * image->n);
     dev = fz_new_draw_device(pdf->glyph_cache, image);
     error = pdf_run_page(pdf->xref, page, dev, ctm);
     if (error)
@@ -849,14 +853,18 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
             (int)(image->w), (int)(image->h),
             *width, *height);
 
-    fix_samples(image->samples, image->w, image->h);
-
     /* TODO: learn jni and avoid copying bytes ;) */
     num_pixels = image->w * image->h;
 
     jints = (*env)->NewIntArray(env, num_pixels);
 	jbuf = (*env)->GetIntArrayElements(env, jints, NULL);
-    memcpy(jbuf, image->samples, num_pixels * 4);
+    if (gray) {
+        copy_alpha((unsigned char*)jbuf, image->samples, image->w, image->h);
+    }
+    else {
+//        fix_samples(image->samples, image->w, image->h);
+        memcpy(jbuf, image->samples, num_pixels * 4);
+    }
     (*env)->ReleaseIntArrayElements(env, jints, jbuf, 0);
 
     *width = image->w;
@@ -865,6 +873,17 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
 
     runs += 1;
     return jints;
+}
+
+
+void copy_alpha(unsigned char* out, unsigned char *in, unsigned int w, unsigned int h) {
+        unsigned int count = w*h;
+        while(count--) {
+            out+= 3;
+            *out++ = *in; //((unsigned int)in[0]+in[1]+in[2])/3;
+            in += 2;
+            //in += 4;
+        }
 }
 
 
