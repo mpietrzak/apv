@@ -43,7 +43,6 @@ public class PDFPagesProvider extends PagesProvider {
 		this.gray = gray;
 		
 		if (this.bitmapCache != null) {
-			Log.v("ClearCache", "yes");
 			this.bitmapCache.clearCache();
 		}
 	}

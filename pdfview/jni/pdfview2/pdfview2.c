@@ -862,7 +862,6 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
         copy_alpha((unsigned char*)jbuf, image->samples, image->w, image->h);
     }
     else {
-//        fix_samples(image->samples, image->w, image->h);
         memcpy(jbuf, image->samples, num_pixels * 4);
     }
     (*env)->ReleaseIntArrayElements(env, jints, jbuf, 0);
@@ -880,31 +879,8 @@ void copy_alpha(unsigned char* out, unsigned char *in, unsigned int w, unsigned 
         unsigned int count = w*h;
         while(count--) {
             out+= 3;
-            *out++ = *in; //((unsigned int)in[0]+in[1]+in[2])/3;
+            *out++ = 255-((255-in[0]) * in[1])/255;
             in += 2;
-            //in += 4;
-        }
-}
-
-
-/**
- * Reorder bytes in image data - convert from mupdf image to android image.
- * TODO: make it portable across different architectures (when they're released).
- * TODO: make mupdf write pixels in correct format
- */
-void fix_samples(unsigned char *bytes, unsigned int w, unsigned int h) {
-        unsigned char tmp;
-        unsigned i;
-        unsigned pos;
-        unsigned count = w*h;
-
-        for (pos = i = 0; i < count; ++i, pos+=4) {
-                // translate rgba to bgra by swapping bytes[pos+0] and
-                // bytes[pos+2]
-
-                tmp = bytes[pos];
-                bytes[pos] = bytes[pos+2];
-                bytes[pos+2] = tmp;
         }
 }
 
