@@ -421,6 +421,22 @@ public class OpenFileActivity extends Activity {
 				}
 			}
     	});
+    	Button page1Button = new Button(this);
+    	page1Button.setText(getResources().getString(R.string.page) +" 1");
+    	page1Button.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				d.dismiss();
+				OpenFileActivity.this.gotoPage(0);
+			}
+    	});
+    	Button lastPageButton = new Button(this);
+    	lastPageButton.setText(getResources().getString(R.string.page) +" "+pagecount);
+    	lastPageButton.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				d.dismiss();
+				OpenFileActivity.this.gotoPage(pagecount-1);
+			}
+    	});
     	LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
     	params.leftMargin = 5;
     	params.rightMargin = 5;
@@ -429,6 +445,8 @@ public class OpenFileActivity extends Activity {
     	contents.addView(label, params);
     	contents.addView(pageNumberInputField, params);
     	contents.addView(goButton, params);
+    	contents.addView(page1Button, params);
+    	contents.addView(lastPageButton, params);
     	d.setContentView(contents);
     	d.show();
     }
