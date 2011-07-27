@@ -133,7 +133,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * For example, if we determine that 200x400 image fits screen best, but PDF's pages are 400x800, then
 	 * base scaling would be 0.5, since at base scalling, without any zoom, page should fit into screen nicely.
 	 */
-	private float scalling0 = 0f;
+	private float scaling0 = 0f;
 	
 	/**
 	 * Page sized obtained from pages provider.
@@ -219,8 +219,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		super.onSizeChanged(w, h, oldw, oldh);
 		this.width = w;
 		this.height = h;
-		if (this.scalling0 == 0f) {
-			this.scalling0 = Math.min(
+		if (this.scaling0 == 0f) {
+			this.scaling0 = Math.min(
 					((float)this.height - 2*MARGIN) / (float)this.pageSizes[0][1],
 					((float)this.width - 2*MARGIN) / (float)this.pageSizes[0][0]);
 		}
@@ -235,7 +235,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		if (this.pagesProvider != null) {
 			this.pageSizes = this.pagesProvider.getPageSizes();
 			if (this.width > 0 && this.height > 0) {
-				this.scalling0 = Math.min(
+				this.scaling0 = Math.min(
 						((float)this.height - 2*MARGIN) / (float)this.pageSizes[0][1],
 						((float)this.width - 2*MARGIN) / (float)this.pageSizes[0][0]);
 				this.left = this.width / 2;
@@ -263,7 +263,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 */
 	private int getCurrentPageWidth(int pageno) {
 		float realpagewidth = (float)this.pageSizes[pageno][this.rotation % 2 == 0 ? 0 : 1];
-		float currentpagewidth = realpagewidth * scalling0 * (this.zoomLevel*0.001f);
+		float currentpagewidth = realpagewidth * scaling0 * (this.zoomLevel*0.001f);
 		return (int)currentpagewidth;
 	}
 	
@@ -273,7 +273,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 */
 	private float getCurrentPageHeight(int pageno) {
 		float realpageheight = (float)this.pageSizes[pageno][this.rotation % 2 == 0 ? 1 : 0];
-		float currentpageheight = realpageheight * scalling0 * (this.zoomLevel*0.001f);
+		float currentpageheight = realpageheight * scaling0 * (this.zoomLevel*0.001f);
 		return currentpageheight;
 	}
 	
@@ -392,7 +392,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 						
 							if (dst.intersects(0, 0, this.width, (int)(renderAhead*this.height))) {
 
-								Tile tile = new Tile(i, (int)(this.zoomLevel * scalling0), 
+								Tile tile = new Tile(i, (int)(this.zoomLevel * scaling0), 
 										tileix*tileSizes[0], tileiy*tileSizes[1], this.rotation,
 										tileSizes[0], tileSizes[1]);
 								if (dst.intersects(0, 0, this.width, this.height)) {
@@ -473,7 +473,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			Point pagePosition = this.getPagePositionOnScreen(findResult.page);
 			float pagex = pagePosition.x;
 			float pagey = pagePosition.y;
-			float z = (this.scalling0 * (float)this.zoomLevel * 0.001f);
+			float z = (this.scaling0 * (float)this.zoomLevel * 0.001f);
 			while(i.hasNext()) {
 				r = i.next();
 				canvas.drawLine(
@@ -627,6 +627,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 */
 	public void onImagesRendered(Map<Tile,Bitmap> renderedTiles) {
 		Log.d(TAG, "there are " + renderedTiles.size() + " new rendered tiles");
+		
 		this.post(new Runnable() {
 			public void run() {
 				PagesView.this.invalidate();
@@ -794,8 +795,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		
 		float margin = this.getCurrentMargin();
 	
-		this.left = (int)(x * scalling0 * this.zoomLevel * 0.001f + margin);
-		this.top = (int)(y * scalling0 * this.zoomLevel * 0.001f + (page+1)*margin);
+		this.left = (int)(x * scaling0 * this.zoomLevel * 0.001f + margin);
+		this.top = (int)(y * scaling0 * this.zoomLevel * 0.001f + (page+1)*margin);
 	}
 	
 	/**
