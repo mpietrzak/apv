@@ -129,9 +129,9 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	private int rotation = 0;
 	
 	/**
-	 * Base scalling factor - how much shrink (or grow) page to fit it nicely to screen at zoomLevel = 1000.
+	 * Base scaling factor - how much shrink (or grow) page to fit it nicely to screen at zoomLevel = 1000.
 	 * For example, if we determine that 200x400 image fits screen best, but PDF's pages are 400x800, then
-	 * base scaling would be 0.5, since at base scalling, without any zoom, page should fit into screen nicely.
+	 * base scaling would be 0.5, since at base scaling, without any zoom, page should fit into screen nicely.
 	 */
 	private float scaling0 = 0f;
 	
@@ -856,6 +856,15 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		this.top *= step;
 		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
 		this.invalidate();
+	}
+
+	/* zoom to width */
+	public void zoomWidth() {
+		int page = currentPage < 0 ? 0 : currentPage;
+		int pageWidth = getCurrentPageWidth(page);
+		this.zoomLevel = 1000*this.width /pageWidth;
+		this.left = this.width/2;
+		this.invalidate();		
 	}
 
 	/**

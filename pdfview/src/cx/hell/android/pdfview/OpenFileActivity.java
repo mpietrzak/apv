@@ -89,6 +89,7 @@ public class OpenFileActivity extends Activity {
 
 	// zoom buttons, layout and fade animation
 	private ImageButton zoomDownButton;
+	private ImageButton zoomWidthButton;
 	private ImageButton zoomUpButton;
 	private Animation zoomAnim;
 	private LinearLayout zoomLayout;
@@ -157,7 +158,11 @@ public class OpenFileActivity extends Activity {
 		zoomDownButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_down));
 		zoomDownButton.setBackgroundColor(Color.TRANSPARENT);
 		zoomLayout.addView(zoomDownButton, (int)(80 * metrics.density), (int)(50 * metrics.density));	// TODO: remove hardcoded values
-		zoomUpButton = new ImageButton(this);
+		zoomWidthButton = new ImageButton(this);
+		zoomWidthButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_width));
+		zoomWidthButton.setBackgroundColor(Color.TRANSPARENT);
+		zoomLayout.addView(zoomWidthButton, (int)(58 * metrics.density), (int)(50 * metrics.density));
+		zoomUpButton = new ImageButton(this);		
 		zoomUpButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_up));
 		zoomUpButton.setBackgroundColor(Color.TRANSPARENT);
 		zoomLayout.addView(zoomUpButton, (int)(80 * metrics.density), (int)(50 * metrics.density));
@@ -173,7 +178,6 @@ public class OpenFileActivity extends Activity {
         this.pageNumberTextView.setBackgroundColor(invert ? Color.BLACK : Color.WHITE);
         this.pageNumberTextView.setTextColor(invert ? Color.WHITE : Color.BLACK);
         this.pageNumberTextView.setTextSize(8f*metrics.density);
-        this.pageNumberTextView.setVisibility(View.GONE);
         lp = new RelativeLayout.LayoutParams(
         		RelativeLayout.LayoutParams.WRAP_CONTENT, 
         		RelativeLayout.LayoutParams.WRAP_CONTENT);
@@ -262,6 +266,11 @@ public class OpenFileActivity extends Activity {
     	this.zoomDownButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				pagesView.zoomDown();
+			}
+    	});
+    	this.zoomWidthButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				pagesView.zoomWidth();
 			}
     	});
     	this.zoomUpButton.setOnClickListener(new View.OnClickListener() {
@@ -364,7 +373,6 @@ public class OpenFileActivity extends Activity {
 		pageNumberAnim.setFillAfter(true);
 		pageNumberTextView.setText(""+(this.pagesView.getCurrentPage()+1)+"/"+
 				this.pdfPagesProvider.getPageCount());
-        pageNumberTextView.setVisibility(View.VISIBLE);
 		pageNumberTextView.startAnimation(pageNumberAnim);     	
     }
     

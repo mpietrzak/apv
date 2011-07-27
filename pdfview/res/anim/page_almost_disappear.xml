@@ -2,5 +2,5 @@
 <set xmlns:android="http://schemas.android.com/apk/res/android"
 	android:interpolator="@android:anim/accelerate_interpolator">
 	<alpha android:fromAlpha="1.0" android:toAlpha="0.1"
-		android:startOffset="7000" android:duration="1000" />
+		android:duration="1000" />
 </set>
