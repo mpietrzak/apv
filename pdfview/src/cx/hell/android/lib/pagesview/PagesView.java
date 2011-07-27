@@ -51,6 +51,11 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 */
 	private final static int MARGIN = 10;
 	
+	/* This is for adjusting how far we are allowed to scroll beyond
+	 * the limits of the document.
+	 */
+	private final static float scrollMargin = 0.1f;
+	
 	/* zoom steps */
 	float step = 1.414f;
 	
@@ -69,6 +74,9 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	private long lastControlsUseMillis = 0;
 	
 	private boolean invert = false;
+	
+	private float maxRealPageSize[] = {0f, 0f};
+	private float realDocumentSize[] = {0f, 0f};
 	
 	/**
 	 * Current width of this view.
@@ -234,6 +242,19 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		this.pagesProvider = pagesProvider;
 		if (this.pagesProvider != null) {
 			this.pageSizes = this.pagesProvider.getPageSizes();
+			
+			maxRealPageSize[0] = 0f;
+			maxRealPageSize[1] = 0f;
+			realDocumentSize[0] = 0f;
+			realDocumentSize[1] = 0f;
+			
+			for (int i = 0; i < this.pageSizes.length; i++) 
+				for (int j = 0; j<2; j++) {
+					if (pageSizes[i][j] > maxRealPageSize[j])
+						maxRealPageSize[j] = pageSizes[i][j];
+					realDocumentSize[j] += pageSizes[i][j]; 
+				}
+			
 			if (this.width > 0 && this.height > 0) {
 				this.scaling0 = Math.min(
 						((float)this.height - 2*MARGIN) / (float)this.pageSizes[0][1],
@@ -255,6 +276,32 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	public void onDraw(Canvas canvas) {
 		this.drawPages(canvas);
 		if (this.findMode) this.drawFindResults(canvas);
+	}
+	
+	/**
+	 * Get current maximum page width by page number taking into account zoom and rotation
+	 */
+	private int getCurrentMaxPageWidth() {
+		float realpagewidth = this.maxRealPageSize[this.rotation % 2 == 0 ? 0 : 1];
+		return (int)(realpagewidth * scaling0 * (this.zoomLevel*0.001f));
+	}
+	
+	/**
+	 * Get current maximum page height by page number taking into account zoom and rotation
+	 */
+	private int getCurrentMaxPageHeight() {
+		float realpageheight = this.maxRealPageSize[this.rotation % 2 == 0 ? 1 : 0];
+		return (int)(realpageheight * scaling0 * (this.zoomLevel*0.001f));
+	}
+	
+	/**
+	 * Get current maximum page width by page number taking into account zoom and rotation
+	 */
+	private int getCurrentDocumentHeight() {
+		float realheight = this.realDocumentSize[this.rotation % 2 == 0 ? 1 : 0];
+		/* we add pageSizes.length to account for round-off issues */
+		return (int)(realheight * scaling0 * (this.zoomLevel*0.001f) +  
+			pageSizes.length * this.getCurrentMargin());
 	}
 	
 	/**
@@ -350,6 +397,25 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			viewy0 = top - dragoffy - height/2;
 			
 			int pageCount = this.pageSizes.length;
+			
+			/* We now adjust the position to make sure we don't scroll too
+			 * far away from the document text.
+			 */
+			int oldviewx0 = viewx0;
+			int oldviewy0 = viewy0;
+			
+			viewx0 = adjustPosition(viewx0, width, 
+					(int)(scrollMargin*getCurrentMaxPageWidth()),  
+					getCurrentMaxPageWidth());
+			viewy0 = adjustPosition(viewy0, height, 
+					(int)(scrollMargin*getCurrentMaxPageHeight()),
+					getCurrentDocumentHeight());
+			
+			if (!inDrag) {
+				left += viewx0 - oldviewx0;
+				top += viewy0 - oldviewy0;
+			}
+			
 			float currpageoff = currentMargin;
 			
 			this.currentPage = -1;
@@ -915,5 +981,26 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			return minSize;
 		else
 			return proposedSize;
+	}
+	
+	private int adjustPosition(int pos, int screenDim, int margin, int docDim) {
+		if (docDim <= screenDim) {
+			/* all pages can and should fit */
+			if (0 < pos)
+				pos = 0;
+			if (pos + screenDim < docDim) {
+				pos = docDim - screenDim;
+			}
+		}
+		else {
+			/* document is too wide/tall to fit */
+			if (pos + screenDim > docDim+margin)
+				pos = margin + docDim - screenDim; 
+			if (pos < -margin)
+				pos = -margin;
+			
+		}
+		
+		return pos;
 	}
 }
