@@ -183,17 +183,17 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	};
 	
 	private static final float[] grayDrawMatrix = {
-		0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
+		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
+		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
+		0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 	};
 	
 	private static final float[] grayInvertMatrix = {
-		0.0f, 0.0f, 0.0f, -1.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, -1.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, -1.0f, 255.0f,
 		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
+		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
+		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
+		0.0f, 0.0f, 0.0f, -1.0f, 255.0f,
 	};
 	
 	/**
@@ -500,17 +500,33 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	private void drawBitmap(Canvas canvas, Bitmap b, Rect src, Rect dst) {
 		if (invert || b.getConfig() == Bitmap.Config.ALPHA_8) {
 			Paint paint = new Paint();
+			Bitmap out;
+			Bitmap tmp = null;
 
 			float[] matrix;
 			
-			if (b.getConfig() == Bitmap.Config.ALPHA_8)
-				matrix = invert ? grayInvertMatrix : grayDrawMatrix;
-			else
+			out = b;
+			
+			if (b.getConfig() == Bitmap.Config.ALPHA_8) {
+				if (invert) {
+					matrix = grayInvertMatrix;
+					out = b.copy(Bitmap.Config.ARGB_8888, false);					
+				}
+				else {
+					matrix = grayDrawMatrix;
+					out = b.copy(Bitmap.Config.ARGB_8888, false);					
+				}
+			}
+			else {
 				matrix = rgbInvertMatrix;
+			}
 			
 			paint.setColorFilter(new 
 					ColorMatrixColorFilter(new ColorMatrix(matrix)));
-			canvas.drawBitmap(b, src, dst, paint);
+			canvas.drawBitmap(out, src, dst, paint);
+			if (out != b) {
+				out.recycle();
+			}
 		}
 		else {
 			canvas.drawBitmap(b, src, dst, null);
