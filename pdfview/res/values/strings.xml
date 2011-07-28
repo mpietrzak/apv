@@ -111,4 +111,24 @@
 	<string name="gray">Grayscale</string>
 	<string name="gray_sub">No colors, slightly slower, but uses less memory.</string>
 	<string name="page">Page</string>
+	<string name="color_mode">Color mode</string>
+	<string-array name="color_mode_labels">
+		<item>Normal color</item>
+		<item>Inverted color</item>
+		<item>Normal black and white</item>
+		<item>Inverted black and white</item>
+		<item>Black on yellowish</item>
+		<item>Green on black</item>
+		<item>Red on black</item>
+	</string-array>
+	<string-array name="color_modes">
+		<item>0</item>
+		<item>1</item>
+		<item>2</item>
+		<item>3</item>
+		<item>4</item>
+		<item>5</item>
+		<item>6</item>
+	</string-array>
+	<string name="default_color_mode">0</string> 
 </resources>
