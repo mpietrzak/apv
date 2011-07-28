@@ -11,15 +11,12 @@
     	android:title="@string/fullscreen"
     	android:defaultValue="false"
     	android:key="fullscreen"/>
-    <CheckBoxPreference
-    	android:title="@string/gray"
-    	android:summary="@string/gray_sub"
-    	android:defaultValue="false"
-    	android:key="gray"/>
-    <CheckBoxPreference
-    	android:title="@string/invert"
-    	android:defaultValue="false"
-    	android:key="invert"/>
+    <ListPreference
+    	android:title="@string/color_mode"
+    	android:defaultValue="@string/default_color_mode"
+    	android:entries="@array/color_mode_labels"
+    	android:entryValues="@array/color_modes"
+    	android:key="colorMode"/>
     <ListPreference
     	android:title="@string/zoom_increment"
     	android:defaultValue="@string/default_zoom_increment"

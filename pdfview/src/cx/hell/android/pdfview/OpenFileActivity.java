@@ -100,7 +100,7 @@ public class OpenFileActivity extends Activity {
 
 	private int fadeStartOffset = 7000; 
 	
-	private Boolean invert = false;
+	private int colorMode = Options.COLOR_MODE_NORMAL;
 	
     /**
      * Called when the activity is first created.
@@ -124,8 +124,9 @@ public class OpenFileActivity extends Activity {
         // the PDF view
         this.pagesView = new PagesView(this);
         this.pdf = this.getPDF();
-        this.pdfPagesProvider = new PDFPagesProvider(pdf, 
-        		PreferenceManager.getDefaultSharedPreferences(this).getBoolean(Options.PREF_GRAY, false));
+        this.colorMode = Options.getColorMode(
+				PreferenceManager.getDefaultSharedPreferences(this));
+        this.pdfPagesProvider = new PDFPagesProvider(pdf, Options.isGray(this.colorMode));
         pagesView.setPagesProvider(pdfPagesProvider);
         layout.addView(pagesView);
         
@@ -175,8 +176,6 @@ public class OpenFileActivity extends Activity {
 		layout.addView(zoomLayout,lp);
 		
         this.pageNumberTextView = new TextView(this);
-        this.pageNumberTextView.setBackgroundColor(invert ? Color.BLACK : Color.WHITE);
-        this.pageNumberTextView.setTextColor(invert ? Color.WHITE : Color.BLACK);
         this.pageNumberTextView.setTextSize(8f*metrics.density);
         lp = new RelativeLayout.LayoutParams(
         		RelativeLayout.LayoutParams.WRAP_CONTENT, 
@@ -213,13 +212,15 @@ public class OpenFileActivity extends Activity {
 		
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
 
-		this.pdfPagesProvider.setGray(options.getBoolean(Options.PREF_GRAY, false));
+        this.colorMode = Options.getColorMode(options);
+        this.pageNumberTextView.setBackgroundColor(Options.getBackColor(colorMode));
+        this.pageNumberTextView.setTextColor(Options.getForeColor(colorMode));
+        this.pdfPagesProvider.setGray(Options.isGray(this.colorMode));
+		pagesView.setColorMode(this.colorMode);
 		
 		pagesView.setZoomIncrement(
 				Float.parseFloat(options.getString(Options.PREF_ZOOM_INCREMENT, "1.414")));
 		pagesView.setRenderAhead(options.getBoolean(Options.PREF_RENDER_AHEAD, true));
-		this.invert = options.getBoolean(Options.PREF_INVERT, false);
-		pagesView.setInvert(this.invert);
 		pagesView.setPageWithVolume(options.getBoolean(Options.PREF_PAGE_WITH_VOLUME, true));
 		pagesView.invalidate();
 		zoomAnim = AnimationUtils.loadAnimation(this,

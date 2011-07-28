@@ -5,6 +5,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import cx.hell.android.pdfview.Options;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -15,7 +17,6 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.os.SystemClock;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -73,7 +74,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	@SuppressWarnings("unused")
 	private long lastControlsUseMillis = 0;
 	
-	private boolean invert = false;
+	private int colorMode;
 	
 	private float maxRealPageSize[] = {0f, 0f};
 	private float realDocumentSize[] = {0f, 0f};
@@ -173,28 +174,6 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * avoid too much allocations in rectsintersect()
 	 */
 	private static Rect r1 = new Rect();
-	
-	
-	private static final float[] rgbInvertMatrix = {
-				-1.0f, 0.0f, 0.0f, 0.0f, 255.0f,
-				0.0f, -1.0f, 0.0f, 0.0f, 255.0f,
-				0.0f, 0.0f, -1.0f, 0.0f, 255.0f,
-				0.0f, 0.0f, 0.0f, 0.0f, 255.0f 
-	};
-	
-	private static final float[] grayDrawMatrix = {
-		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-	};
-	
-	private static final float[] grayInvertMatrix = {
-		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, -1.0f, 255.0f,
-	};
 	
 	/**
 	 * Construct this view.
@@ -498,33 +477,24 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	}
 		
 	private void drawBitmap(Canvas canvas, Bitmap b, Rect src, Rect dst) {
-		if (invert || b.getConfig() == Bitmap.Config.ALPHA_8) {
+		if (colorMode != Options.COLOR_MODE_NORMAL) {
 			Paint paint = new Paint();
 			Bitmap out;
-			Bitmap tmp = null;
-
-			float[] matrix;
-			
-			out = b;
 			
 			if (b.getConfig() == Bitmap.Config.ALPHA_8) {
-				if (invert) {
-					matrix = grayInvertMatrix;
-					out = b.copy(Bitmap.Config.ARGB_8888, false);					
-				}
-				else {
-					matrix = grayDrawMatrix;
-					out = b.copy(Bitmap.Config.ARGB_8888, false);					
-				}
+				out = b.copy(Bitmap.Config.ARGB_8888, false);
 			}
 			else {
-				matrix = rgbInvertMatrix;
+				out = b;
 			}
 			
 			paint.setColorFilter(new 
-					ColorMatrixColorFilter(new ColorMatrix(matrix)));
+					ColorMatrixColorFilter(new ColorMatrix(
+							Options.getColorModeMatrix(this.colorMode))));
+
 			canvas.drawBitmap(out, src, dst, paint);
-			if (out != b) {
+			
+			if (b.getConfig() == Bitmap.Config.ALPHA_8) {
 				out.recycle();
 			}
 		}
@@ -961,8 +931,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	}
 	
 	
-	public void setInvert(boolean invert) {
-		this.invert = invert;
+	public void setColorMode(int colorMode) {
+		this.colorMode = colorMode;
 		this.invalidate();
 	}
 
