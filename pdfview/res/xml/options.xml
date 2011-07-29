@@ -58,7 +58,7 @@
     android:title="@string/selector">
     <CheckBoxPreference
     	android:title="@string/dirs_first"
-    	android:defaultValue="false"
+    	android:defaultValue="true"
     	android:key="dirsFirst"/>
     <CheckBoxPreference
     	android:title="@string/show_extension"
