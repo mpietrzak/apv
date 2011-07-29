@@ -9,11 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 import android.graphics.Bitmap;
-import android.os.SystemClock;
 import android.util.Log;
 import cx.hell.android.lib.pagesview.OnImageRenderedListener;
 import cx.hell.android.lib.pagesview.PagesProvider;
-import cx.hell.android.lib.pagesview.PagesView;
 import cx.hell.android.lib.pagesview.RenderingException;
 import cx.hell.android.lib.pagesview.Tile;
 
