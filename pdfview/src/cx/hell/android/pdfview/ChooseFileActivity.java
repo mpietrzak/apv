@@ -10,6 +10,7 @@ import java.util.Comparator;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -38,16 +39,18 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 	private final static String TAG = "cx.hell.android.pdfview";
 	private final static String PREF_TAG = "ChooseFileActivity";
 	private final static String PREF_HOME = "Home";
-	private final static int HOME_POSITION = 0;
-	private final static int RECENT_START = 1;
+	
+	private final static int[] recentIds = {
+		R.id.recent1, R.id.recent2, R.id.recent3, R.id.recent4, R.id.recent5 
+	};
 	
 	private String currentPath;
 	
 	private TextView pathTextView = null;
 	private ListView filesListView = null;
 	private FileFilter fileFilter = null;
-	private ArrayAdapter<String> fileListAdapter = null;
-	private ArrayList<String> fileList = null;
+	private ArrayAdapter<FileListEntry> fileListAdapter = null;
+	private ArrayList<FileListEntry> fileList = null;
 	private Recent recent = null;
 	
 	private MenuItem aboutMenuItem = null;
@@ -55,7 +58,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 	private MenuItem deleteMenuItem = null;
 	private MenuItem optionsMenuItem = null;
 	
-	private Boolean dirsFirst = false;
+	private Boolean dirsFirst = true;
 	private Boolean showExtension = false;
 
     @Override
@@ -75,8 +78,8 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	this.pathTextView = (TextView) this.findViewById(R.id.path);
     	this.filesListView = (ListView) this.findViewById(R.id.files);
     	final Activity activity = this;
-    	this.fileList = new ArrayList<String>();
-    	this.fileListAdapter = new ArrayAdapter<String>(this, 
+    	this.fileList = new ArrayList<FileListEntry>();
+    	this.fileListAdapter = new ArrayAdapter<FileListEntry>(this, 
 				R.layout.onelinewithicon, fileList) {
 			public View getView(int position, View convertView, ViewGroup parent) {
 				View v;				
@@ -88,44 +91,37 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 					v = convertView;
 				}
 				
-				String label = fileList.get(position);
-				
-				if (!showExtension && label.length() > 4 &&
-						isFilePosition(position) && 
-						label.substring(label.length()-4, label.length()).equalsIgnoreCase(".pdf")) {
-					label = label.substring(0, label.length()-4);
-				}
+				FileListEntry entry = fileList.get(position);
 				
 				v.findViewById(R.id.home).setVisibility(
-						position==HOME_POSITION?View.VISIBLE:View.GONE );
+						entry.getType() == FileListEntry.HOME ? View.VISIBLE:View.GONE );
 				v.findViewById(R.id.upfolder).setVisibility(
-						fileList.get(position).equals("..")?View.VISIBLE:View.GONE );
+						entry.isUpFolder() ? View.VISIBLE:View.GONE );
 				v.findViewById(R.id.folder).setVisibility(
-						(isDirPosition(position) && !
-								fileList.get(position).equals(".."))?View.VISIBLE:View.GONE );
-				v.findViewById(R.id.recent1).setVisibility(
-						(isRecentPosition(position)&&position==RECENT_START+0)
-						?View.VISIBLE:View.GONE );
-				v.findViewById(R.id.recent2).setVisibility(
-						(isRecentPosition(position)&&position==RECENT_START+1)
-						?View.VISIBLE:View.GONE );
-				v.findViewById(R.id.recent3).setVisibility(
-						(isRecentPosition(position)&&position==RECENT_START+2)
-						?View.VISIBLE:View.GONE );
-				v.findViewById(R.id.recent4).setVisibility(
-						(isRecentPosition(position)&&position==RECENT_START+3)
-						?View.VISIBLE:View.GONE );
-				v.findViewById(R.id.recent5).setVisibility(
-						(isRecentPosition(position)&&position==RECENT_START+4)
-						?View.VISIBLE:View.GONE ); 
-			
-				((TextView)v.findViewById(R.id.text)).setText(label);
+						(entry.getType() == FileListEntry.NORMAL &&
+							 entry.isDirectory() &&
+						     ! entry.isUpFolder()) ? View.VISIBLE:View.GONE );
+				
+				int r = entry.getRecentNumber();
+				
+				for (int i=0; i < recentIds.length; i++) {
+					v.findViewById(recentIds[i]).setVisibility(
+							i == r ? View.VISIBLE : View.GONE);
+				}
+
+				TextView tv = (TextView)v.findViewById(R.id.text);
+				
+				tv.setText(entry.getLabel());
+				tv.setTypeface(tv.getTypeface(), 
+						entry.getType() == FileListEntry.RECENT ? Typeface.ITALIC :
+							Typeface.NORMAL);
 
 				return v;
 			}				
     	};
        	this.filesListView.setAdapter(this.fileListAdapter);
     	this.filesListView.setOnItemClickListener(this);
+    	
     	registerForContextMenu(this.filesListView);
     }
     
@@ -135,9 +131,33 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     private void update() {
     	this.pathTextView.setText(this.currentPath);
     	this.fileListAdapter.clear();
-    	this.fileListAdapter.add(getResources().getString(R.string.go_home));
-    	if (!this.currentPath.equals("/"))
-    		this.fileListAdapter.add("..");
+    	
+    	FileListEntry entry;
+    	
+    	if (isHome(currentPath)) {
+    		recent = new Recent(this);
+    		
+        	for (int i = 0; i < recent.size() && i < recentIds.length; i++) {
+        		File file = new File(recent.get(i));
+        		
+        		entry = new FileListEntry(FileListEntry.RECENT, i, file, showExtension);
+        		this.fileList.add(entry);
+        	}
+    	}
+    	else {
+    		recent = null;
+    	}
+
+    	entry = new FileListEntry(FileListEntry.HOME, 
+    			      getResources().getString(R.string.go_home));
+    	this.fileListAdapter.add(entry);
+    	
+    	if (!this.currentPath.equals("/")) {
+    		File upFolder = new File(this.currentPath).getParentFile();
+    		entry = new FileListEntry(FileListEntry.NORMAL,
+    				-1, upFolder, "..");
+    		this.fileListAdapter.add(entry);
+    	}
     	
     	File files[] = new File(this.currentPath).listFiles(this.fileFilter);
 
@@ -164,21 +184,12 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 	    		throw new RuntimeException("failed to sort file list " + files + " for path " + this.currentPath, e);
 	    	}
 	    	
-	    	for(int i = 0; i < files.length; ++i) this.fileListAdapter.add(files[i].getName());
+	    	for (File file:files) {
+	    		entry = new FileListEntry(FileListEntry.NORMAL, -1, file, showExtension);
+	    		this.fileListAdapter.add(entry);
+	    	}
     	}
-    	
-    	if (isHome(currentPath)) {
-    		recent = new Recent(this);
-    		
-        	for (int i = 0; i < recent.size(); i++) {
-        		this.fileListAdapter.insert((new File(recent.get(i))).getName(), 
-        				RECENT_START+i);
-        	}
-    	}
-    	else {
-    		recent = null;
-    	}
-    	
+
     	this.filesListView.setSelection(0);
     }
     
@@ -189,38 +200,6 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 		intent.setClass(this, OpenFileActivity.class);
 		intent.setAction("android.intent.action.VIEW");
 		this.startActivity(intent);
-    }
-    
-    private boolean isRegularPosition(int position) {
-    	if (recent == null)
-    		return RECENT_START <= position;
-    	else
-    		return RECENT_START+recent.size() <= position;
-    }
-    
-    private boolean isFilePosition(int position) {
-    	return isRecentPosition(position) ||
-    			(isRegularPosition(position) && ! isDirPosition(position));     	
-    }
-    
-    private boolean isDirPosition(int position) {
-    	return isRegularPosition(position) &&
-    			(new File(currentPath, fileList.get(position))).isDirectory();
-    }
-    
-    private boolean isRecentPosition(int position) {
-    	return recent != null && RECENT_START <= position &&
-    			position < RECENT_START+recent.size();
-    }
-
-    private boolean isHome(String path) {
-    	File pathFile = new File(path);
-    	File homeFile = new File(getHome());
-    	try {
-			return pathFile.getCanonicalPath().equals(homeFile.getCanonicalPath());
-		} catch (IOException e) {
-			return false;
-		}
     }
     
     private String getHome() {
@@ -241,31 +220,20 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     
     @SuppressWarnings("rawtypes")
 	public void onItemClick(AdapterView parent, View v, int position, long id) {
+    	FileListEntry clickedEntry = this.fileList.get(position);
     	File clickedFile;
-    	
-    	if (position == HOME_POSITION) {
+
+    	if (clickedEntry.getType() == FileListEntry.HOME) {
     		clickedFile = new File(getHome());
     	}
-    	else if (isRecentPosition(position)) {
-    		clickedFile = new File(recent.get(position-RECENT_START));
-    	}
     	else {
-    		String filename = (String) this.filesListView.getItemAtPosition(position);
-    		clickedFile = null;
-    		
-    		if (filename.equals("..")) {
-    			clickedFile = (new File(this.currentPath)).getParentFile();
-    		}
-    		else {
-    			clickedFile = new File(this.currentPath, filename);
-    		}
+    		clickedFile = clickedEntry.getFile();
     	}
     	
     	if (!clickedFile.exists())
     		return;
     	
     	if (clickedFile.isDirectory()) {
-    		Log.d(TAG, "change dir to " + clickedFile);
     		this.currentPath = clickedFile.getAbsolutePath();
     		this.update();
     	} else {
@@ -307,7 +275,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	
     	Options.setOrientation(this);
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);		
-		dirsFirst = options.getBoolean(Options.PREF_DIRS_FIRST, false);
+		dirsFirst = options.getBoolean(Options.PREF_DIRS_FIRST, true);
 		showExtension = options.getBoolean(Options.PREF_SHOW_EXTENSION, false);
     	
     	this.update();
@@ -318,25 +286,32 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	int position =  
     		((AdapterView.AdapterContextMenuInfo)item.getMenuInfo()).position;
     	if (item == deleteMenuItem) {
-    		if (isRecentPosition(position)) {
-    			recent.remove(position - RECENT_START);
+    		FileListEntry entry = this.fileList.get(position);
+    		if (entry.getType() == FileListEntry.RECENT) {
+    			recent.remove(entry.getRecentNumber());
     			recent.commit();
     			update();
     		}
-    		else if (position != HOME_POSITION) {
-    			File clickedFile = new File(this.currentPath, 
-    					(String) this.filesListView.getItemAtPosition(position));
-    			if (! clickedFile.isDirectory()) {
-    				clickedFile.delete();
-    				update();
-    			}
-    		}
-    		
+    		else if (entry.getType() == FileListEntry.NORMAL &&
+    				! entry.isDirectory()) {
+    			entry.getFile().delete();
+    			update();
+    		}    		
     		return true;
     	}
     	return false;
     }
-    	
+    
+    
+    private boolean isHome(String path) {
+        File pathFile = new File(path);
+        File homeFile = new File(getHome());
+        try {
+                        return pathFile.getCanonicalPath().equals(homeFile.getCanonicalPath());
+                } catch (IOException e) {
+                        return false;
+                }
+    }
     
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
