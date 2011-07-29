@@ -955,7 +955,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	public void zoomWidth() {
 		int page = currentPage < 0 ? 0 : currentPage;
 		int pageWidth = getCurrentPageWidth(page);
-		this.zoomLevel = 1000*this.width /pageWidth;
+		this.top = (this.top - this.height / 2) * this.width / pageWidth + this.height / 2;
+		this.zoomLevel = this.zoomLevel * this.width / pageWidth;
 		this.left = this.width/2;
 		this.invalidate();		
 	}
