@@ -16,7 +16,6 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.text.InputType;
 import android.util.DisplayMetrics;
@@ -128,6 +127,9 @@ public class OpenFileActivity extends Activity {
 				PreferenceManager.getDefaultSharedPreferences(this));
         this.pdfPagesProvider = new PDFPagesProvider(pdf, Options.isGray(this.colorMode));
         pagesView.setPagesProvider(pdfPagesProvider);
+        Bookmark b = new Bookmark(this.getApplicationContext()).open();
+        pagesView.setStartBookmark(b, filePath);
+        b.close();
         layout.addView(pagesView);
         
         // the find buttons
@@ -188,7 +190,7 @@ public class OpenFileActivity extends Activity {
         this.setContentView(layout);
         
         // go to last viewed page
-        gotoLastPage();
+//        gotoLastPage();
         
         // send keyboard events to this view
         pagesView.setFocusable(true);
@@ -460,12 +462,13 @@ public class OpenFileActivity extends Activity {
     	d.show();
     }
     
-    private void gotoPage(int page, int zoom) {
+    private void gotoPage(int page, int zoom, int rotation) {
     	Log.i(TAG, "rewind to page " + page);
     	if (this.pagesView != null) {
     		this.pagesView.scrollToPage(page);
     		if (zoom > 0)
     			this.pagesView.setZoomLevel(zoom);
+    		this.pagesView.setRotation(rotation);
             showAnimated();
     	}
     }
@@ -475,31 +478,16 @@ public class OpenFileActivity extends Activity {
      * @param page page number, 0-based
      */
     private void gotoPage(int page) {
-    	gotoPage(page, this.pagesView.getCurrentZoom());
+    	gotoPage(page, this.pagesView.getCurrentZoom(), this.pagesView.getRotation());
     }
     
-    /**
-     * Goto the last open page if possible
-     */
-    private void gotoLastPage() {
-    	Log.v(TAG, "getting last page for "+filePath);
-        Bookmark b = new Bookmark(this.getApplicationContext()).open();
-        int lastpage = b.getLastPage(filePath);
-        int zoom = b.getLastZoom(filePath);
-        b.close();
-        if (lastpage > 0) {
-        	Handler mHandler = new Handler();
-        	Runnable mUpdateTimeTask = new GotoPageThread(lastpage, zoom);
-        	mHandler.postDelayed(mUpdateTimeTask, 2000);
-        }    	
-    }
-
-    /**
+   /**
      * Save the last page in the bookmarks
      */
     private void saveLastPage() {
         Bookmark b = new Bookmark(this.getApplicationContext()).open();
-        b.setLast(filePath, pagesView.getCurrentPage(), pagesView.getCurrentZoom());
+        b.setLast(filePath, pagesView.getCurrentPage(), pagesView.getCurrentZoom(),
+        		pagesView.getRotation());
         b.close();
         Log.i(TAG, "last page saved for "+filePath);    
     }
@@ -527,23 +515,6 @@ public class OpenFileActivity extends Activity {
     	return true;
     }
         
-	/**
-	 * Thread to delay the gotoPage action when opening a PDF file
-	 */
-	private class GotoPageThread implements Runnable {
-		int page;
-		int zoom;
-
-		public GotoPageThread(int page, int zoom) {
-			this.page = page;
-			this.zoom = zoom;
-		}
-
-		public void run() {
-			gotoPage(page, zoom);
-		}
-	}
-
     /**
      * Prepare menu contents.
      * Hide or show "Clear find results" menu item depending on whether

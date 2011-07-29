@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import cx.hell.android.pdfview.Bookmark;
 import cx.hell.android.pdfview.Options;
 
 import android.app.Activity;
@@ -175,6 +176,12 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 */
 	private static Rect r1 = new Rect();
 	
+
+	/**
+	 * Bookmarked page to go to.
+	 */
+	private int bookmarkedPage = 0;
+	
 	/**
 	 * Construct this view.
 	 * @param activity parent activity
@@ -190,7 +197,24 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		this.findResultsPaint.setStrokeWidth(3);
 		this.setOnTouchListener(this);
 		this.setOnKeyListener(this);
-		activity.setDefaultKeyMode(Activity.DEFAULT_KEYS_SEARCH_LOCAL);
+		activity.setDefaultKeyMode(Activity.DEFAULT_KEYS_SEARCH_LOCAL);		
+	}
+	
+	public void setStartBookmark(Bookmark b, String bookmarkName) {
+		if (b != null) {
+			this.rotation = b.getLastRotation(bookmarkName);
+
+			int zoom = b.getLastZoom(bookmarkName);
+			if (0<zoom) {
+				this.zoomLevel = zoom;
+			}
+			
+			int page = b.getLastPage(bookmarkName);
+			if (0<page) {
+				this.bookmarkedPage = page;
+				this.currentPage = page;
+			}
+		}
 	}
 		
 	/**
@@ -213,7 +237,14 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		}
 		if (oldw == 0 && oldh == 0) {
 			this.left = this.width / 2;
-			this.top = this.height / 2;
+
+			if (bookmarkedPage == 0) {
+				this.top  = this.height / 2;
+			}
+			else {
+				Point pos = getPagePositionInDocumentWithZoom(bookmarkedPage);
+				this.top = pos.y + this.height / 2;
+			}
 		}
 	}
 	
@@ -233,6 +264,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 						maxRealPageSize[j] = pageSizes[i][j];
 					realDocumentSize[j] += pageSizes[i][j]; 
 				}
+			
+			Log.v("BOOKMARK", "rds "+realDocumentSize[0]+" "+realDocumentSize[1]);
 			
 			if (this.width > 0 && this.height > 0) {
 				this.scaling0 = Math.min(
@@ -315,6 +348,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		float left = margin;
 		float top = 0;
 		for(int i = 0; i < page; ++i) {
+			Log.v("BOOKMARK", "page "+i+" "+this.getCurrentPageHeight(i));
 			top += this.getCurrentPageHeight(i);
 		}
 		top += (page+1) * margin;
@@ -383,9 +417,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			int oldviewx0 = viewx0;
 			int oldviewy0 = viewy0;
 			
-			viewx0 = adjustPosition(viewx0, width, 
-					(int)(scrollMargin*getCurrentMaxPageWidth()),  
-					getCurrentMaxPageWidth());
+			viewx0 = adjustPosition(viewx0, width, 0, getCurrentMaxPageWidth());
 			viewy0 = adjustPosition(viewy0, height, 
 					(int)(scrollMargin*getCurrentMaxPageHeight()),
 					getCurrentDocumentHeight());
@@ -868,6 +900,15 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	}
 	
 	/**
+	 * Get the current rotation
+	 * 
+	 * @return the current rotation
+	 */
+	public int getRotation() {
+		return rotation;
+	}
+	
+	/**
 	 * Get page count.
 	 */
 	public int getPageCount() {
@@ -920,13 +961,25 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	}
 
 	/**
-	 * Zoom up one level
+	 * Set zoom
 	 */
 	public void setZoomLevel(int zoomLevel) {
 		if (this.zoomLevel == zoomLevel)
 			return;
 		this.zoomLevel = zoomLevel;
 		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
+		this.invalidate();
+	}
+	
+	
+	/**
+	 * Set rotation
+	 */
+	public void setRotation(int rotation) {
+		if (this.rotation == rotation)
+			return;
+		this.rotation = rotation;
+		Log.d(TAG, "rotation changed to " + this.rotation);
 		this.invalidate();
 	}
 	
