@@ -176,6 +176,7 @@ Java_cx_hell_android_pdfview_PDF_freeMemory(
 
     __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "jni freeMemory()");
 	pdf = (pdf_t*) (*env)->GetIntField(env, this, pdf_field_id);
+	(*env)->SetIntField(env, this, pdf_field_id, 0);
 
     if (pdf->pages) {
         int i;
@@ -188,9 +189,9 @@ Java_cx_hell_android_pdfview_PDF_freeMemory(
                 pdf->pages[i] = NULL;
             }
         }
-    }
 
-	(*env)->SetIntField(env, this, pdf_field_id, 0);
+        free(pdf->pages);
+    }
 
     /*
     if (pdf->textlines) {
@@ -216,6 +217,11 @@ Java_cx_hell_android_pdfview_PDF_freeMemory(
 
     /* pdf->fileno is dup()-ed in parse_pdf_fileno */
     if (pdf->fileno >= 0) close(pdf->fileno);
+    if (pdf->glyph_cache)
+        fz_free_glyph_cache(pdf->glyph_cache);
+    if (pdf->xref)
+        pdf_free_xref(pdf->xref);
+
     free(pdf);
 }
 
