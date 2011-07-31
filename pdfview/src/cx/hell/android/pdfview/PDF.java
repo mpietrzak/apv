@@ -132,6 +132,10 @@ public class PDF {
 	synchronized private native void freeMemory();
 	
 	public void finalize() {
+		try {
+			super.finalize();
+		} catch (Throwable e) {
+		}
 		this.freeMemory();
 	}
 }

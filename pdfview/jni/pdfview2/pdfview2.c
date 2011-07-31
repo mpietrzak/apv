@@ -813,7 +813,7 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     /*
     pdf_flushxref(pdf->xref, 0);
     */
-
+    
     page = get_page(pdf, pageno);
     if (!page) return NULL; /* TODO: handle/propagate errors */
 
@@ -860,8 +860,16 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
         return NULL;
     }
 
-
     fz_free_device(dev);
+
+    /* TODO: The better way to do this would be to kill the store
+       when it exceeds some fixed size, and even then not to kill it all at once, but age it
+       gracefully using pdf_age_store().  But killing it is better than nothing since otherwise
+       the store grows uncontrollably. */
+    if (pdf->xref->store) {
+        pdf_free_store(pdf->xref->store);
+        pdf->xref->store = NULL;
+    }
 
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "got image %d x %d, asked for %d x %d",
             (int)(image->w), (int)(image->h),
