@@ -22,7 +22,6 @@ cp $JBIG2DEC/* ../jni/jbig2dec/
 for x in draw fitz pdf ; do
     cp -r $MUPDF/$x/*.[ch] ../jni/mupdf/$x/
 done
-cp $MUPDF/scripts/jconfig.h ../jni/mupdf/pdf/
 cp -r $MUPDF/fonts ../jni/mupdf/
 cp -r $FREETYPE/{src,include} ../jni/freetype/
 sed -i 's:^/\*\s\s*#define\s\s*TT_CONFIG_OPTION_BYTECODE_INTERPRETER\s*\*/:#define TT_CONFIG_OPTION_BYTECODE_INTERPRETER:' \
