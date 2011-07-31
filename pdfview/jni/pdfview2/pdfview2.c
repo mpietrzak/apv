@@ -10,6 +10,9 @@
 #define PDFVIEW_LOG_TAG "cx.hell.android.pdfview"
 #define PDFVIEW_MAX_PAGES_LOADED 16
 
+#define BITMAP_STORE_MAX_AGE  1
+#define FIND_STORE_MAX_AGE    4
+
 static jintArray get_page_image_bitmap(JNIEnv *env,
       pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
       int gray, int skipImages,
@@ -253,6 +256,11 @@ Java_cx_hell_android_pdfview_PDF_find(
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "find(%s)", ctext);
     pdf = get_pdf_from_this(env, this);
     page = get_page(pdf, pageno);
+
+    if (pdf->last_pageno != pageno && NULL != pdf->xref->store) {
+        pdf_age_store(pdf->xref->store, FIND_STORE_MAX_AGE);
+        pdf->last_pageno = pageno;
+    }
 
     text_span = fz_new_text_span();
     dev = fz_new_text_device(text_span);
@@ -680,6 +688,8 @@ pdf_t* parse_pdf_file(const char *filename, int fileno) {
         c = pdf_count_pages(pdf->xref);
         __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "page count: %d", c);
     }
+    
+    pdf->last_pageno = -1;
 
     return pdf;
 }
@@ -810,10 +820,11 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
         }
     }
 
-    /*
-    pdf_flushxref(pdf->xref, 0);
-    */
-    
+    if (pdf->last_pageno != pageno && NULL != pdf->xref->store) {
+        pdf_age_store(pdf->xref->store, BITMAP_STORE_MAX_AGE);
+        pdf->last_pageno = pageno;
+    }
+
     page = get_page(pdf, pageno);
     if (!page) return NULL; /* TODO: handle/propagate errors */
 
@@ -861,15 +872,6 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     }
 
     fz_free_device(dev);
-
-    /* TODO: The better way to do this would be to kill the store
-       when it exceeds some fixed size, and even then not to kill it all at once, but age it
-       gracefully using pdf_age_store().  But killing it is better than nothing since otherwise
-       the store grows uncontrollably. */
-    if (pdf->xref->store) {
-        pdf_free_store(pdf->xref->store);
-        pdf->xref->store = NULL;
-    }
 
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "got image %d x %d, asked for %d x %d",
             (int)(image->w), (int)(image->h),
