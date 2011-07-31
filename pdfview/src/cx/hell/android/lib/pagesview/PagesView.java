@@ -43,7 +43,7 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	private static final int MIN_TILE_WIDTH = 256;
 	private static final int MAX_TILE_WIDTH = 640;
 	private static final int MIN_TILE_HEIGHT = 128;
-	private static final int MAX_TILE_PIXELS = 640*256;
+	private static final int MAX_TILE_PIXELS = 640*360;
 	
 //	private final static int MAX_ZOOM = 4000;
 //	private final static int MIN_ZOOM = 100;
@@ -265,8 +265,6 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 					realDocumentSize[j] += pageSizes[i][j]; 
 				}
 			
-			Log.v("BOOKMARK", "rds "+realDocumentSize[0]+" "+realDocumentSize[1]);
-			
 			if (this.width > 0 && this.height > 0) {
 				this.scaling0 = Math.min(
 						((float)this.height - 2*MARGIN) / (float)this.pageSizes[0][1],
@@ -348,7 +346,6 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		float left = margin;
 		float top = 0;
 		for(int i = 0; i < page; ++i) {
-			Log.v("BOOKMARK", "page "+i+" "+this.getCurrentPageHeight(i));
 			top += this.getCurrentPageHeight(i);
 		}
 		top += (page+1) * margin;
@@ -1013,8 +1010,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	private int getGoodTileSize(int pageSize, int minSize, int maxSize) {
 		if (pageSize <= 2)
 			return 2;
-		if (pageSize < maxSize)
-			return maxSize;
+		if (pageSize <= maxSize)
+			return pageSize;
 		int numInPageSize = (pageSize + maxSize - 1) / maxSize;
 		int proposedSize = (pageSize + numInPageSize - 1) / numInPageSize;
 		if (proposedSize < minSize)

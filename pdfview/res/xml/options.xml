@@ -17,6 +17,10 @@
     	android:entries="@array/color_mode_labels"
     	android:entryValues="@array/color_modes"
     	android:key="colorMode"/>
+    <CheckBoxPreference
+    	android:title="@string/omit_images"
+    	android:defaultValue="false"
+    	android:key="omitImages"/>
     <ListPreference
     	android:title="@string/zoom_increment"
     	android:defaultValue="@string/default_zoom_increment"
