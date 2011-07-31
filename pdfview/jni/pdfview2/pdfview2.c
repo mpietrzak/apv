@@ -124,7 +124,7 @@ Java_cx_hell_android_pdfview_PDF_renderPage(
 
     pdf = get_pdf_from_this(env, this);
 
-    jints = get_page_image_bitmap(env, pdf, pageno, zoom, left, top, rotation, gray, 
+    jints = get_page_image_bitmap(env, pdf, pageno, zoom, left, top, rotation, gray,
           skipImages, &width, &height);
 
     if (jints != NULL)
@@ -176,22 +176,21 @@ Java_cx_hell_android_pdfview_PDF_freeMemory(
 
     __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "jni freeMemory()");
 	pdf = (pdf_t*) (*env)->GetIntField(env, this, pdf_field_id);
-	(*env)->SetIntField(env, this, pdf_field_id, 0);
 
-    /*
     if (pdf->pages) {
         int i;
         int pagecount;
-        pagecount = pdf_getpagecount(pdf->xref);
+        pagecount = pdf_count_pages(pdf->xref);
+
         for(i = 0; i < pagecount; ++i) {
             if (pdf->pages[i]) {
-                pdf_droppage(pdf->pages[i]);
+                pdf_free_page(pdf->pages[i]);
+                pdf->pages[i] = NULL;
             }
         }
-        free(pdf->pages);
-        pdf->pages = NULL;
     }
-    */
+
+	(*env)->SetIntField(env, this, pdf_field_id, 0);
 
     /*
     if (pdf->textlines) {
@@ -842,15 +841,20 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     fz_clear_pixmap_with_color(image, gray ? 0 : 0xff);
     memset(image->samples, gray ? 0 : 0xff, image->h * image->w * image->n);
     dev = fz_new_draw_device(pdf->glyph_cache, image);
+
     if (skipImages)
         dev->hints |= FZ_IGNORE_IMAGE;
+
     error = pdf_run_page(pdf->xref, page, dev, ctm);
+
     if (error)
     {
         /* TODO: cleanup */
         fz_rethrow(error, "rendering failed");
         return NULL;
     }
+
+
     fz_free_device(dev);
 
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "got image %d x %d, asked for %d x %d",
