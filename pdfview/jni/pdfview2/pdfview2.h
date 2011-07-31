@@ -15,6 +15,7 @@
  * Holds pdf info.
  */
 typedef struct {
+    int last_pageno;
 	pdf_xref *xref;
 	pdf_outline *outline;
     int fileno; /* used only when opening by file descriptor */
