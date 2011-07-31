@@ -26,15 +26,8 @@ public class PDFPagesProvider extends PagesProvider {
 	private final static String TAG = "cx.hell.android.pdfview";
 
 	private boolean gray;
+	private boolean omitImages;
 
-	/**
-	 * Smart page-bitmap cache.
-	 * Stores up to approx MAX_CACHE_SIZE_BYTES of images.
-	 * Dynamically drops oldest unused bitmaps.
-	 * TODO: Return high resolution bitmaps if no exact res is available.
-	 * Bitmap images are tiled - tile size is specified in PagesView.TILE_SIZE.
-	 */
-	
 	public void setGray(boolean gray) {
 		if (this.gray == gray)
 			return;
@@ -46,6 +39,25 @@ public class PDFPagesProvider extends PagesProvider {
 	}
 	
 
+	public void setOmitImages(boolean skipImages) {
+		if (this.omitImages == skipImages)
+			return;
+		this.omitImages = skipImages;
+		
+		if (this.bitmapCache != null) {
+			this.bitmapCache.clearCache();
+		}
+	}
+	
+
+	/**
+	 * Smart page-bitmap cache.
+	 * Stores up to approx MAX_CACHE_SIZE_BYTES of images.
+	 * Dynamically drops oldest unused bitmaps.
+	 * TODO: Return high resolution bitmaps if no exact res is available.
+	 * Bitmap images are tiled - tile size is specified in PagesView.TILE_SIZE.
+	 */
+	
 	private static class BitmapCache {
 
 		/**
@@ -305,9 +317,10 @@ public class PDFPagesProvider extends PagesProvider {
 	private RendererWorker rendererWorker = null;
 	private OnImageRenderedListener onImageRendererListener = null;
 	
-	public PDFPagesProvider(PDF pdf, boolean gray) {
+	public PDFPagesProvider(PDF pdf, boolean gray, boolean skipImages) {
 		this.gray = gray;
 		this.pdf = pdf;
+		this.omitImages = skipImages;
 		this.bitmapCache = new BitmapCache();
 		this.rendererWorker = new RendererWorker(this);
 	}
@@ -337,9 +350,9 @@ public class PDFPagesProvider extends PagesProvider {
 	private Bitmap renderBitmap(Tile tile) throws RenderingException {
 		PDF.Size size = new PDF.Size(tile.getPrefXSize(), tile.getPrefYSize());
 		int[] pagebytes = null;
-
+		
 		pagebytes = pdf.renderPage(tile.getPage(), tile.getZoom(), tile.getX(), tile.getY(), 
-				tile.getRotation(), gray, size); /* native */
+				tile.getRotation(), gray, omitImages, size); /* native */
 		if (pagebytes == null) throw new RenderingException("Couldn't render page " + tile.getPage());
 		
 		/* create a bitmap from the 32-bit color array */			

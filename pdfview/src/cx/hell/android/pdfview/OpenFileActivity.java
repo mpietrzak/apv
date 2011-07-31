@@ -119,13 +119,16 @@ public class OpenFileActivity extends Activity {
         
         // use a relative layout to stack the views
         RelativeLayout layout = new RelativeLayout(this);
+        
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
 
         // the PDF view
         this.pagesView = new PagesView(this);
         this.pdf = this.getPDF();
-        this.colorMode = Options.getColorMode(
-				PreferenceManager.getDefaultSharedPreferences(this));
-        this.pdfPagesProvider = new PDFPagesProvider(pdf, Options.isGray(this.colorMode));
+        this.colorMode = Options.getColorMode(pref);
+        this.pdfPagesProvider = new PDFPagesProvider(pdf, 
+        		Options.isGray(this.colorMode), 
+        		pref.getBoolean(Options.PREF_OMIT_IMAGES, false));
         pagesView.setPagesProvider(pdfPagesProvider);
         Bookmark b = new Bookmark(this.getApplicationContext()).open();
         pagesView.setStartBookmark(b, filePath);
@@ -218,6 +221,7 @@ public class OpenFileActivity extends Activity {
         this.pageNumberTextView.setBackgroundColor(Options.getBackColor(colorMode));
         this.pageNumberTextView.setTextColor(Options.getForeColor(colorMode));
         this.pdfPagesProvider.setGray(Options.isGray(this.colorMode));
+        this.pdfPagesProvider.setOmitImages(options.getBoolean(Options.PREF_OMIT_IMAGES, false));
 		pagesView.setColorMode(this.colorMode);
 		
 		pagesView.setZoomIncrement(

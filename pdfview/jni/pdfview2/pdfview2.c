@@ -12,7 +12,7 @@
 
 static jintArray get_page_image_bitmap(JNIEnv *env,
       pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
-      int gray,
+      int gray, int skipImages,
       int *width, int *height);
 static void copy_alpha(unsigned char* out, unsigned char *in, unsigned int w, unsigned int h);
 
@@ -107,6 +107,7 @@ Java_cx_hell_android_pdfview_PDF_renderPage(
         jint top,
         jint rotation,
         jboolean gray,
+        jboolean skipImages,
         jobject size) {
 
     jint *buf; /* rendered page, freed before return, as bitmap */
@@ -123,7 +124,8 @@ Java_cx_hell_android_pdfview_PDF_renderPage(
 
     pdf = get_pdf_from_this(env, this);
 
-    jints = get_page_image_bitmap(env, pdf, pageno, zoom, left, top, rotation, gray, &width, &height);
+    jints = get_page_image_bitmap(env, pdf, pageno, zoom, left, top, rotation, gray, 
+          skipImages, &width, &height);
 
     if (jints != NULL)
         save_size(env, size, width, height);
@@ -776,7 +778,7 @@ pdf_page* get_page(pdf_t *pdf, int pageno) {
  */
 static jintArray get_page_image_bitmap(JNIEnv *env,
       pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
-      int gray,
+      int gray, int skipImages,
       int *width, int *height) {
     unsigned char *bytes = NULL;
     fz_matrix ctm;
@@ -840,6 +842,8 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     fz_clear_pixmap_with_color(image, gray ? 0 : 0xff);
     memset(image->samples, gray ? 0 : 0xff, image->h * image->w * image->n);
     dev = fz_new_draw_device(pdf->glyph_cache, image);
+    if (skipImages)
+        dev->hints |= FZ_IGNORE_IMAGE;
     error = pdf_run_page(pdf->xref, page, dev, ctm);
     if (error)
     {

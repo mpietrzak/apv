@@ -23,6 +23,7 @@ public class Options extends PreferenceActivity {
 	public final static String PREF_RENDER_AHEAD = "renderAhead";
 	public final static String PREF_GRAY = "gray";
 	public final static String PREF_COLOR_MODE = "colorMode";
+	public final static String PREF_OMIT_IMAGES = "omitImages";
 	public final static int COLOR_MODE_NORMAL = 0;
 	public final static int COLOR_MODE_INVERT = 1;
 	public final static int COLOR_MODE_GRAY = 2;
