@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="cx.hell.android.pdfview" android:versionName="0.3.0pre7" android:versionCode="216">
+	package="cx.hell.android.pdfview" android:versionName="0.3.0pre8" android:versionCode="217">
 
     <!-- 3 is 1.5 or later, that's more than 99% of devices -->
 	<uses-sdk android:minSdkVersion="3" />
