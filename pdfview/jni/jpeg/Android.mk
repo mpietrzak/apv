@@ -2,8 +2,13 @@ LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_CFLAGS := -O3
 LOCAL_ARM_MODE := arm
+
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+  LOCAL_CFLAGS := -DJDCT_DEFAULT=JDCT_IFAST #JDCT_IFAST
+else
+  LOCAL_CFLAGS:= -DJDCT_DEFAULT=JDCT_IFAST
+endif
 
 LOCAL_MODULE    := jpeg
 LOCAL_SRC_FILES := jaricom.c jcapimin.c jcapistd.c jcarith.c jccoefct.c jccolor.c \
