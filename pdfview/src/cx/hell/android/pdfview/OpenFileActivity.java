@@ -671,8 +671,8 @@ public class OpenFileActivity extends Activity {
 		private void createDialog() {
 			this.parent.runOnUiThread(new Runnable() {
 				public void run() {
-					String title = Finder.this.parent.getString(R.string.searching_for).replace("%1", Finder.this.text);
-					String message = Finder.this.parent.getString(R.string.page_of).replace("%1", String.valueOf(Finder.this.startingPage)).replace("%2", String.valueOf(pageCount));
+					String title = Finder.this.parent.getString(R.string.searching_for).replace("%1$s", Finder.this.text);
+					String message = Finder.this.parent.getString(R.string.page_of).replace("%1$d", String.valueOf(Finder.this.startingPage)).replace("%2$d", String.valueOf(pageCount));
 			    	AlertDialog.Builder builder = new AlertDialog.Builder(Finder.this.parent);
 			    	AlertDialog dialog = builder
 			    		.setTitle(title)
@@ -688,7 +688,7 @@ public class OpenFileActivity extends Activity {
 		public void updateDialog(final int page) {
 			this.parent.runOnUiThread(new Runnable() {
 				public void run() {
-					String message = Finder.this.parent.getString(R.string.page_of).replace("%1", String.valueOf(page)).replace("%2", String.valueOf(pageCount));
+					String message = Finder.this.parent.getString(R.string.page_of).replace("%1$d", String.valueOf(page)).replace("%2$d", String.valueOf(pageCount));
 					Finder.this.dialog.setMessage(message);
 				}
 			});
