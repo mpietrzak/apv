@@ -117,7 +117,7 @@ Java_cx_hell_android_pdfview_PDF_renderPage(
 
     get_size(env, size, &width, &height);
 
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "jni renderPage(pageno: %d, zoom: %d, left: %d, right: %d, width: %d, height: %d) start",
+    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "jni renderPage(pageno: %d, zoom: %d, left: %d, top: %d, width: %d, height: %d) start",
             (int)pageno, (int)zoom,
             (int)left, (int)top,
             (int)width, (int)height);

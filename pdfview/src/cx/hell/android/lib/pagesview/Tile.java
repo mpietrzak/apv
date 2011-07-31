@@ -45,10 +45,12 @@ public class Tile {
 			this.rotation + ")";
 	}
 	
+	@Override
 	public int hashCode() {
 		return this._hashCode;
 	}
 	
+	@Override
 	public boolean equals(Object o) {
 		if (! (o instanceof Tile)) return false;
 		Tile t = (Tile) o;

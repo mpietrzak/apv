@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import android.graphics.Bitmap;
+import android.os.SystemClock;
 import android.util.Log;
 import cx.hell.android.lib.pagesview.OnImageRenderedListener;
 import cx.hell.android.lib.pagesview.PagesProvider;
@@ -132,6 +133,7 @@ public class PDFPagesProvider extends PagesProvider {
 		 */
 		synchronized void put(Tile tile, Bitmap bitmap) {
 			while (this.willExceedCacheSize(bitmap) && !this.bitmaps.isEmpty()) {
+				Log.v(TAG, "Removing oldest");
 				this.removeOldest();
 			}
 			this.bitmaps.put(tile, new BitmapCacheValue(bitmap, System.currentTimeMillis()));
@@ -151,8 +153,9 @@ public class PDFPagesProvider extends PagesProvider {
 		 */
 		private static int getBitmapSizeInCache(Bitmap bitmap) {
 			int numPixels = bitmap.getWidth() * bitmap.getHeight(); 
-			if (bitmap.getConfig() == Bitmap.Config.RGB_565) 
+			if (bitmap.getConfig() == Bitmap.Config.RGB_565) {
 				return numPixels * 2;
+			}
 			else if (bitmap.getConfig() == Bitmap.Config.ALPHA_8)
 				return numPixels;
 			else
@@ -170,6 +173,7 @@ public class PDFPagesProvider extends PagesProvider {
 				Bitmap bitmap = bcv.bitmap;
 				size += getBitmapSizeInCache(bitmap);
 			}
+			Log.v(TAG, "Cache size: "+size);
 			return size;
 		}
 		
@@ -177,7 +181,8 @@ public class PDFPagesProvider extends PagesProvider {
 		 * Determine if adding this bitmap would grow cache size beyond max size.
 		 */
 		private synchronized boolean willExceedCacheSize(Bitmap bitmap) {
-			return (this.getCurrentCacheSize() + BitmapCache.getBitmapSizeInCache(bitmap) > MAX_CACHE_SIZE_BYTES);
+			return (this.getCurrentCacheSize() + 
+					    BitmapCache.getBitmapSizeInCache(bitmap) > MAX_CACHE_SIZE_BYTES);
 		}
 		
 		/**
@@ -227,6 +232,8 @@ public class PDFPagesProvider extends PagesProvider {
 		
 		private PDFPagesProvider pdfPagesProvider;
 		
+		private BitmapCache bitmapCache;
+		
 		private Collection<Tile> tiles;
 		
 		/**
@@ -257,8 +264,10 @@ public class PDFPagesProvider extends PagesProvider {
 		 * This also starts rendering thread if one is needed.
 		 * @param tiles a collection of tile objects, they carry information about what should be rendered next
 		 */
-		synchronized void setTiles(Collection<Tile> tiles) {
+		synchronized void setTiles(Collection<Tile> tiles, BitmapCache bitmapCache) {
 			this.tiles = tiles;
+			this.bitmapCache = bitmapCache;
+			
 			if (this.workerThread == null) {
 				Thread t = new Thread(this);
 				t.setPriority(Thread.MIN_PRIORITY);
@@ -302,8 +311,9 @@ public class PDFPagesProvider extends PagesProvider {
 				Collection<Tile> tiles = this.popTiles(); /* this can't block */
 				if (tiles == null || tiles.size() == 0) break;
 				try {
-					Map<Tile,Bitmap> renderedTiles = this.pdfPagesProvider.renderTiles(tiles);
-					this.pdfPagesProvider.publishBitmaps(renderedTiles);
+					Map<Tile,Bitmap> renderedTiles = this.pdfPagesProvider.renderTiles(tiles, bitmapCache);
+					if (renderedTiles.size() > 0)
+						this.pdfPagesProvider.publishBitmaps(renderedTiles);
 				} catch (RenderingException e) {
 					this.isFailed = true;
 					this.pdfPagesProvider.publishRenderingException(e);
@@ -331,14 +341,16 @@ public class PDFPagesProvider extends PagesProvider {
 	 * @param tiles job description - what to render
 	 * @return mapping of jobs and job results, with job results being Bitmap objects
 	 */
-	private Map<Tile,Bitmap> renderTiles(Collection<Tile> tiles) throws RenderingException {
+	private Map<Tile,Bitmap> renderTiles(Collection<Tile> tiles, BitmapCache ignore) throws RenderingException {
 		Map<Tile,Bitmap> renderedTiles = new HashMap<Tile,Bitmap>();
 		Iterator<Tile> i = tiles.iterator();
 		Tile tile = null;
 
 		while(i.hasNext()) {
 			tile = i.next();
-			renderedTiles.put(tile, this.renderBitmap(tile));
+			Bitmap bitmap = this.renderBitmap(tile);
+			if (bitmap != null)
+				renderedTiles.put(tile, bitmap);
 		}
 		
 		return renderedTiles;
@@ -348,28 +360,36 @@ public class PDFPagesProvider extends PagesProvider {
 	 * Really render bitmap. Takes time, should be done in background thread. Calls native code (through PDF object).
 	 */
 	private Bitmap renderBitmap(Tile tile) throws RenderingException {
-		PDF.Size size = new PDF.Size(tile.getPrefXSize(), tile.getPrefYSize());
-		int[] pagebytes = null;
-		
-		pagebytes = pdf.renderPage(tile.getPage(), tile.getZoom(), tile.getX(), tile.getY(), 
-				tile.getRotation(), gray, omitImages, size); /* native */
-		if (pagebytes == null) throw new RenderingException("Couldn't render page " + tile.getPage());
-		
-		/* create a bitmap from the 32-bit color array */			
-
-		if (gray) {
-			Bitmap b = Bitmap.createBitmap(pagebytes, size.width, size.height, 
-					Bitmap.Config.ARGB_8888);
-			Bitmap b2 = b.copy(Bitmap.Config.ALPHA_8, false);
-			b.recycle();
-			this.bitmapCache.put(tile, b2);
-			return b2;
-		}
-		else {
-			Bitmap b = Bitmap.createBitmap(pagebytes, size.width, size.height, 
-					Bitmap.Config.RGB_565);
-			this.bitmapCache.put(tile, b);
-			return b;
+		synchronized(tile) {
+			/* last minute check to make sure some other thread hasn't rendered this tile */
+			if (this.bitmapCache.contains(tile))
+				return null;
+			
+			PDF.Size size = new PDF.Size(tile.getPrefXSize(), tile.getPrefYSize());
+			int[] pagebytes = null;
+			
+			long t1 =SystemClock.currentThreadTimeMillis();
+			pagebytes = pdf.renderPage(tile.getPage(), tile.getZoom(), tile.getX(), tile.getY(), 
+					tile.getRotation(), gray, omitImages, size); /* native */
+			Log.v(TAG, "Time:"+(SystemClock.currentThreadTimeMillis()-t1));
+			if (pagebytes == null) throw new RenderingException("Couldn't render page " + tile.getPage());
+			
+			/* create a bitmap from the 32-bit color array */			
+	
+			if (gray) {
+				Bitmap b = Bitmap.createBitmap(pagebytes, size.width, size.height, 
+						Bitmap.Config.ARGB_8888);
+				Bitmap b2 = b.copy(Bitmap.Config.ALPHA_8, false);
+				b.recycle();
+				this.bitmapCache.put(tile, b2);
+				return b2;
+			}
+			else {
+				Bitmap b = Bitmap.createBitmap(pagebytes, size.width, size.height, 
+						Bitmap.Config.RGB_565);
+				this.bitmapCache.put(tile, b);
+				return b;
+			}
 		}
 	}
 	
@@ -459,7 +479,7 @@ public class PDFPagesProvider extends PagesProvider {
 			}
 		}
 		if (newtiles != null) {
-			this.rendererWorker.setTiles(newtiles);
+			this.rendererWorker.setTiles(newtiles, this.bitmapCache);
 		}
 	}
 	

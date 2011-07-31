@@ -3,6 +3,11 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_CFLAGS := -O3
+
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+  LOCAL_CFLAGS += -DJDCT_FASTEST=JDCT_FLOAT
+endif
+
 LOCAL_ARM_MODE := arm
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../mupdf $(LOCAL_PATH)/../../jpeg \
