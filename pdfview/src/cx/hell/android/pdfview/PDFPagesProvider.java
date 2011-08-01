@@ -66,19 +66,6 @@ public class PDFPagesProvider extends PagesProvider {
 		 */
 		private static final int MAX_CACHE_SIZE_BYTES = 4*1024*1024;
 		
-		/**
-		 * Cache value - tuple with data and properties.
-		 */
-		private static class BitmapCacheValue {
-			public Bitmap bitmap;
-			/* public long millisAdded; */
-			public long millisAccessed;
-			public BitmapCacheValue(Bitmap bitmap, long millisAdded) {
-				this.bitmap = bitmap;
-				/* this.millisAdded = millisAdded; */
-				this.millisAccessed = millisAdded;
-			}
-		}
 		
 		/**
 		 * Stores cached bitmaps.
@@ -136,7 +123,7 @@ public class PDFPagesProvider extends PagesProvider {
 				Log.v(TAG, "Removing oldest");
 				this.removeOldest();
 			}
-			this.bitmaps.put(tile, new BitmapCacheValue(bitmap, System.currentTimeMillis()));
+			this.bitmaps.put(tile, new BitmapCacheValue(bitmap, System.currentTimeMillis(), 0));
 		}
 		
 		/**
