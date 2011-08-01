@@ -19,16 +19,20 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.GestureDetector.OnDoubleTapListener;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Scroller;
 
 /**
  * View that simplifies displaying of paged documents.
  * TODO: redesign zooms, pages, margins, layout
  * TODO: use more floats for better align, or use more ints for performance ;) (that is, really analyse what should be used when)
  */
-public class PagesView extends View implements View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
+public class PagesView extends View implements 
+View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	/**
 	 * Logging tag.
 	 */
@@ -89,31 +93,6 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 * Current height of this view.
 	 */
 	private int height = 0;
-	
-	/**
-	 * Flag: are we being moved around by dragging.
-	 */
-	private boolean inDrag = false;
-	
-	/**
-	 * Drag start pos.
-	 */
-	private int dragx = 0;
-	
-	/**
-	 * Drag start pos.
-	 */
-	private int dragy = 0;
-	
-	/**
-	 * Drag pos.
-	 */
-	private int dragx1 = 0;
-	
-	/**
-	 * Drag pos.
-	 */
-	private int dragy1 = 0;
 	
 	/**
 	 * Position over book, not counting drag.
@@ -190,6 +169,9 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	private boolean volumeUpIsDown = false;
 	private boolean volumeDownIsDown = false;
 	
+	private GestureDetector gestureDetector = null;
+	private Scroller scroller = null;
+	
 	public PagesView(Activity activity) {
 		super(activity);
 		this.activity = activity;
@@ -201,7 +183,58 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		this.findResultsPaint.setStrokeWidth(3);
 		this.setOnTouchListener(this);
 		this.setOnKeyListener(this);
-		activity.setDefaultKeyMode(Activity.DEFAULT_KEYS_SEARCH_LOCAL);		
+		activity.setDefaultKeyMode(Activity.DEFAULT_KEYS_SEARCH_LOCAL);
+		
+		this.scroller = new Scroller(activity);
+		
+		this.gestureDetector = new GestureDetector(activity, 
+				new GestureDetector.OnGestureListener() {
+
+					public boolean onDown(MotionEvent e) {
+						scroller.forceFinished(true);
+						return true;
+					}
+
+					public boolean onFling(MotionEvent e1, MotionEvent e2,
+							float velocityX, float velocityY) {
+						doFling(velocityX, velocityY);
+						return true;
+					}
+
+					public void onLongPress(MotionEvent e) {
+					}
+
+					public boolean onScroll(MotionEvent e1, MotionEvent e2,
+							float distanceX, float distanceY) {
+						
+						doScroll((int)distanceX, (int)distanceY);
+						return true;
+					}
+
+					public void onShowPress(MotionEvent e) {
+					}
+
+					public boolean onSingleTapUp(MotionEvent e) {
+						return false;
+					}
+		});
+		
+		gestureDetector.setOnDoubleTapListener(new OnDoubleTapListener() {
+			public boolean onDoubleTap(MotionEvent e) {
+				left += e.getX() - width/2;
+				top += e.getY() - height/2;
+				invalidate();
+				zoomUpBig();				
+				return false;
+			}
+
+			public boolean onDoubleTapEvent(MotionEvent e) {
+				return false;
+			}
+
+			public boolean onSingleTapConfirmed(MotionEvent e) {				
+				return false;
+			}});
 	}
 	
 	public void setStartBookmark(Bookmark b, String bookmarkName) {
@@ -363,10 +396,6 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	private Point getScreenPositionOverDocument() {
 		float top = this.top - this.height / 2;
 		float left = this.left - this.width / 2;
-		if (this.inDrag) {
-			left -= (this.dragx1 - this.dragx);
-			top -= (this.dragy1 - this.dragy);
-		}
 		return new Point((int)left, (int)top);
 	}
 	
@@ -387,6 +416,16 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 				);
 	}
 	
+	@Override
+	public void computeScroll() {
+		if (this.scroller.computeScrollOffset()) {
+			left = this.scroller.getCurrX();
+			top = this.scroller.getCurrY();
+			((cx.hell.android.pdfview.OpenFileActivity)activity).showPageNumber(false);
+			postInvalidate();
+		}
+	}
+	
 	/**
 	 * Draw pages.
 	 * Also collect info what's visible and push this info to page renderer.
@@ -398,17 +437,15 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		int pageHeight = 0;
 		float pagex0, pagey0, pagex1, pagey1; // in doc, counts zoom
 		float x, y; // on screen
-		int dragoffx, dragoffy;
 		int viewx0, viewy0; // view over doc
 		LinkedList<Tile> visibleTiles = new LinkedList<Tile>();
 		float currentMargin = this.getCurrentMargin();
-		if (this.pagesProvider != null) {
+		
+//		((cx.hell.android.pdfview.OpenFileActivity)activity).showPageNumber(false);
 
-			dragoffx = (inDrag) ? (dragx1 - dragx) : 0;
-			dragoffy = (inDrag) ? (dragy1 - dragy) : 0;
-			
-			viewx0 = left - dragoffx - width/2;
-			viewy0 = top - dragoffy - height/2;
+		if (this.pagesProvider != null) {
+			viewx0 = left - width/2;
+			viewy0 = top - height/2;
 			
 			int pageCount = this.pageSizes.length;
 			
@@ -423,10 +460,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 					(int)(scrollMargin*getCurrentMaxPageHeight()),
 					getCurrentDocumentHeight());
 			
-			if (!inDrag) {
-				left += viewx0 - oldviewx0;
-				top += viewy0 - oldviewy0;
-			}
+			left += viewx0 - oldviewx0;
+			top += viewy0 - oldviewy0;
 			
 			float currpageoff = currentMargin;
 			
@@ -591,32 +626,8 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 	 */
 	public boolean onTouch(View v, MotionEvent event) {
 		this.lastControlsUseMillis = System.currentTimeMillis();
-		if (event.getAction() == MotionEvent.ACTION_DOWN) {
-			Log.d(TAG, "onTouch(ACTION_DOWN)");
-			int x = (int)event.getX();
-			int y = (int)event.getY();
-			this.dragx = this.dragx1 = x;
-			this.dragy = this.dragy1 = y;
-			this.inDrag = true;
-		} else if (event.getAction() == MotionEvent.ACTION_UP) {
-			if (this.inDrag) {
-				this.inDrag = false;
-				this.left -= (this.dragx1 - this.dragx);
-				this.top -= (this.dragy1 - this.dragy);
-				if (this.top < 0) {
-					this.top = 0;
-				}
-				if (this.left < 0) {
-					this.left = 0;
-				}
-			}
-		} else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-			if (this.inDrag) {
-				this.dragx1 = (int) event.getX();
-				this.dragy1 = (int) event.getY();
-				this.invalidate();
-			}
-		}
+		
+		gestureDetector.onTouchEvent(event);
 		return true;
 	}
 	
@@ -943,6 +954,37 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 		return this.findResults;
 	}
 	
+	private void doFling(float vx, float vy) {
+		float avx = vx > 0 ? vx : -vx;
+		float avy = vy > 0 ? vy : -vy;
+		
+		if (avx < .25 * avy) {
+			vx = 0;
+		}
+		else if (avy < .25 * avx) {
+			vy = 0;
+		}
+		
+		int minx = this.width/2 + getLowerBound(this.width, 0, getCurrentMaxPageWidth());
+		int maxx = this.width/2 + getUpperBound(this.width, 0, getCurrentMaxPageWidth());
+		int miny = this.height/2 + getLowerBound(this.width, (int)(scrollMargin*getCurrentMaxPageHeight()),
+				  getCurrentDocumentHeight());
+		int maxy = this.height/2 + getUpperBound(this.width, (int)(scrollMargin*getCurrentMaxPageHeight()),
+				  getCurrentDocumentHeight());
+
+		this.scroller.fling(this.left, this.top, 
+				(int)-vx, (int)-vy,
+				minx, maxx,
+				miny, maxy);
+		invalidate();
+	}
+	
+	private void doScroll(int dx, int dy) {
+		this.left += dx;
+		this.top += dy;
+		invalidate();
+	}
+	
 	/**
 	 * Zoom down one level
 	 */
@@ -1071,24 +1113,37 @@ public class PagesView extends View implements View.OnTouchListener, OnImageRend
 			return proposedSize;
 	}
 	
-	private int adjustPosition(int pos, int screenDim, int margin, int docDim) {
+	private int getLowerBound(int screenDim, int margin, int docDim) {
 		if (docDim <= screenDim) {
-			/* all pages can and should fit */
-			if (0 < pos)
-				pos = 0;
-			if (pos + screenDim < docDim) {
-				pos = docDim - screenDim;
-			}
+			/* all pages can and do fit */
+			return docDim - screenDim;
 		}
 		else {
 			/* document is too wide/tall to fit */
-			if (pos + screenDim > docDim+margin)
-				pos = margin + docDim - screenDim; 
-			if (pos < -margin)
-				pos = -margin;
-			
+			return -margin;
 		}
-		
-		return pos;
 	}
+	
+	private int getUpperBound(int screenDim, int margin, int docDim) {
+		if (docDim <= screenDim) {
+			/* all pages can and do fit */
+			return 0;
+		}
+		else {
+			/* document is too wide/tall to fit */
+			return margin + docDim - screenDim;
+		}
+	}
+	
+	private int adjustPosition(int pos, int screenDim, int margin, int docDim) {
+		int min = getLowerBound(screenDim, margin, docDim);
+		int max = getUpperBound(screenDim, margin, docDim);
+		
+		if (pos < min)
+			return min;
+		else if (max < pos)
+			return max;
+		else
+			return pos;
+	} 
 }

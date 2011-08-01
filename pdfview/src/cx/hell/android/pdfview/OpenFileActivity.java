@@ -386,19 +386,31 @@ public class OpenFileActivity extends Activity {
 		return super.dispatchKeyEvent(event);    	
     };
     
+    private void showZoom() {
+    	zoomAnim.setStartOffset(fadeStartOffset);
+		zoomAnim.setFillAfter(true);
+		zoomLayout.startAnimation(zoomAnim); 
+    }
+    
+    public void showPageNumber(boolean force) {
+    	String newText = ""+(this.pagesView.getCurrentPage()+1)+"/"+
+				this.pdfPagesProvider.getPageCount();
+    	
+    	if (!force && newText.equals(pageNumberTextView.getText()))
+    		return;
+    	
+    	pageNumberAnim.setStartOffset(fadeStartOffset);
+		pageNumberAnim.setFillAfter(true);
+		pageNumberTextView.setText(newText);
+		pageNumberTextView.startAnimation(pageNumberAnim);      	
+    }
+    
     /**
      * Show zoom buttons and page number
      */
     private void showAnimated() {
-    	zoomAnim.setStartOffset(fadeStartOffset);
-		zoomAnim.setFillAfter(true);
-		zoomLayout.startAnimation(zoomAnim);
-
-    	pageNumberAnim.setStartOffset(fadeStartOffset);
-		pageNumberAnim.setFillAfter(true);
-		pageNumberTextView.setText(""+(this.pagesView.getCurrentPage()+1)+"/"+
-				this.pdfPagesProvider.getPageCount());
-		pageNumberTextView.startAnimation(pageNumberAnim);     	
+    	showZoom();
+    	showPageNumber(true);
     }
     
     /**
