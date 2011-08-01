@@ -57,11 +57,6 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 */
 	private final static int MARGIN = 10;
 	
-	/* This is for adjusting how far we are allowed to scroll beyond
-	 * the limits of the document.
-	 */
-	private final static float scrollMargin = 0.1f;
-	
 	/* zoom steps */
 	float step = 1.414f;
 	
@@ -348,7 +343,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		float realheight = this.realDocumentSize[this.rotation % 2 == 0 ? 1 : 0];
 		/* we add pageSizes.length to account for round-off issues */
 		return (int)(realheight * scaling0 * (this.zoomLevel*0.001f) +  
-			pageSizes.length * this.getCurrentMargin());
+			(pageSizes.length - 1) * this.getCurrentMargin());
 	}
 	
 	/**
@@ -441,8 +436,6 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		LinkedList<Tile> visibleTiles = new LinkedList<Tile>();
 		float currentMargin = this.getCurrentMargin();
 		
-//		((cx.hell.android.pdfview.OpenFileActivity)activity).showPageNumber(false);
-
 		if (this.pagesProvider != null) {
 			viewx0 = left - width/2;
 			viewy0 = top - height/2;
@@ -455,10 +448,10 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			int oldviewx0 = viewx0;
 			int oldviewy0 = viewy0;
 			
-			viewx0 = adjustPosition(viewx0, width, 0, getCurrentMaxPageWidth());
-			viewy0 = adjustPosition(viewy0, height, 
-					(int)(scrollMargin*getCurrentMaxPageHeight()),
-					getCurrentDocumentHeight());
+			viewx0 = adjustPosition(viewx0, width, (int)currentMargin, 
+					getCurrentMaxPageWidth());
+			viewy0 = adjustPosition(viewy0, height, (int)currentMargin,
+					(int)getCurrentDocumentHeight());
 			
 			left += viewx0 - oldviewx0;
 			top += viewy0 - oldviewy0;
@@ -466,6 +459,11 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			float currpageoff = currentMargin;
 			
 			this.currentPage = -1;
+			
+			int firstVisiblePage = -1;
+			int lastVisiblePage = -1;
+			
+			pagey0 = 0;
 			
 			for(int i = 0; i < pageCount; ++i) {
 				// is page i visible?
@@ -965,11 +963,14 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			vy = 0;
 		}
 		
-		int minx = this.width/2 + getLowerBound(this.width, 0, getCurrentMaxPageWidth());
-		int maxx = this.width/2 + getUpperBound(this.width, 0, getCurrentMaxPageWidth());
-		int miny = this.height/2 + getLowerBound(this.width, (int)(scrollMargin*getCurrentMaxPageHeight()),
+		int margin = (int)getCurrentMargin();
+		int minx = this.width/2 + getLowerBound(this.width, margin, 
+				getCurrentMaxPageWidth());
+		int maxx = this.width/2 + getUpperBound(this.width, margin, 
+				getCurrentMaxPageWidth());
+		int miny = this.height/2 + getLowerBound(this.width, margin,
 				  getCurrentDocumentHeight());
-		int maxy = this.height/2 + getUpperBound(this.width, (int)(scrollMargin*getCurrentMaxPageHeight()),
+		int maxy = this.height/2 + getUpperBound(this.width, margin,
 				  getCurrentDocumentHeight());
 
 		this.scroller.fling(this.left, this.top, 
@@ -1035,7 +1036,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		int pageWidth = getCurrentPageWidth(page);
 		this.top = (this.top - this.height / 2) * this.width / pageWidth + this.height / 2;
 		this.zoomLevel = this.zoomLevel * this.width / pageWidth;
-		this.left = this.width/2;
+		this.left = (int) (this.width/2 + getCurrentMargin());
 		this.invalidate();		
 	}
 
@@ -1046,7 +1047,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		int z2 = (int)(this.zoomLevel * this.height / getCurrentPageHeight(page));
 		this.zoomLevel = z2 < z1 ? z2 : z1;
 		Point pos = getPagePositionInDocumentWithZoom(page);
-		this.left = this.width/2;
+		this.left = this.width/2 + pos.x;
 		this.top = this.height/2 + pos.y;
 		this.invalidate();		
 	}
@@ -1113,25 +1114,28 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			return proposedSize;
 	}
 	
+	/* Get the upper and lower bounds for the viewpoint.  The document itself is
+	 * drawn from margin to margin+docDim.   
+	 */
 	private int getLowerBound(int screenDim, int margin, int docDim) {
 		if (docDim <= screenDim) {
 			/* all pages can and do fit */
-			return docDim - screenDim;
+			return margin + docDim - screenDim;
 		}
 		else {
 			/* document is too wide/tall to fit */
-			return -margin;
+			return 0; 
 		}
 	}
 	
 	private int getUpperBound(int screenDim, int margin, int docDim) {
 		if (docDim <= screenDim) {
 			/* all pages can and do fit */
-			return 0;
+			return margin;
 		}
 		else {
 			/* document is too wide/tall to fit */
-			return margin + docDim - screenDim;
+			return 2 * margin + docDim - screenDim;
 		}
 	}
 	
