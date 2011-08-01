@@ -211,16 +211,12 @@ public class PDFPagesProvider extends PagesProvider {
 	}
 	
 	private static class RendererWorker implements Runnable {
-		
 		/**
 		 * Worker stops rendering if error was encountered.
 		 */
 		private boolean isFailed = false;
-		
 		private PDFPagesProvider pdfPagesProvider;
-		
 		private BitmapCache bitmapCache;
-		
 		private Collection<Tile> tiles;
 		
 		/**
