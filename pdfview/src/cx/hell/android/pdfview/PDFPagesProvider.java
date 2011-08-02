@@ -49,7 +49,7 @@ public class PDFPagesProvider extends PagesProvider {
 	
 	/* also calculates renderAhead */
 	private void setMaxCacheSize() {
-		final int maxMax = 6*1024*1024; /* at most allocate this much unless absolutely necessary */
+		final int maxMax = (int)(7*1024*1024); /* at most allocate this much unless absolutely necessary */
 		final int minMax = 4*1024*1024; /* at least allocate this much */
 
 		int displaySize = activity.getWindowManager().getDefaultDisplay().getHeight() *
@@ -64,17 +64,14 @@ public class PDFPagesProvider extends PagesProvider {
 		int m = (int)(displaySize * 1.25f * 1.0001f);
 		
 		if (doRenderAhead) {
-			if (maxMax <= m) {
-				renderAhead = 1.0001f;
-			}
-			else if ((int)(m * 2.1f) <= maxMax) {
+			if ((int)(m * 2.1f) <= maxMax) {
 				renderAhead = 2.1f;
+				m = (int)(m * renderAhead);
 			}
 			else {
-				renderAhead = (float)maxMax / (float)m;
+				renderAhead = 1.0001f;
 			}
 			
-			m = (int)(m * renderAhead);
 		}
 		else {
 			/* The extra little bit is to compensate for round-off */
