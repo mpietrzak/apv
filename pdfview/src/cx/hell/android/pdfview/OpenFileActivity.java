@@ -117,7 +117,10 @@ public class OpenFileActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+		Options.setOrientation(this);
+		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
+
+		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         
         // Get display metrics
         DisplayMetrics metrics = new DisplayMetrics();
@@ -126,15 +129,14 @@ public class OpenFileActivity extends Activity {
         // use a relative layout to stack the views
         RelativeLayout layout = new RelativeLayout(this);
         
-        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
-
         // the PDF view
         this.pagesView = new PagesView(this);
         this.pdf = this.getPDF();
-        this.colorMode = Options.getColorMode(pref);
-        this.pdfPagesProvider = new PDFPagesProvider(pdf, 
+        this.colorMode = Options.getColorMode(options);
+        this.pdfPagesProvider = new PDFPagesProvider(this, pdf, 
         		Options.isGray(this.colorMode), 
-        		pref.getBoolean(Options.PREF_OMIT_IMAGES, false));
+        		options.getBoolean(Options.PREF_OMIT_IMAGES, false),
+        		options.getBoolean(Options.PREF_RENDER_AHEAD, true));
         pagesView.setPagesProvider(pdfPagesProvider);
         Bookmark b = new Bookmark(this.getApplicationContext()).open();
         pagesView.setStartBookmark(b, filePath);
@@ -244,7 +246,7 @@ public class OpenFileActivity extends Activity {
 		
 		pagesView.setZoomIncrement(
 				Float.parseFloat(options.getString(Options.PREF_ZOOM_INCREMENT, "1.414")));
-		pagesView.setRenderAhead(options.getBoolean(Options.PREF_RENDER_AHEAD, true));
+		this.pdfPagesProvider.setRenderAhead(options.getBoolean(Options.PREF_RENDER_AHEAD, true));
 		pagesView.setPageWithVolume(options.getBoolean(Options.PREF_PAGE_WITH_VOLUME, true));
 		pagesView.invalidate();
 		zoomAnim = AnimationUtils.loadAnimation(this,

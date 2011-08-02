@@ -38,9 +38,6 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 */
 	private static final String TAG = "cx.hell.android.pdfview";
 	
-	/* render a little more than twice the screen height, so the next page will be ready */
-	private float renderAhead = 2.1f; 
-
 	/* Experiments show that larger tiles are faster, but the gains do drop off,
 	 * and must be balanced against the size of memory chunks being requested.
 	 */
@@ -438,6 +435,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		int viewx0, viewy0; // view over doc
 		LinkedList<Tile> visibleTiles = new LinkedList<Tile>();
 		float currentMargin = this.getCurrentMargin();
+		float renderAhead = this.pagesProvider.getRenderAhead();
 		
 		if (this.pagesProvider != null) {
 			viewx0 = left - width/2;
@@ -748,6 +746,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 				(int)getCurrentDocumentHeight());
 		
 		float currpageoff = currentMargin;
+		float renderAhead = this.pagesProvider.getRenderAhead();
 
 		float pagex0;
 		float pagex1;
@@ -1147,11 +1146,6 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		this.step = step;
 	}
 	
-	public void setRenderAhead(boolean ahead) {
-		/* The 1.0001 instead of 1 is to avoid roundoff issues */
-		this.renderAhead = ahead ? 2.1f : 1.0001f; 
-	}
-
 	public void setPageWithVolume(boolean pageWithVolume) {
 		this.pageWithVolume = pageWithVolume;
 	}
