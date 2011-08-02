@@ -16,6 +16,7 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.text.InputType;
 import android.util.DisplayMetrics;
@@ -60,6 +61,11 @@ public class OpenFileActivity extends Activity {
 	private PDF pdf = null;
 	private PagesView pagesView = null;
 	private PDFPagesProvider pdfPagesProvider = null;
+	
+	private Handler zoomHandler = null;
+	private Handler pageHandler = null;
+	private Runnable zoomRunnable = null;
+	private Runnable pageRunnable = null;
 	
 	private MenuItem aboutMenuItem = null;
 	private MenuItem gotoPageMenuItem = null;
@@ -156,7 +162,6 @@ public class OpenFileActivity extends Activity {
         lp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
         layout.addView(this.findButtonsLayout, lp);
 
-        Log.v("start", "go4");
         // the zoom buttons
         zoomLayout = new LinearLayout(this);
         zoomLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -198,6 +203,19 @@ public class OpenFileActivity extends Activity {
         // send keyboard events to this view
         pagesView.setFocusable(true);
         pagesView.setFocusableInTouchMode(true);
+
+        this.zoomHandler = new Handler();
+        this.pageHandler = new Handler();
+        this.zoomRunnable = new Runnable() {
+        	public void run() {
+        		fadeZoom();
+        	}
+        };
+        this.pageRunnable = new Runnable() {
+        	public void run() {
+        		fadePage();
+        	}
+        };
     }
 
 	/** 
@@ -387,9 +405,15 @@ public class OpenFileActivity extends Activity {
     };
     
     private void showZoom() {
-    	zoomAnim.setStartOffset(fadeStartOffset);
+    	zoomLayout.clearAnimation();
+    	zoomHandler.removeCallbacks(zoomRunnable);
+    	zoomHandler.postDelayed(zoomRunnable, fadeStartOffset);
+    }
+    
+    private void fadeZoom() {
+    	zoomAnim.setStartOffset(0);
 		zoomAnim.setFillAfter(true);
-		zoomLayout.startAnimation(zoomAnim); 
+		zoomLayout.startAnimation(zoomAnim);
     }
     
     public void showPageNumber(boolean force) {
@@ -399,11 +423,18 @@ public class OpenFileActivity extends Activity {
     	if (!force && newText.equals(pageNumberTextView.getText()))
     		return;
     	
-    	pageNumberAnim.setStartOffset(fadeStartOffset);
-		pageNumberAnim.setFillAfter(true);
 		pageNumberTextView.setText(newText);
-		pageNumberTextView.startAnimation(pageNumberAnim);      	
+    	pageNumberTextView.clearAnimation();
+
+    	pageHandler.removeCallbacks(pageRunnable);
+    	pageHandler.postDelayed(pageRunnable, fadeStartOffset);
     }
+    
+    private void fadePage() {
+    	pageNumberAnim.setStartOffset(0);
+		pageNumberAnim.setFillAfter(true);
+		pageNumberTextView.startAnimation(pageNumberAnim);      	
+    }    
     
     /**
      * Show zoom buttons and page number

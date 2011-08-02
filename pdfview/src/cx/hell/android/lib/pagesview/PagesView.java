@@ -314,7 +314,10 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 * Draw view.
 	 * @param canvas what to draw on
 	 */
-	@Override
+	
+	int prevTop = -1;
+	int prevLeft = -1;
+	
 	public void onDraw(Canvas canvas) {
 		this.drawPages(canvas);
 		if (this.findMode) this.drawFindResults(canvas);
@@ -731,13 +734,71 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 * TODO: only invalidate what needs to be painted, not the whole view
 	 */
 	public void onImagesRendered(Map<Tile,Bitmap> renderedTiles) {
-		Log.d(TAG, "there are " + renderedTiles.size() + " new rendered tiles");
+		Rect rect = new Rect(); /* TODO: move out of onImagesRendered */
+
+		int viewx0 = left - width/2;
+		int viewy0 = top - height/2;
 		
-		this.post(new Runnable() {
-			public void run() {
-				PagesView.this.invalidate();
+		int pageCount = this.pageSizes.length;
+		float currentMargin = this.getCurrentMargin();
+		
+		viewx0 = adjustPosition(viewx0, width, (int)currentMargin, 
+				getCurrentMaxPageWidth());
+		viewy0 = adjustPosition(viewy0, height, (int)currentMargin,
+				(int)getCurrentDocumentHeight());
+		
+		float currpageoff = currentMargin;
+
+		float pagex0;
+		float pagex1;
+		float pagey0 = 0;
+		float pagey1;
+		float x;
+		float y;
+		int pageWidth;
+		int pageHeight;
+		
+		for(int i = 0; i < pageCount; ++i) {
+			// is page i visible?
+
+			pageWidth = this.getCurrentPageWidth(i);
+			pageHeight = (int) this.getCurrentPageHeight(i);
+			
+			pagex0 = currentMargin;
+			pagex1 = (int)(currentMargin + pageWidth);
+			pagey0 = currpageoff;
+			pagey1 = (int)(currpageoff + pageHeight);
+			
+			if (rectsintersect(
+						(int)pagex0, (int)pagey0, (int)pagex1, (int)pagey1, // page rect in doc
+						viewx0, viewy0, viewx0 + this.width, 
+						viewy0 + this.height  
+					))
+			{
+				x = pagex0 - viewx0;
+				y = pagey0 - viewy0;
+				
+				for (Tile tile: renderedTiles.keySet()) {
+					if (tile.getPage() == i) {
+						Bitmap b = renderedTiles.get(tile); 
+						
+						rect.left = (int)(x + tile.getX());
+						rect.top = (int)(y + tile.getY());
+						rect.right = rect.left + b.getWidth();
+						rect.bottom = rect.top + b.getHeight();	
+					
+						if (rect.intersects(0, 0, this.width, (int)(renderAhead*this.height))) {
+							Log.v(TAG, "New bitmap forces redraw");
+							postInvalidate();
+							return;
+						}
+					}
+				}
+				
 			}
-		});
+			currpageoff += currentMargin + this.getCurrentPageHeight(i);
+		}
+		Log.v(TAG, "New bitmap does not require redraw");
 	}
 	
 	/**
@@ -1149,5 +1210,5 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			return max;
 		else
 			return pos;
-	} 
+	}
 }
