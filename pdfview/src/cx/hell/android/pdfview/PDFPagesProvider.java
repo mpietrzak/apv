@@ -8,8 +8,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.SystemClock;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import cx.hell.android.lib.pagesview.OnImageRenderedListener;
 import cx.hell.android.lib.pagesview.PagesProvider;
@@ -26,8 +28,12 @@ public class PDFPagesProvider extends PagesProvider {
 	 */
 	private final static String TAG = "cx.hell.android.pdfview";
 
+	/* render a little more than twice the screen height, so the next page will be ready */
+	private float renderAhead = 2.1f;
+	private boolean doRenderAhead = true;
 	private boolean gray;
 	private boolean omitImages;
+	Activity activity = null;
 
 	public void setGray(boolean gray) {
 		if (this.gray == gray)
@@ -37,6 +43,50 @@ public class PDFPagesProvider extends PagesProvider {
 		if (this.bitmapCache != null) {
 			this.bitmapCache.clearCache();
 		}
+		
+		setMaxCacheSize();
+	}
+	
+	/* also calculates renderAhead */
+	private void setMaxCacheSize() {
+		final int maxMax = 6*1024*1024; /* at most allocate this much unless absolutely necessary */
+		final int minMax = 4*1024*1024; /* at least allocate this much */
+
+		int displaySize = activity.getWindowManager().getDefaultDisplay().getHeight() *
+				activity.getWindowManager().getDefaultDisplay().getHeight();
+		
+		if (displaySize <= 320*240)
+			displaySize = 320*240;
+		
+		if (!this.gray) 
+			displaySize *= 2;
+		
+		int m = (int)(displaySize * 1.25f * 1.0001f);
+		
+		if (doRenderAhead) {
+			if (maxMax <= m) {
+				renderAhead = 1.0001f;
+			}
+			else if ((int)(m * 2.1f) <= maxMax) {
+				renderAhead = 2.1f;
+			}
+			else {
+				renderAhead = (float)maxMax / (float)m;
+			}
+			
+			m = (int)(m * renderAhead);
+		}
+		else {
+			/* The extra little bit is to compensate for round-off */
+			renderAhead = 1.0001f;
+		}
+		
+		if (m < minMax)
+			m = minMax;
+		
+		Log.v(TAG, "Setting cache size to "+m);
+		
+		this.bitmapCache.setMaxCacheSizeBytes(m);
 	}
 	
 
@@ -53,29 +103,25 @@ public class PDFPagesProvider extends PagesProvider {
 
 	/**
 	 * Smart page-bitmap cache.
-	 * Stores up to approx MAX_CACHE_SIZE_BYTES of images.
+	 * Stores up to approx maxCacheSizeBytes of images.
 	 * Dynamically drops oldest unused bitmaps.
 	 * TODO: Return high resolution bitmaps if no exact res is available.
 	 * Bitmap images are tiled - tile size is specified in PagesView.TILE_SIZE.
 	 */
 	
 	private static class BitmapCache {
-
-		/**
-		 * Max size of bitmap cache in bytes.
-		 */
-		private static final int MAX_CACHE_SIZE_BYTES = 4*1024*1024;
-		
-		
 		/**
 		 * Stores cached bitmaps.
 		 */
 		private Map<Tile, BitmapCacheValue> bitmaps;
 		
+		private int maxCacheSizeBytes = 4*1024*1024; 
+		
 		/**
 		 * Stats logging - number of cache hits.
 		 */
 		private long hits;
+				
 		
 		/**
 		 * Stats logging - number of misses.
@@ -86,6 +132,10 @@ public class PDFPagesProvider extends PagesProvider {
 			this.bitmaps = new HashMap<Tile, BitmapCacheValue>();
 			this.hits = 0;
 			this.misses = 0;
+		}
+		
+		public void setMaxCacheSizeBytes(int maxCacheSizeBytes) {
+			this.maxCacheSizeBytes = maxCacheSizeBytes;
 		}
 		
 		/**
@@ -169,7 +219,7 @@ public class PDFPagesProvider extends PagesProvider {
 		 */
 		private synchronized boolean willExceedCacheSize(Bitmap bitmap) {
 			return (this.getCurrentCacheSize() + 
-					    BitmapCache.getBitmapSizeInCache(bitmap) > MAX_CACHE_SIZE_BYTES);
+					    BitmapCache.getBitmapSizeInCache(bitmap) > maxCacheSizeBytes);
 		}
 		
 		/**
@@ -310,12 +360,25 @@ public class PDFPagesProvider extends PagesProvider {
 	private RendererWorker rendererWorker = null;
 	private OnImageRenderedListener onImageRendererListener = null;
 	
-	public PDFPagesProvider(PDF pdf, boolean gray, boolean skipImages) {
+	public float getRenderAhead() {
+		return this.renderAhead;
+	}
+	
+	public PDFPagesProvider(Activity activity, PDF pdf, boolean gray, boolean skipImages,
+			boolean doRenderAhead) {
 		this.gray = gray;
 		this.pdf = pdf;
 		this.omitImages = skipImages;
 		this.bitmapCache = new BitmapCache();
 		this.rendererWorker = new RendererWorker(this);
+		this.activity = activity;
+		this.doRenderAhead = doRenderAhead;
+		setMaxCacheSize();
+	}
+	
+	public void setRenderAhead(boolean doRenderAhead) {
+		this.doRenderAhead = doRenderAhead;
+		setMaxCacheSize();
 	}
 	
 	/**
@@ -464,7 +527,5 @@ public class PDFPagesProvider extends PagesProvider {
 		if (newtiles != null) {
 			this.rendererWorker.setTiles(newtiles, this.bitmapCache);
 		}
-	}
-	
-	
+	}	
 }

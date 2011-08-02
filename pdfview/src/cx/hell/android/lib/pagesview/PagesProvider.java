@@ -43,4 +43,5 @@ public abstract class PagesProvider {
 	
 	public abstract void setVisibleTiles(Collection<Tile> tiles);
 
+	public abstract float getRenderAhead();
 }
