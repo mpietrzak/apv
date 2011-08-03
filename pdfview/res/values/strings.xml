@@ -131,5 +131,7 @@
 		<item>6</item>
 	</string-array>
 	<string name="default_color_mode">0</string>
-	<string name="omit_images">Skip images</string> 
+	<string name="omit_images">Skip images</string>
+	<string name="vertical_scroll_lock">Vertical scroll lock</string>
+	<string name="vertical_scroll_lock_sub">To scroll horizontally, you must first move horizontally 1/5 of the screen width.</string> 
 </resources>

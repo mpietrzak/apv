@@ -57,6 +57,11 @@
     	android:title="@string/page_with_volume"
     	android:defaultValue="true"
     	android:key="pageWithVolume"/>
+    <CheckBoxPreference
+    	android:title="@string/vertical_scroll_lock"
+    	android:summary="@string/vertical_scroll_lock_sub"
+    	android:defaultValue="false"
+    	android:key="verticalScrollLock"/>
     </PreferenceCategory>
     <PreferenceCategory
     android:title="@string/selector">

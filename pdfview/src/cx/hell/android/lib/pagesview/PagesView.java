@@ -159,10 +159,17 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 */
 	
 	private boolean volumeUpIsDown = false;
-	private boolean volumeDownIsDown = false;
-	
+	private boolean volumeDownIsDown = false;	
 	private GestureDetector gestureDetector = null;
 	private Scroller scroller = null;
+	
+	private boolean verticalScrollLock = true;
+	private boolean lockedVertically = false;
+	private float downX = 0;
+	private float downY = 0;
+	private float lastX = 0;
+	private float lastY = 0;
+	private float maxExcursionY = 0;
 	
 	public PagesView(Activity activity) {
 		super(activity);
@@ -177,30 +184,30 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		this.setOnKeyListener(this);
 		activity.setDefaultKeyMode(Activity.DEFAULT_KEYS_SEARCH_LOCAL);
 		
-		this.scroller = new Scroller(activity);
+		this.scroller = null; // new Scroller(activity);
 		
 		this.gestureDetector = new GestureDetector(activity, 
 				new GestureDetector.OnGestureListener() {
-
 					public boolean onDown(MotionEvent e) {
-						scroller.forceFinished(true);
-						return true;
+						return false;
 					}
 
 					public boolean onFling(MotionEvent e1, MotionEvent e2,
 							float velocityX, float velocityY) {
+						
+						if (lockedVertically) 
+							velocityX = 0;
+						
 						doFling(velocityX, velocityY);
 						return true;
 					}
 
 					public void onLongPress(MotionEvent e) {
 					}
-
+					
 					public boolean onScroll(MotionEvent e1, MotionEvent e2,
 							float distanceX, float distanceY) {
-						
-						doScroll((int)distanceX, (int)distanceY);
-						return true;
+						return false;
 					}
 
 					public void onShowPress(MotionEvent e) {
@@ -413,6 +420,9 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	
 	@Override
 	public void computeScroll() {
+		if (this.scroller == null) 
+			return;
+		
 		if (this.scroller.computeScrollOffset()) {
 			left = this.scroller.getCurrX();
 			top = this.scroller.getCurrY();
@@ -620,13 +630,56 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		}
 	}
 
+	private boolean unlocksVerticalLock(MotionEvent e) {
+		float dx;
+		float dy;
+		
+		dx = Math.abs(e.getX()-downX);
+		dy = Math.abs(e.getY()-downY);
+		
+		if (dy > 0.25 * dx || maxExcursionY > 0.8 * dx)
+			return false;
+		
+		return dx > width/5 || dx > height/5;
+	}
+
 	/**
 	 * Handle touch event coming from Android system.
 	 */
 	public boolean onTouch(View v, MotionEvent event) {
 		this.lastControlsUseMillis = System.currentTimeMillis();
 		
-		gestureDetector.onTouchEvent(event);
+		if (!gestureDetector.onTouchEvent(event)) {
+			if (event.getAction() == MotionEvent.ACTION_DOWN) {
+				downX = event.getX();
+				downY = event.getY();
+				lastX = downX;
+				lastY = downY;
+				lockedVertically = verticalScrollLock;
+				maxExcursionY = 0;
+				scroller = null;
+			}
+			else if (event.getAction() == MotionEvent.ACTION_MOVE){
+				if (lockedVertically && unlocksVerticalLock(event)) 
+					lockedVertically = false;
+				
+				float dx = event.getX() - lastX;
+				float dy = event.getY() - lastY;
+				
+				float excursionY = Math.abs(event.getY() - downY);
+
+				if (excursionY > maxExcursionY)
+					maxExcursionY = excursionY;
+				
+				if (lockedVertically)
+					dx = 0;
+				
+				doScroll((int)-dx, (int)-dy);
+				
+				lastX = event.getX();
+				lastY = event.getY();
+			}
+		}
 		return true;
 	}
 	
@@ -1033,6 +1086,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		int maxy = this.height/2 + getUpperBound(this.width, margin,
 				  getCurrentDocumentHeight());
 
+		this.scroller = new Scroller(activity);
 		this.scroller.fling(this.left, this.top, 
 				(int)-vx, (int)-vy,
 				minx, maxx,
@@ -1133,6 +1187,11 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		this.rotation = rotation;
 		Log.d(TAG, "rotation changed to " + this.rotation);
 		this.invalidate();
+	}
+	
+	
+	public void setVerticalScrollLock(boolean verticalScrollLock) {
+		this.verticalScrollLock = verticalScrollLock;
 	}
 	
 	
