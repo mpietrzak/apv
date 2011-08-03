@@ -242,13 +242,14 @@ public class OpenFileActivity extends Activity {
         this.pageNumberTextView.setTextColor(Options.getForeColor(colorMode));
         this.pdfPagesProvider.setGray(Options.isGray(this.colorMode));
         this.pdfPagesProvider.setOmitImages(options.getBoolean(Options.PREF_OMIT_IMAGES, false));
-		pagesView.setColorMode(this.colorMode);
+		pagesView.setColorMode(this.colorMode);		
 		
 		pagesView.setZoomIncrement(
 				Float.parseFloat(options.getString(Options.PREF_ZOOM_INCREMENT, "1.414")));
 		this.pdfPagesProvider.setRenderAhead(options.getBoolean(Options.PREF_RENDER_AHEAD, true));
-		pagesView.setPageWithVolume(options.getBoolean(Options.PREF_PAGE_WITH_VOLUME, true));
-		pagesView.invalidate();
+		this.pagesView.setPageWithVolume(options.getBoolean(Options.PREF_PAGE_WITH_VOLUME, true));
+		this.pagesView.setVerticalScrollLock(options.getBoolean(Options.PREF_VERTICAL_SCROLL_LOCK, false));
+		this.pagesView.invalidate();
 		zoomAnim = AnimationUtils.loadAnimation(this,
 				zoomAnimations[
 				    Integer.parseInt(options.getString(Options.PREF_ZOOM_ANIMATION, "2"))]);		
