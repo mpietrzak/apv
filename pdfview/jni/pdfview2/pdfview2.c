@@ -22,6 +22,15 @@ static void copy_alpha(unsigned char* out, unsigned char *in, unsigned int w, un
 
 extern char fz_errorbuf[150*20]; /* defined in fitz/apv_base_error.c */
 
+#define NUM_BOXES 5
+
+const char boxes[NUM_BOXES][MAX_BOX_NAME+1] = {
+    "ArtBox",
+    "BleedBox",
+    "CropBox",
+    "MediaBox",
+    "TrimBox"
+};
 
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *jvm, void *reserved) {
@@ -41,20 +50,25 @@ JNIEXPORT void JNICALL
 Java_cx_hell_android_pdfview_PDF_parseFile(
         JNIEnv *env,
         jobject jthis,
-        jstring file_name) {
+        jstring file_name,
+        jint box_type) {
     const char *c_file_name = NULL;
     jboolean iscopy;
     jclass this_class;
     jfieldID pdf_field_id;
     pdf_t *pdf = NULL;
 
-
     c_file_name = (*env)->GetStringUTFChars(env, file_name, &iscopy);
 	this_class = (*env)->GetObjectClass(env, jthis);
 	pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
 	pdf = parse_pdf_file(c_file_name, 0);
+    if (NUM_BOXES <= box_type)
+        strcpy(pdf->box, "CropBox");
+    else
+        strcpy(pdf->box, boxes[box_type]);
     (*env)->ReleaseStringUTFChars(env, file_name, c_file_name);
 	(*env)->SetIntField(env, jthis, pdf_field_id, (int)pdf);
+    __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "Loading %s in page mode %s.", c_file_name, pdf->box);
 }
 
 
@@ -65,16 +79,23 @@ JNIEXPORT void JNICALL
 Java_cx_hell_android_pdfview_PDF_parseFileDescriptor(
         JNIEnv *env,
         jobject jthis,
-        jobject fileDescriptor) {
+        jobject fileDescriptor,
+        jint box_type
+        ) {
     int fileno;
     jclass this_class;
     jfieldID pdf_field_id;
     pdf_t *pdf = NULL;
+    jboolean iscopy;
 
 	this_class = (*env)->GetObjectClass(env, jthis);
 	pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
     fileno = get_descriptor_from_file_descriptor(env, fileDescriptor);
 	pdf = parse_pdf_file(NULL, fileno);
+    if (NUM_BOXES <= box_type)
+        strcpy(pdf->box, "CropBox");
+    else
+        strcpy(pdf->box, boxes[box_type]);
 	(*env)->SetIntField(env, jthis, pdf_field_id, (int)pdf);
 }
 
@@ -577,11 +598,15 @@ pdf_t* create_pdf_t() {
  * @param len length of byte buffer
  * @return initialized pdf_t struct; or NULL if loading failed
  */
-pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len) {
+pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len, jstring box_name) {
     pdf_t *pdf;
+    const char* c_box_name;
     fz_error error;
 
     pdf = create_pdf_t();
+    c_box_name = (*env)->GetStringUTFChars(env, box_name, &iscopy);
+    strncpy(pdf->box, box_name, 9);
+    pdf->box[MAX_BOX_NAME] = 0;
 
     pdf->xref = pdf_newxref();
     error = pdf_loadxref_mem(pdf->xref, bytes, len);
@@ -788,7 +813,6 @@ pdf_page* get_page(pdf_t *pdf, int pageno) {
  * Get part of page as bitmap.
  * Parameters left, top, width and height are interprted after scalling, so if we have 100x200 page scalled by 25% and
  * request 0x0 x 25x50 tile, we should get 25x50 bitmap of whole page content.
- * Page size is currently TrimBox size: http://www.prepressure.com/pdf/basics/page_boxes
  * pageno is 0-based.
  */
 static jintArray get_page_image_bitmap(JNIEnv *env,
@@ -833,7 +857,7 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
 
     ctm = fz_identity;
     pageobj = pdf->xref->page_objs[pageno];
-    trimobj = fz_dict_gets(pageobj, "TrimBox");
+    trimobj = fz_dict_gets(pageobj, pdf->box);
     if (trimobj != NULL)
         trimbox = pdf_to_rect(trimobj);
     else
@@ -936,7 +960,7 @@ int get_page_size(pdf_t *pdf, int pageno, int *width, int *height) {
     int rotate = 0;
 
     pageobj = pdf->xref->page_objs[pageno];
-    sizeobj = fz_dict_gets(pageobj, "TrimBox");
+    sizeobj = fz_dict_gets(pageobj, pdf->box);
     if (sizeobj == NULL)
          sizeobj = fz_dict_gets(pageobj, "MediaBox");
     rotateobj = fz_dict_gets(pageobj, "Rotate");
@@ -978,7 +1002,7 @@ int convert_point_pdf_to_apv(pdf_t *pdf, int page, int *x, int *y) {
 
     pageobj = pdf_getpageobject(pdf->xref, page+1);
     if (!pageobj) return -1;
-    sizeobj = fz_dictgets(pageobj, "TrimBox");
+    sizeobj = fz_dictgets(pageobj, pdf->box);
     if (sizeobj == NULL)
         sizeobj = fz_dictgets(pageobj, "MediaBox");
     if (!sizeobj) return -1;
@@ -1043,7 +1067,7 @@ int convert_box_pdf_to_apv(pdf_t *pdf, int page, fz_bbox *bbox) {
 
     pageobj = pdf->xref->page_objs[page];
     if (!pageobj) return -1;
-    sizeobj = fz_dict_gets(pageobj, "TrimBox");
+    sizeobj = fz_dict_gets(pageobj, pdf->box);
     if (sizeobj == NULL)
          sizeobj = fz_dict_gets(pageobj, "MediaBox");
     if (!sizeobj) return -1;

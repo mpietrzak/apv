@@ -133,5 +133,21 @@
 	<string name="default_color_mode">0</string>
 	<string name="omit_images">Skip images</string>
 	<string name="vertical_scroll_lock">Vertical scroll lock</string>
-	<string name="vertical_scroll_lock_sub">To scroll horizontally, you must first move horizontally 1/5 of the screen width.</string> 
+	<string name="vertical_scroll_lock_sub">To scroll horizontally, you must first move horizontally 1/5 of the screen width.</string>
+	<string name="box">PDF page box type</string> 
+	<string-array name="box_labels">
+		<item>ArtBox</item>
+		<item>BleedBox</item>
+		<item>CropBox</item>
+		<item>MediaBox</item>
+		<item>TrimBox</item>
+	</string-array>
+	<string-array name="boxes">
+		<item>0</item>
+		<item>1</item>
+		<item>2</item>
+		<item>3</item>
+		<item>4</item>
+	</string-array>
+	<string name="default_box">2</string>
 </resources>

@@ -272,15 +272,19 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 					((float)this.width - 2*MARGIN) / (float)this.pageSizes[0][0]);
 		}
 		if (oldw == 0 && oldh == 0) {
-			this.left = this.width / 2;
+			goToBookmark();
+		}
+	}
+	
+	public void goToBookmark() {
+		this.left = this.width / 2;
 
-			if (bookmarkedPage == 0) {
-				this.top  = this.height / 2;
-			}
-			else {
-				Point pos = getPagePositionInDocumentWithZoom(bookmarkedPage);
-				this.top = pos.y + this.height / 2;
-			}
+		if (bookmarkedPage == 0) {
+			this.top  = this.height / 2;
+		}
+		else {
+			Point pos = getPagePositionInDocumentWithZoom(bookmarkedPage);
+			this.top = pos.y + this.height / 2;
 		}
 	}
 	

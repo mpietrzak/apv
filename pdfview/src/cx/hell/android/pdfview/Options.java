@@ -25,6 +25,7 @@ public class Options extends PreferenceActivity {
 	public final static String PREF_COLOR_MODE = "colorMode";
 	public final static String PREF_OMIT_IMAGES = "omitImages";
 	public final static String PREF_VERTICAL_SCROLL_LOCK = "verticalScrollLock";
+	public final static String PREF_BOX = "boxType";
 	
 	public final static int COLOR_MODE_NORMAL = 0;
 	public final static int COLOR_MODE_INVERT = 1;
