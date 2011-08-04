@@ -102,6 +102,8 @@ public class OpenFileActivity extends Activity {
 	// page number display
 	private TextView pageNumberTextView;
 	private Animation pageNumberAnim;
+	
+	private int box = 2;
 
 	private int fadeStartOffset = 7000; 
 	
@@ -120,6 +122,7 @@ public class OpenFileActivity extends Activity {
 		Options.setOrientation(this);
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
 
+		this.box = Integer.parseInt(options.getString(Options.PREF_BOX, "2"));
 		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         
         // Get display metrics
@@ -131,17 +134,8 @@ public class OpenFileActivity extends Activity {
         
         // the PDF view
         this.pagesView = new PagesView(this);
-        this.pdf = this.getPDF();
-        this.colorMode = Options.getColorMode(options);
-        this.pdfPagesProvider = new PDFPagesProvider(this, pdf, 
-        		Options.isGray(this.colorMode), 
-        		options.getBoolean(Options.PREF_OMIT_IMAGES, false),
-        		options.getBoolean(Options.PREF_RENDER_AHEAD, true));
-        pagesView.setPagesProvider(pdfPagesProvider);
-        Bookmark b = new Bookmark(this.getApplicationContext()).open();
-        pagesView.setStartBookmark(b, filePath);
-        b.close();
         layout.addView(pagesView);
+        startPDF(options);
         
         // the find buttons
         this.findButtonsLayout = new LinearLayout(this);
@@ -236,6 +230,14 @@ public class OpenFileActivity extends Activity {
 		Options.setOrientation(this);
 		
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
+		
+		int newBox = Integer.parseInt(options.getString(Options.PREF_BOX, "2"));
+		if (this.box != newBox) {
+			saveLastPage();
+			this.box = newBox;
+	        startPDF(options);
+	        this.pagesView.goToBookmark();
+		}
 
         this.colorMode = Options.getColorMode(options);
         this.pageNumberTextView.setBackgroundColor(Options.getBackColor(colorMode));
@@ -326,7 +328,19 @@ public class OpenFileActivity extends Activity {
     	});
     }
 
-    
+    private void startPDF(SharedPreferences options) {
+	    this.pdf = this.getPDF();
+	    this.colorMode = Options.getColorMode(options);
+	    this.pdfPagesProvider = new PDFPagesProvider(this, pdf,        		
+	    		Options.isGray(this.colorMode), 
+	    		options.getBoolean(Options.PREF_OMIT_IMAGES, false),
+	    		options.getBoolean(Options.PREF_RENDER_AHEAD, true));
+	    pagesView.setPagesProvider(pdfPagesProvider);
+	    Bookmark b = new Bookmark(this.getApplicationContext()).open();
+	    pagesView.setStartBookmark(b, filePath);
+	    b.close();
+    }
+
     /**
      * Return PDF instance wrapping file referenced by Intent.
      * Currently reads all bytes to memory, in future local files
@@ -342,7 +356,7 @@ public class OpenFileActivity extends Activity {
 			Recent recent = new Recent(this);
 			recent.add(0, filePath);
 			recent.commit();
-			return new PDF(new File(filePath));
+			return new PDF(new File(filePath), this.box);
     	} else if (uri.getScheme().equals("content")) {
     		ContentResolver cr = this.getContentResolver();
     		FileDescriptor fileDescriptor;
@@ -351,7 +365,7 @@ public class OpenFileActivity extends Activity {
 			} catch (FileNotFoundException e) {
 				throw new RuntimeException(e); // TODO: handle errors
 			}
-    		return new PDF(fileDescriptor);
+    		return new PDF(fileDescriptor, this.box);
     	} else {
     		throw new RuntimeException("don't know how to get filename from " + uri);
     	}

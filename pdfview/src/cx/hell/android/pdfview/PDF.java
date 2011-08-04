@@ -48,42 +48,42 @@ public class PDF {
 	 * Parse bytes as PDF file and store resulting pdf_t struct in pdf_ptr.
 	 * @return error code
 	 */
-	synchronized private native int parseBytes(byte[] bytes);
+/*	synchronized private native int parseBytes(byte[] bytes, int box); */
 	
 	/**
 	 * Parse PDF file.
 	 * @param fileName pdf file name
 	 * @return error code
 	 */
-	synchronized private native int parseFile(String fileName);
+	synchronized private native int parseFile(String fileName, int box);
 	
 	/**
 	 * Parse PDF file.
 	 * @param fd opened file descriptor
 	 * @return error code
 	 */
-	synchronized private native int parseFileDescriptor(FileDescriptor fd);
+	synchronized private native int parseFileDescriptor(FileDescriptor fd, int box);
 
 	/**
 	 * Construct PDF structures from bytes stored in memory.
 	 */
-	public PDF(byte[] bytes) {
-		this.parseBytes(bytes);
-	}
+/*	public PDF(byte[] bytes, int box) {
+		this.parseBytes(bytes, box);
+	} */
 	
 	/**
 	 * Construct PDF structures from file sitting on local filesystem.
 	 */
-	public PDF(File file) {
-		this.parseFile(file.getAbsolutePath());
+	public PDF(File file, int box) {
+		this.parseFile(file.getAbsolutePath(), box);
 	}
 	
 	/**
 	 * Construct PDF structures from opened file descriptor.
 	 * @param file opened file descriptor
 	 */
-	public PDF(FileDescriptor file) {
-		this.parseFileDescriptor(file);
+	public PDF(FileDescriptor file, int box) {
+		this.parseFileDescriptor(file, box);
 	}
 	
 	/**

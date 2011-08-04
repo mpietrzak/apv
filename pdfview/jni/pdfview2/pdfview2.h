@@ -10,6 +10,7 @@
 #include "fitz.h"
 #include "mupdf.h"
 
+#define MAX_BOX_NAME 8
 
 /**
  * Holds pdf info.
@@ -21,13 +22,14 @@ typedef struct {
     int fileno; /* used only when opening by file descriptor */
     pdf_page **pages; /* lazy-loaded pages */
     fz_glyph_cache *glyph_cache;
+    char box[MAX_BOX_NAME + 1];
 } pdf_t;
 
 
 
 
 /*
- * Declarations 
+ * Declarations
  */
 
 
