@@ -703,7 +703,7 @@ pdf_t* parse_pdf_file(const char *filename, int fileno) {
  * @param page original page
  * @return zoom required to best fit page into max_width x max_height rectangle
  */
-double get_page_zoom(pdf_page *page, int max_width, int max_height) {
+/*double get_page_zoom(pdf_page *page, int max_width, int max_height) {
     double page_width, page_height;
     double zoom_x, zoom_y;
     double zoom;
@@ -716,7 +716,7 @@ double get_page_zoom(pdf_page *page, int max_width, int max_height) {
     zoom = (zoom_x < zoom_y) ? zoom_x : zoom_y;
 
     return zoom;
-}
+}*/
 
 
 /**
@@ -788,7 +788,7 @@ pdf_page* get_page(pdf_t *pdf, int pageno) {
  * Get part of page as bitmap.
  * Parameters left, top, width and height are interprted after scalling, so if we have 100x200 page scalled by 25% and
  * request 0x0 x 25x50 tile, we should get 25x50 bitmap of whole page content.
- * Page size is currently MediaBox size: http://www.prepressure.com/pdf/basics/page_boxes, but probably shuld be TrimBox.
+ * Page size is currently TrimBox size: http://www.prepressure.com/pdf/basics/page_boxes
  * pageno is 0-based.
  */
 static jintArray get_page_image_bitmap(JNIEnv *env,
@@ -807,6 +807,9 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     int num_pixels;
     jintArray jints; /* return value */
     int *jbuf; /* pointer to internal jint */
+    fz_obj *pageobj;
+    fz_obj *trimobj;
+    fz_rect trimbox;
 
     zoom = (double)zoom_pmil / 1000.0;
 
@@ -829,11 +832,18 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     if (!page) return NULL; /* TODO: handle/propagate errors */
 
     ctm = fz_identity;
-    ctm = fz_concat(ctm, fz_translate(-page->mediabox.x0, -page->mediabox.y1));
+    pageobj = pdf->xref->page_objs[pageno];
+    trimobj = fz_dict_gets(pageobj, "TrimBox");
+    if (trimobj != NULL)
+        trimbox = pdf_to_rect(trimobj);
+    else
+        trimbox = page->mediabox;
+
+    ctm = fz_concat(ctm, fz_translate(-trimbox.x0, -trimbox.y1));
     ctm = fz_concat(ctm, fz_scale(zoom, -zoom));
     rotation = page->rotate + rotation * -90;
     if (rotation != 0) ctm = fz_concat(ctm, fz_rotate(rotation));
-    bbox = fz_transform_rect(ctm, page->mediabox);
+    bbox = fz_transform_rect(ctm, trimbox);
 
     /* not bbox holds page after transform, but we only need tile at (left,right) from top-left corner */
 
@@ -926,7 +936,9 @@ int get_page_size(pdf_t *pdf, int pageno, int *width, int *height) {
     int rotate = 0;
 
     pageobj = pdf->xref->page_objs[pageno];
-    sizeobj = fz_dict_gets(pageobj, "MediaBox");
+    sizeobj = fz_dict_gets(pageobj, "TrimBox");
+    if (sizeobj == NULL)
+         sizeobj = fz_dict_gets(pageobj, "MediaBox");
     rotateobj = fz_dict_gets(pageobj, "Rotate");
     if (fz_is_int(rotateobj)) {
         rotate = fz_to_int(rotateobj);
@@ -966,7 +978,9 @@ int convert_point_pdf_to_apv(pdf_t *pdf, int page, int *x, int *y) {
 
     pageobj = pdf_getpageobject(pdf->xref, page+1);
     if (!pageobj) return -1;
-    sizeobj = fz_dictgets(pageobj, "MediaBox");
+    sizeobj = fz_dictgets(pageobj, "TrimBox");
+    if (sizeobj == NULL)
+        sizeobj = fz_dictgets(pageobj, "MediaBox");
     if (!sizeobj) return -1;
     bbox = pdf_torect(sizeobj);
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "page bbox is %.1f, %.1f, %.1f, %.1f", bbox.x0, bbox.y0, bbox.x1, bbox.y1);
@@ -1004,7 +1018,7 @@ int convert_point_pdf_to_apv(pdf_t *pdf, int page, int *x, int *y) {
 /**
  * Convert coordinates from pdf to APV.
  * Result is stored in location pointed to by bbox param.
- * This function has to get page MediaBox relative to which bbox is located.
+ * This function has to get page TrimBox relative to which bbox is located.
  * This function should not allocate any memory.
  * @return error code, 0 means ok
  */
@@ -1029,7 +1043,9 @@ int convert_box_pdf_to_apv(pdf_t *pdf, int page, fz_bbox *bbox) {
 
     pageobj = pdf->xref->page_objs[page];
     if (!pageobj) return -1;
-    sizeobj = fz_dict_gets(pageobj, "MediaBox");
+    sizeobj = fz_dict_gets(pageobj, "TrimBox");
+    if (sizeobj == NULL)
+         sizeobj = fz_dict_gets(pageobj, "MediaBox");
     if (!sizeobj) return -1;
     page_bbox = pdf_to_rect(sizeobj);
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "page bbox is %.1f, %.1f, %.1f, %.1f", page_bbox.x0, page_bbox.y0, page_bbox.x1, page_bbox.y1);
