@@ -81,7 +81,7 @@ public class PDFPagesProvider extends PagesProvider {
 		if (m < minMax)
 			m = minMax;
 		
-		Log.v(TAG, "Setting cache size to "+m);
+		Log.v(TAG, "Setting: cache size="+m+ " renderAhead="+renderAhead);
 		
 		this.bitmapCache.setMaxCacheSizeBytes(m);
 	}
