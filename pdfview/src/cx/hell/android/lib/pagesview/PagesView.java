@@ -445,7 +445,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		int pageWidth = 0;
 		int pageHeight = 0;
 		float pagex0, pagey0, pagex1, pagey1; // in doc, counts zoom
-		float x, y; // on screen
+		int x, y; // on screen
 		int viewx0, viewy0; // view over doc
 		LinkedList<Tile> visibleTiles = new LinkedList<Tile>();
 		float currentMargin = this.getCurrentMargin();
@@ -475,10 +475,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			
 			this.currentPage = -1;
 			
-			int firstVisiblePage = -1;
-			int lastVisiblePage = -1;
-			
 			pagey0 = 0;
+			int[] tileSizes = new int[2];
 			
 			for(int i = 0; i < pageCount; ++i) {
 				// is page i visible?
@@ -502,10 +500,9 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 						this.currentPage = i;
 					}
 					
-					x = pagex0 - viewx0;
-					y = pagey0 - viewy0;
+					x = (int)pagex0 - viewx0;
+					y = (int)pagey0 - viewy0;
 					
-					int[] tileSizes = new int[2];
 					getGoodTileSizes(tileSizes, pageWidth, pageHeight);
 					
 					for(int tileix = 0; tileix < (pageWidth + tileSizes[0]-1) / tileSizes[0]; ++tileix)
@@ -544,6 +541,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 										
 									}
 								}
+								Log.v(TAG, "requesting "+tile);
 								visibleTiles.add(tile);
 							}
 						}
