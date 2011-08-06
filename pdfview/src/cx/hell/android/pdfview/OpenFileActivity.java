@@ -544,37 +544,27 @@ public class OpenFileActivity extends Activity {
     	d.show();
     }
     
-    private void gotoPage(int page, int zoom, int rotation) {
+    private void gotoPage(int page) {
     	Log.i(TAG, "rewind to page " + page);
     	if (this.pagesView != null) {
     		this.pagesView.scrollToPage(page);
-    		if (zoom > 0)
-    			this.pagesView.setZoomLevel(zoom);
-    		this.pagesView.setRotation(rotation);
             showAnimated();
     	}
-    }
-    
-    /**
-     * Called after submitting go to page dialog.
-     * @param page page number, 0-based
-     */
-    private void gotoPage(int page) {
-    	gotoPage(page, this.pagesView.getCurrentZoom(), this.pagesView.getRotation());
     }
     
    /**
      * Save the last page in the bookmarks
      */
     private void saveLastPage() {
+    	BookmarkEntry entry = this.pagesView.toBookmarkEntry();
         Bookmark b = new Bookmark(this.getApplicationContext()).open();
-        b.setLast(filePath, pagesView.getCurrentPage(), pagesView.getCurrentZoom(),
-        		pagesView.getRotation());
+        b.setLast(filePath, entry);
         b.close();
         Log.i(TAG, "last page saved for "+filePath);    
     }
     
     /**
+     * 
      * Create options menu, called by Android system.
      * @param menu menu to populate
      * @return true meaning that menu was populated

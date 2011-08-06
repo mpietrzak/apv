@@ -11,7 +11,6 @@ import java.util.Map;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.SystemClock;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import cx.hell.android.lib.pagesview.OnImageRenderedListener;
 import cx.hell.android.lib.pagesview.PagesProvider;

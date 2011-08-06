@@ -41,18 +41,16 @@ public class Bookmark {
 	public static final String KEY_ID = "_id";
 	public static final String KEY_BOOK = "book";
 	public static final String KEY_NAME = "name";
-	public static final String KEY_PAGE = "page";
 	public static final String KEY_COMMENT = "comment";
 	public static final String KEY_TIME = "time";
-	public static final String KEY_ZOOM = "zoom";
-	public static final String KEY_ROTATION = "rotation";
+	public static final String KEY_ENTRY = "entry";
 
-	private static final int DB_VERSION = 4;
+	private static final int DB_VERSION = 1;
 
 	private static final String DATABASE_CREATE = "create table bookmark "
 			+ "(_id integer primary key autoincrement, "
 			+ "book text not null, name text not null, "
-			+ "page integer, zoom integer, rotation integer, comment text, time integer);";
+			+ "entry integer, comment text, time integer);";
 
 	private final Context context;
 
@@ -75,7 +73,7 @@ public class Bookmark {
 	 */
 	private static class DatabaseHelper extends SQLiteOpenHelper {
 		DatabaseHelper(Context context) {
-			super(context, "bookmark.db", null, DB_VERSION);
+			super(context, "bookmarks.db", null, DB_VERSION);
 		}
 
 		@Override
@@ -85,15 +83,6 @@ public class Bookmark {
 
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-			if (oldVersion < 2) {
-				db.execSQL("ALTER TABLE bookmark ADD COLUMN " + KEY_TIME + " integer");
-			}
-			if (oldVersion < 3) {
-				db.execSQL("ALTER TABLE bookmark ADD COLUMN " + KEY_ZOOM + " integer");
-			}
-			if (oldVersion < 4) {
-				db.execSQL("ALTER TABLE bookmark ADD COLUMN " + KEY_ROTATION + " integer");
-			}
 		}
 	}
 
@@ -123,13 +112,11 @@ public class Bookmark {
 	 * @param page
 	 *            last page
 	 */
-	public void setLast(String file, int page, int zoomLevel, int rotation) {
+	public void setLast(String file, BookmarkEntry entry) {
 		String md5 = nameToMD5(file);
 		ContentValues cv = new ContentValues();
 		cv.put(KEY_BOOK, md5);
-		cv.put(KEY_PAGE, page);
-		cv.put(KEY_ZOOM, zoomLevel);
-		cv.put(KEY_ROTATION, rotation);
+		cv.put(KEY_ENTRY, entry.toString());
 		cv.put(KEY_NAME, "last");
 		cv.put(KEY_TIME, System.currentTimeMillis() / 1000);
 		if (db.update("bookmark", cv, KEY_BOOK + "='" + md5 + "' AND "
@@ -138,50 +125,20 @@ public class Bookmark {
 		}
 	}
 	
-	public int getInt(String file, String key, int defaultValue) {
-		int value = defaultValue;
+	public BookmarkEntry getLast(String file) {
+		BookmarkEntry entry = null;
 		String md5 = nameToMD5(file);
 
-		Cursor cur = db.query(true, "bookmark", new String[] { key },
+		Cursor cur = db.query(true, "bookmark", new String[] { KEY_ENTRY },
 				KEY_BOOK + "='" + md5 + "' AND " + KEY_NAME + "= 'last'", null,
 				null, null, null, "1");
 		if (cur != null) {
 			if (cur.moveToFirst()) {
-				value = cur.getInt(0);
+				entry = new BookmarkEntry(cur.getString(0));
 			}
 		}
 		cur.close();
-		return value;
-	}
-
-	/**
-	 * Get the last recorded page for the given file
-	 * 
-	 * @param file
-	 * @return page number (0-based) or 0 if not found
-	 */
-	public int getLastPage(String file) {
-		return getInt(file, KEY_PAGE, 0);
-	}
-
-	/**
-	 * Get the last recorded zoom for the given file
-	 * 
-	 * @param file
-	 * @return zoom level or 0 if not found
-	 */
-	public int getLastZoom(String file) {
-		return getInt(file, KEY_ZOOM, 0);
-	}
-
-	/**
-	 * Get the last recorded rotation for the given file
-	 * 
-	 * @param file
-	 * @return rotation or 0 if not found
-	 */
-	public int getLastRotation(String file) {
-		return getInt(file, KEY_ROTATION, 0);
+		return entry;
 	}
 
 	/**
@@ -204,7 +161,7 @@ public class Bookmark {
 		}
 		
 		String message = file + ":" + (new File(file)).length();
-
+		
 		digest.update(message.getBytes());
 		byte messageDigest[] = digest.digest();
 		StringBuffer hexString = new StringBuffer();
