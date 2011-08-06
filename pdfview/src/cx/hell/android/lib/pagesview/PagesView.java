@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import cx.hell.android.pdfview.Bookmark;
+import cx.hell.android.pdfview.BookmarkEntry;
 import cx.hell.android.pdfview.Options;
 
 import android.app.Activity;
@@ -151,7 +152,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	/**
 	 * Bookmarked page to go to.
 	 */
-	private int bookmarkedPage = 0;
+	private BookmarkEntry bookmarkToRestore = null;
 	
 	/**
 	 * Construct this view.
@@ -238,17 +239,18 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	
 	public void setStartBookmark(Bookmark b, String bookmarkName) {
 		if (b != null) {
-			this.rotation = b.getLastRotation(bookmarkName);
-
-			int zoom = b.getLastZoom(bookmarkName);
-			if (0<zoom) {
-				this.zoomLevel = zoom;
-			}
+			this.bookmarkToRestore = b.getLast(bookmarkName);
 			
-			int page = b.getLastPage(bookmarkName);
-			if (0<page) {
-				this.bookmarkedPage = page;
-				this.currentPage = page;
+			if (this.bookmarkToRestore == null)
+				return;
+						
+			if (this.bookmarkToRestore.numberOfPages != this.pageSizes.length) {
+				this.bookmarkToRestore = null;
+				return;
+			}
+
+			if (0<this.bookmarkToRestore.page) {
+				this.currentPage = this.bookmarkToRestore.page;
 			}
 		}
 	}
@@ -277,14 +279,19 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	}
 	
 	public void goToBookmark() {
-		this.left = this.width / 2;
 
-		if (bookmarkedPage == 0) {
+		if (this.bookmarkToRestore == null) {
 			this.top  = this.height / 2;
+			this.left = this.width / 2;
 		}
 		else {
-			Point pos = getPagePositionInDocumentWithZoom(bookmarkedPage);
+			this.zoomLevel = (int)(this.bookmarkToRestore.absoluteZoomLevel / this.scaling0);
+			this.rotation = this.bookmarkToRestore.rotation;
+			Point pos = getPagePositionInDocumentWithZoom(this.bookmarkToRestore.page);
+			this.currentPage = this.bookmarkToRestore.page;
 			this.top = pos.y + this.height / 2;
+			this.left = this.getCurrentPageWidth(this.currentPage)/2 + MARGIN + this.bookmarkToRestore.offsetX;
+			this.bookmarkToRestore = null;
 		}
 	}
 	
@@ -1033,7 +1040,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 * 
 	 * @return the current zoom level
 	 */
-	public int getCurrentZoom() {
+	public int getCurrentAbsoluteZoom() {
 		return zoomLevel;
 	}
 	
@@ -1265,5 +1272,11 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			return max;
 		else
 			return pos;
+	}
+	
+	public BookmarkEntry toBookmarkEntry() {
+		return new BookmarkEntry(this.pageSizes.length, 
+				this.currentPage, scaling0*zoomLevel, rotation, 
+				this.left - this.getCurrentPageWidth(this.currentPage)/2 - MARGIN);
 	}
 }
