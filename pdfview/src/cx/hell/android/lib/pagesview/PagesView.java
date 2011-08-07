@@ -548,7 +548,6 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 										
 									}
 								}
-								Log.v(TAG, "requesting "+tile);
 								visibleTiles.add(tile);
 							}
 						}

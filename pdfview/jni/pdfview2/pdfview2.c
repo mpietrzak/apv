@@ -1,5 +1,5 @@
-
 #include <string.h>
+#include <wctype.h>
 #include <jni.h>
 
 #include "android/log.h"
@@ -12,6 +12,7 @@
 
 #define BITMAP_STORE_MAX_AGE  1
 #define FIND_STORE_MAX_AGE    4
+#define TEXT_STORE_MAX_AGE    4
 
 static jintArray get_page_image_bitmap(JNIEnv *env,
       pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
@@ -250,15 +251,12 @@ Java_cx_hell_android_pdfview_PDF_freeMemory(
 }
 
 
-JNIEXPORT jobject JNICALL
-Java_cx_hell_android_pdfview_PDF_find(
+#if 0
+JNIEXPORT void JNICALL
+Java_cx_hell_android_pdfview_PDF_export(
         JNIEnv *env,
-        jobject this,
-        jstring text,
-        jint pageno) {
+        jobject this) {
     pdf_t *pdf = NULL;
-    char *ctext = NULL;
-    jboolean is_copy;
     jobject results = NULL;
     pdf_page *page = NULL;
     fz_text_span *text_span = NULL, *ln = NULL;
@@ -267,14 +265,132 @@ Java_cx_hell_android_pdfview_PDF_find(
     char *found = NULL;
     fz_error error = 0;
     jobject find_result = NULL;
+    int pageno = 0;
+    int pagecount;
+    int fd;
 
-    ctext = (char*)(*env)->GetStringUTFChars(env, text, &is_copy);
-    if (ctext == NULL) {
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "export to txt");
+
+    pdf = get_pdf_from_this(env, this);
+
+    pagecount = pdf_count_pages(pdf->xref);
+
+    fd = open("/tmp/pdfview-export.txt", O_WRONLY|O_CREAT, 0666);
+    if (fd < 0) {
+         __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "Error opening /tmp/pdfview-export.txt");
+        return;
+    }
+
+    for(pageno = 0; pageno < pagecount ; pageno++) {
+        page = get_page(pdf, pageno);
+
+        if (pdf->last_pageno != pageno && NULL != pdf->xref->store) {
+            pdf_age_store(pdf->xref->store, TEXT_STORE_MAX_AGE);
+            pdf->last_pageno = pageno;
+        }
+
+      text_span = fz_new_text_span();
+      dev = fz_new_text_device(text_span);
+      error = pdf_run_page(pdf->xref, page, dev, fz_identity);
+      if (error)
+      {
+          /* TODO: cleanup */
+          fz_rethrow(error, "text extraction failed");
+          return;
+      }
+
+      /* TODO: Detect paragraph breaks using bbox field */
+      for(ln = text_span; ln; ln = ln->next) {
+          int i;
+          textlinechars = (char*)malloc(ln->len + 1);
+          for(i = 0; i < ln->len; ++i) textlinechars[i] = ln->text[i].c;
+          textlinechars[i] = '\n';
+          write(fd, textlinechars, ln->len+1);
+          free(textlinechars);
+      }
+
+      fz_free_device(dev);
+      fz_free_text_span(text_span);
+    }
+
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "export complete");
+
+    close(fd);
+}
+#endif
+
+
+/* wcsstr() seems broken--it matches too much */
+wchar_t* widestrstr(wchar_t* haystack, int haystack_length, wchar_t* needle, int needle_length) {
+    char* found;
+    int byte_haystack_length;
+    int byte_needle_length;
+
+    if (needle_length == 0)
+         return haystack;
+         
+    byte_haystack_length = haystack_length * sizeof(wchar_t);
+    byte_needle_length = needle_length * sizeof(wchar_t);
+
+    while(haystack_length >= needle_length &&
+        NULL != (found = memmem(haystack, byte_haystack_length, needle, byte_needle_length))) {
+          int delta = found - (char*)haystack;
+          int new_offset;
+
+          /* Check if the find is wchar_t-aligned */
+          if (delta % sizeof(wchar_t) == 0)
+              return (wchar_t*)found;
+
+          new_offset = (delta + sizeof(wchar_t) - 1) / sizeof(wchar_t);
+
+          haystack += new_offset;
+          haystack_length -= new_offset;
+          byte_haystack_length = haystack_length * sizeof(wchar_t);
+    }
+
+    return NULL;
+}
+
+/* TODO: Specialcase searches for 7-bit text to make them faster */
+JNIEXPORT jobject JNICALL
+Java_cx_hell_android_pdfview_PDF_find(
+        JNIEnv *env,
+        jobject this,
+        jstring text,
+        jint pageno) {
+    pdf_t *pdf = NULL;
+    const jchar *jtext = NULL;
+    wchar_t *ctext = NULL;
+    jboolean is_copy;
+    jobject results = NULL;
+    pdf_page *page = NULL;
+    fz_text_span *text_span = NULL, *ln = NULL;
+    fz_device *dev = NULL;
+    wchar_t *textlinechars;
+    wchar_t *found = NULL;
+    fz_error error = 0;
+    jobject find_result = NULL;
+    int length;
+    int i;
+
+    jtext = (*env)->GetStringChars(env, text, &is_copy);
+
+    if (jtext == NULL) {
         __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "text cannot be null");
-        (*env)->ReleaseStringUTFChars(env, text, ctext);
+        (*env)->ReleaseStringChars(env, text, jtext);
         return NULL;
     }
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "find(%s)", ctext);
+
+    length = (*env)->GetStringLength(env, text);
+
+    ctext = malloc((length+1) * sizeof(wchar_t));
+
+    for (i=0; i<length; i++) {
+        ctext[i] = towlower(jtext[i]);
+        __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "find(%x)", ctext[i]);
+    }
+    ctext[length] = 0; /* This will be needed if wcsstr() ever starts to work */
+
     pdf = get_pdf_from_this(env, this);
     page = get_page(pdf, pageno);
 
@@ -294,71 +410,74 @@ Java_cx_hell_android_pdfview_PDF_find(
     }
 
     for(ln = text_span; ln; ln = ln->next) {
-        textlinechars = (char*)malloc(ln->len + 1);
-        {
-            int i;
-            for(i = 0; i < ln->len; ++i) textlinechars[i] = ln->text[i].c;
-        }
-        textlinechars[ln->len] = 0;
-        found = strcasestr(textlinechars, ctext);
-        if (found) {
-            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "found something, creating empty find result");
-            find_result = create_find_result(env);
-            if (find_result == NULL) {
-                __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "tried to create empty find result, but got NULL instead");
-                /* TODO: free resources */
-                (*env)->ReleaseStringUTFChars(env, text, ctext);
-                return;
-            }
-            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "found something, empty find result created");
-            set_find_result_page(env, find_result, pageno);
-            /* now add markers to this find result */
-            {
-                int i = 0;
-                int i0, i1;
-                /* int x, y; */
-                fz_bbox charbox;
-                i0 = (found-textlinechars);
-                i1 = i0 + strlen(ctext);
-                for(i = i0; i < i1; ++i) {
-                    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "adding marker for letter %d: %c", i, textlinechars[i]);
-                    /* 
-                    x = ln->text[i].x;
-                    y = ln->text[i].y;
-                    convert_point_pdf_to_apv(pdf, pageno, &x, &y);
-                    */
-                    charbox = ln->text[i].bbox;
-                    convert_box_pdf_to_apv(pdf, pageno, &charbox);
-                    /* add_find_result_marker(env, find_result, x-2, y-2, x+2, y+2); */
-                    add_find_result_marker(env, find_result, charbox.x0-2, charbox.y0-2, charbox.x1+2, charbox.y1+2); /* TODO: check errors */
-
+        if (length <= ln->len) {
+            textlinechars = (wchar_t*)malloc((ln->len + 1)*sizeof(wchar_t));
+            for(i = 0; i < ln->len; ++i) textlinechars[i] = towlower(ln->text[i].c);
+            textlinechars[ln->len] = 0; /* will be needed if wccstr starts to work */
+            found = widestrstr(textlinechars, ln->len, ctext, length);
+            if (found) {
+                __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "found something, creating empty find result");
+                find_result = create_find_result(env);
+                if (find_result == NULL) {
+                    __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "tried to create empty find result, but got NULL instead");
+                    /* TODO: free resources */
+                    free(ctext);
+                    (*env)->ReleaseStringChars(env, text, jtext);
+                    pdf_age_store(pdf->xref->store, 0);
+                    return;
                 }
-                /* TODO: obviously this sucks massively, good God please forgive me for writing this; if only I had more time... */
-                /*
-                x = ((float)(ln->text[i1-1].x - ln->text[i0].x)) / (float)strlen(ctext) + ln->text[i1-1].x;
-                y = ((float)(ln->text[i1-1].y - ln->text[i0].y)) / (float)strlen(ctext) + ln->text[i1-1].y;
-                convert_point_pdf_to_apv(pdf, pageno, &x, &y);
-                __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "adding final marker");
-                add_find_result_marker(env,
-                        find_result,
-                        x-2, y-2,
-                        x+2, y+2
-                    );
-                */
+                __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "found something, empty find result created");
+                set_find_result_page(env, find_result, pageno);
+                /* now add markers to this find result */
+                {
+                    int i = 0;
+                    int i0, i1;
+                    /* int x, y; */
+                    fz_bbox charbox;
+                    i0 = (found-textlinechars);
+                    i1 = i0 + length;
+                    for(i = i0; i < i1; ++i) {
+                        __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "adding marker for letter %d: %c", i, textlinechars[i]);
+                        /* 
+                        x = ln->text[i].x;
+                        y = ln->text[i].y;
+                        convert_point_pdf_to_apv(pdf, pageno, &x, &y);
+                        */
+                        charbox = ln->text[i].bbox;
+                        convert_box_pdf_to_apv(pdf, pageno, &charbox);
+                        /* add_find_result_marker(env, find_result, x-2, y-2, x+2, y+2); */
+                        add_find_result_marker(env, find_result, charbox.x0-2, charbox.y0-2, charbox.x1+2, charbox.y1+2); /* TODO: check errors */
+
+                    }
+                    /* TODO: obviously this sucks massively, good God please forgive me for writing this; if only I had more time... */
+                    /*
+                    x = ((float)(ln->text[i1-1].x - ln->text[i0].x)) / (float)strlen(ctext) + ln->text[i1-1].x;
+                    y = ((float)(ln->text[i1-1].y - ln->text[i0].y)) / (float)strlen(ctext) + ln->text[i1-1].y;
+                    convert_point_pdf_to_apv(pdf, pageno, &x, &y);
+                    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "adding final marker");
+                    add_find_result_marker(env,
+                            find_result,
+                            x-2, y-2,
+                            x+2, y+2
+                        );
+                    */
+                }
+                __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "adding find result to list");
+                add_find_result_to_list(env, &results, find_result);
+                __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "added find result to list");
             }
-            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "adding find result to list");
-            add_find_result_to_list(env, &results, find_result);
-            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "added find result to list");
+            free(textlinechars);
         }
-        free(textlinechars);
     }
 
     fz_free_device(dev);
     fz_free_text_span(text_span);
 
+    free(ctext);
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "releasing text back to jvm");
-    (*env)->ReleaseStringUTFChars(env, text, ctext);
+    (*env)->ReleaseStringChars(env, text, jtext);
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "returning results");
+    pdf_age_store(pdf->xref->store, 0);
     return results;
 }
 
