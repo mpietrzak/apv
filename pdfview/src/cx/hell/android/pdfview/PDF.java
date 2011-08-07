@@ -112,6 +112,11 @@ public class PDF {
 	synchronized public native int getPageSize(int n, PDF.Size size);
 	
 	/**
+	 * Export PDF to a text file.
+	 */
+//	synchronized public native void export();
+
+	/**
 	 * Find text on given page, return list of find results.
 	 */
 	synchronized public native List<FindResult> find(String text, int page);

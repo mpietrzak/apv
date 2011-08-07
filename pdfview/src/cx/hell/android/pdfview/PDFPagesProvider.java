@@ -70,7 +70,6 @@ public class PDFPagesProvider extends PagesProvider {
 			else {
 				renderAhead = 1.0001f;
 			}
-			
 		}
 		else {
 			/* The extra little bit is to compensate for round-off */
