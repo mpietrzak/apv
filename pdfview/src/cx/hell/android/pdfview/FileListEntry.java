@@ -64,6 +64,6 @@ public class FileListEntry {
 	}
 	
 	public boolean isUpFolder() {
-		return this.isDirectory && this.file.getName().equals("..");
+		return this.isDirectory && this.label.equals("..");
 	}
 }
