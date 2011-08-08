@@ -231,6 +231,8 @@ public class OpenFileActivity extends Activity {
 		
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
 		
+		this.pagesView.setSideMargins(options.getBoolean(Options.PREF_SIDE_MARGINS, false));
+		
 		int newBox = Integer.parseInt(options.getString(Options.PREF_BOX, "2"));
 		if (this.box != newBox) {
 			saveLastPage();
@@ -243,8 +245,9 @@ public class OpenFileActivity extends Activity {
         this.pageNumberTextView.setBackgroundColor(Options.getBackColor(colorMode));
         this.pageNumberTextView.setTextColor(Options.getForeColor(colorMode));
         this.pdfPagesProvider.setGray(Options.isGray(this.colorMode));
+        this.pdfPagesProvider.setExtraCache(1024*1024*Options.getIntFromString(options, Options.PREF_EXTRA_CACHE, 0));
         this.pdfPagesProvider.setOmitImages(options.getBoolean(Options.PREF_OMIT_IMAGES, false));
-		pagesView.setColorMode(this.colorMode);		
+		this.pagesView.setColorMode(this.colorMode);		
 		
 		pagesView.setZoomIncrement(
 				Float.parseFloat(options.getString(Options.PREF_ZOOM_INCREMENT, "1.414")));

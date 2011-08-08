@@ -53,7 +53,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	/**
 	 * Space between screen edge and page and between pages.
 	 */
-	private final static int MARGIN = 10;
+	private int MARGIN_X = 0;
+	private static final int MARGIN_Y = 10;
 	
 	/* zoom steps */
 	float step = 1.414f;
@@ -270,8 +271,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		this.height = h;
 		if (this.scaling0 == 0f) {
 			this.scaling0 = Math.min(
-					((float)this.height - 2*MARGIN) / (float)this.pageSizes[0][1],
-					((float)this.width - 2*MARGIN) / (float)this.pageSizes[0][0]);
+					((float)this.height - 2*MARGIN_Y) / (float)this.pageSizes[0][1],
+					((float)this.width - 2*MARGIN_X) / (float)this.pageSizes[0][0]);
 		}
 		if (oldw == 0 && oldh == 0) {
 			goToBookmark();
@@ -290,7 +291,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			Point pos = getPagePositionInDocumentWithZoom(this.bookmarkToRestore.page);
 			this.currentPage = this.bookmarkToRestore.page;
 			this.top = pos.y + this.height / 2;
-			this.left = this.getCurrentPageWidth(this.currentPage)/2 + MARGIN + this.bookmarkToRestore.offsetX;
+			this.left = this.getCurrentPageWidth(this.currentPage)/2 + MARGIN_X + this.bookmarkToRestore.offsetX;
 			this.bookmarkToRestore = null;
 		}
 	}
@@ -314,8 +315,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			
 			if (this.width > 0 && this.height > 0) {
 				this.scaling0 = Math.min(
-						((float)this.height - 2*MARGIN) / (float)this.pageSizes[0][1],
-						((float)this.width - 2*MARGIN) / (float)this.pageSizes[0][0]);
+						((float)this.height - 2*MARGIN_Y) / (float)this.pageSizes[0][1],
+						((float)this.width - 2*MARGIN_X) / (float)this.pageSizes[0][0]);
 				this.left = this.width / 2;
 				this.top = this.height / 2;
 			}
@@ -349,10 +350,10 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	/**
 	 * Get current maximum page height by page number taking into account zoom and rotation
 	 */
-	private int getCurrentMaxPageHeight() {
+/*	private int getCurrentMaxPageHeight() {
 		float realpageheight = this.maxRealPageSize[this.rotation % 2 == 0 ? 1 : 0];
 		return (int)(realpageheight * scaling0 * (this.zoomLevel*0.001f));
-	}
+	} */
 	
 	/**
 	 * Get current maximum page width by page number taking into account zoom and rotation
@@ -361,7 +362,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		float realheight = this.realDocumentSize[this.rotation % 2 == 0 ? 1 : 0];
 		/* we add pageSizes.length to account for round-off issues */
 		return (int)(realheight * scaling0 * (this.zoomLevel*0.001f) +  
-			(pageSizes.length - 1) * this.getCurrentMargin());
+			(pageSizes.length - 1) * this.getCurrentMarginY());
 	}
 	
 	/**
@@ -384,21 +385,26 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		return currentpageheight;
 	}
 	
-	private float getCurrentMargin() {
-		return (float)MARGIN * this.zoomLevel * 0.001f;
+	private float getCurrentMarginX() {
+		return (float)MARGIN_X * this.zoomLevel * 0.001f;
+	}
+	
+	private float getCurrentMarginY() {
+		return (float)MARGIN_Y * this.zoomLevel * 0.001f;
 	}
 	
 	/**
 	 * This takes into account zoom level.
 	 */
 	private Point getPagePositionInDocumentWithZoom(int page) {
-		float margin = this.getCurrentMargin();
-		float left = margin;
+		float marginX = this.getCurrentMarginX();
+		float marginY = this.getCurrentMarginY();
+		float left = marginX;
 		float top = 0;
 		for(int i = 0; i < page; ++i) {
 			top += this.getCurrentPageHeight(i);
 		}
-		top += (page+1) * margin;
+		top += (page+1) * marginY;
 		
 		return new Point((int)left, (int)top);
 	}
@@ -455,7 +461,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		int x, y; // on screen
 		int viewx0, viewy0; // view over doc
 		LinkedList<Tile> visibleTiles = new LinkedList<Tile>();
-		float currentMargin = this.getCurrentMargin();
+		float currentMarginX = this.getCurrentMarginX();
+		float currentMarginY = this.getCurrentMarginY();
 		float renderAhead = this.pagesProvider.getRenderAhead();
 		
 		if (this.pagesProvider != null) {
@@ -470,15 +477,15 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			int oldviewx0 = viewx0;
 			int oldviewy0 = viewy0;
 			
-			viewx0 = adjustPosition(viewx0, width, (int)currentMargin, 
+			viewx0 = adjustPosition(viewx0, width, (int)currentMarginX, 
 					getCurrentMaxPageWidth());
-			viewy0 = adjustPosition(viewy0, height, (int)currentMargin,
+			viewy0 = adjustPosition(viewy0, height, (int)currentMarginY,
 					(int)getCurrentDocumentHeight());
 			
 			left += viewx0 - oldviewx0;
 			top += viewy0 - oldviewy0;
 			
-			float currpageoff = currentMargin;
+			float currpageoff = currentMarginY;
 			
 			this.currentPage = -1;
 			
@@ -491,8 +498,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 				pageWidth = this.getCurrentPageWidth(i);
 				pageHeight = (int) this.getCurrentPageHeight(i);
 				
-				pagex0 = currentMargin;
-				pagex1 = (int)(currentMargin + pageWidth);
+				pagex0 = currentMarginX;
+				pagex1 = (int)(currentMarginX + pageWidth);
 				pagey0 = currpageoff;
 				pagey1 = (int)(currpageoff + pageHeight);
 				
@@ -555,7 +562,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 				
 				
 				/* move to next page */
-				currpageoff += currentMargin + this.getCurrentPageHeight(i);
+				currpageoff += currentMarginY + this.getCurrentPageHeight(i);
 			}
 			this.pagesProvider.setVisibleTiles(visibleTiles);
 		}
@@ -799,14 +806,15 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		int viewy0 = top - height/2;
 		
 		int pageCount = this.pageSizes.length;
-		float currentMargin = this.getCurrentMargin();
+		float currentMarginX = this.getCurrentMarginX();
+		float currentMarginY = this.getCurrentMarginY();
 		
-		viewx0 = adjustPosition(viewx0, width, (int)currentMargin, 
+		viewx0 = adjustPosition(viewx0, width, (int)currentMarginX, 
 				getCurrentMaxPageWidth());
-		viewy0 = adjustPosition(viewy0, height, (int)currentMargin,
+		viewy0 = adjustPosition(viewy0, height, (int)currentMarginY,
 				(int)getCurrentDocumentHeight());
 		
-		float currpageoff = currentMargin;
+		float currpageoff = currentMarginY;
 		float renderAhead = this.pagesProvider.getRenderAhead();
 
 		float pagex0;
@@ -824,8 +832,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			pageWidth = this.getCurrentPageWidth(i);
 			pageHeight = (int) this.getCurrentPageHeight(i);
 			
-			pagex0 = currentMargin;
-			pagex1 = (int)(currentMargin + pageWidth);
+			pagex0 = currentMarginX;
+			pagex1 = (int)(currentMarginX + pageWidth);
 			pagey0 = currpageoff;
 			pagey1 = (int)(currpageoff + pageHeight);
 			
@@ -856,7 +864,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 				}
 				
 			}
-			currpageoff += currentMargin + this.getCurrentPageHeight(i);
+			currpageoff += currentMarginY + this.getCurrentPageHeight(i);
 		}
 		Log.v(TAG, "New bitmap does not require redraw");
 	}
@@ -902,7 +910,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			top += this.getCurrentPageHeight(i);
 		}
 		if (page > 0)
-			top += (float)MARGIN * this.zoomLevel * 0.001f * (float)(page); 
+			top += (float)MARGIN_Y * this.zoomLevel * 0.001f * (float)(page); 
 		this.top = (int)top;
 		this.currentPage = page;
 		this.invalidate();
@@ -1019,10 +1027,11 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		x += (center.left + center.right) / 2;
 		y += (center.top + center.bottom) / 2;
 		
-		float margin = this.getCurrentMargin();
+		float marginX = this.getCurrentMarginX();
+		float marginY = this.getCurrentMarginX();
 	
-		this.left = (int)(x * scaling0 * this.zoomLevel * 0.001f + margin);
-		this.top = (int)(y * scaling0 * this.zoomLevel * 0.001f + (page+1)*margin);
+		this.left = (int)(x * scaling0 * this.zoomLevel * 0.001f + marginX);
+		this.top = (int)(y * scaling0 * this.zoomLevel * 0.001f + (page+1)*marginY);
 	}
 	
 	/**
@@ -1084,14 +1093,15 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			vy = 0;
 		}
 		
-		int margin = (int)getCurrentMargin();
-		int minx = this.width/2 + getLowerBound(this.width, margin, 
+		int marginX = (int)getCurrentMarginX();
+		int marginY = (int)getCurrentMarginY();
+		int minx = this.width/2 + getLowerBound(this.width, marginX, 
 				getCurrentMaxPageWidth());
-		int maxx = this.width/2 + getUpperBound(this.width, margin, 
+		int maxx = this.width/2 + getUpperBound(this.width, marginX, 
 				getCurrentMaxPageWidth());
-		int miny = this.height/2 + getLowerBound(this.width, margin,
+		int miny = this.height/2 + getLowerBound(this.width, marginY,
 				  getCurrentDocumentHeight());
-		int maxy = this.height/2 + getUpperBound(this.width, margin,
+		int maxy = this.height/2 + getUpperBound(this.width, marginY,
 				  getCurrentDocumentHeight());
 
 		this.scroller = new Scroller(activity);
@@ -1157,8 +1167,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		int page = currentPage < 0 ? 0 : currentPage;
 		int pageWidth = getCurrentPageWidth(page);
 		this.top = (this.top - this.height / 2) * this.width / pageWidth + this.height / 2;
-		this.zoomLevel = this.zoomLevel * this.width / pageWidth;
-		this.left = (int) (this.width/2 + getCurrentMargin());
+		this.zoomLevel = this.zoomLevel * (this.width - 2*MARGIN_X) / pageWidth;
+		this.left = (int) (this.width/2);
 		this.invalidate();		
 	}
 
@@ -1276,6 +1286,13 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	public BookmarkEntry toBookmarkEntry() {
 		return new BookmarkEntry(this.pageSizes.length, 
 				this.currentPage, scaling0*zoomLevel, rotation, 
-				this.left - this.getCurrentPageWidth(this.currentPage)/2 - MARGIN);
+				this.left - this.getCurrentPageWidth(this.currentPage)/2 - MARGIN_X);
+	}
+	
+	public void setSideMargins(Boolean sideMargins) {
+		if (sideMargins)
+			this.MARGIN_X = MARGIN_Y;
+		else
+			this.MARGIN_X = 0;
 	}
 }

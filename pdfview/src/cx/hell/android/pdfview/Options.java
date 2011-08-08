@@ -26,6 +26,8 @@ public class Options extends PreferenceActivity {
 	public final static String PREF_OMIT_IMAGES = "omitImages";
 	public final static String PREF_VERTICAL_SCROLL_LOCK = "verticalScrollLock";
 	public final static String PREF_BOX = "boxType";
+	public final static String PREF_SIDE_MARGINS = "sideMargins";
+	public final static String PREF_EXTRA_CACHE = "extraCache";
 	
 	public final static int COLOR_MODE_NORMAL = 0;
 	public final static int COLOR_MODE_INVERT = 1;
@@ -75,6 +77,11 @@ public class Options extends PreferenceActivity {
 		0.0f, 0.0f, 0.0f, 0.0f, 0f,
 		0.0f, 0.0f, 0.0f, -1.0f, 255.0f} 
 	};
+	
+	public static int getIntFromString(SharedPreferences pref, String option, int def) {
+		return Integer.parseInt(pref.getString(option, ""+def));
+		
+	}
 
 	public static float[] getColorModeMatrix(int colorMode) {
 		return colorMatrices[colorMode];
@@ -93,7 +100,7 @@ public class Options extends PreferenceActivity {
 	}
 	
 	public static int getColorMode(SharedPreferences pref) {
-		return Integer.parseInt(pref.getString(Options.PREF_COLOR_MODE, "0"));
+		return getIntFromString(pref, PREF_COLOR_MODE, 0);
 	}
 	
 	@Override
