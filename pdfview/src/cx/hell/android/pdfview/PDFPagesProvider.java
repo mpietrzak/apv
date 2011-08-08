@@ -31,6 +31,7 @@ public class PDFPagesProvider extends PagesProvider {
 	private float renderAhead = 2.1f;
 	private boolean doRenderAhead = true;
 	private boolean gray;
+	private int extraCache = 0;
 	private boolean omitImages;
 	Activity activity = null;
 
@@ -46,10 +47,16 @@ public class PDFPagesProvider extends PagesProvider {
 		setMaxCacheSize();
 	}
 	
+	public void setExtraCache(int extraCache) {
+		this.extraCache = extraCache; 
+		
+		setMaxCacheSize();
+	}
+	
 	/* also calculates renderAhead */
 	private void setMaxCacheSize() {
-		final int maxMax = (int)(7*1024*1024); /* at most allocate this much unless absolutely necessary */
-		final int minMax = 4*1024*1024; /* at least allocate this much */
+		int maxMax = (int)(7*1024*1024) + this.extraCache; /* at most allocate this much unless absolutely necessary */
+		int minMax = 4*1024*1024; /* at least allocate this much */
 
 		int screenHeight = activity.getWindowManager().getDefaultDisplay().getHeight();
 		int screenWidth = activity.getWindowManager().getDefaultDisplay().getWidth(); 
@@ -79,6 +86,12 @@ public class PDFPagesProvider extends PagesProvider {
 		
 		if (m < minMax)
 			m = minMax;
+
+		if (m < maxMax) {
+			m += this.extraCache;
+			if (maxMax < m)
+				m = maxMax;
+		}
 		
 		Log.v(TAG, "Setting cache size="+m+ " renderAhead="+renderAhead+" for "+screenWidth+"x"+screenHeight);
 		

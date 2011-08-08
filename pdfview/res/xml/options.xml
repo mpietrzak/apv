@@ -62,12 +62,23 @@
     	android:summary="@string/vertical_scroll_lock_sub"
     	android:defaultValue="false"
     	android:key="verticalScrollLock"/>
+    <CheckBoxPreference
+    	android:title="@string/side_margins"
+    	android:defaultValue="false"
+    	android:key="sideMargins"/>
     <ListPreference
     	android:title="@string/box"
     	android:defaultValue="@string/default_box"
     	android:entries="@array/box_labels"
     	android:entryValues="@array/boxes"
     	android:key="boxType"
+    	/>
+    <ListPreference
+    	android:title="@string/extra_cache"
+    	android:defaultValue="@string/default_extra_cache"
+    	android:entries="@array/extra_cache_labels"
+    	android:entryValues="@array/extra_caches"
+    	android:key="extraCache"
     	/>
     </PreferenceCategory>
     <PreferenceCategory

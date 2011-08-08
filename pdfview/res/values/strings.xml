@@ -150,4 +150,26 @@
 		<item>4</item>
 	</string-array>
 	<string name="default_box">2</string>
+	<string name="extra_cache">Extra cache memory</string> 
+	<string name="extra_cache_sub">Using extra cache memory can improve scrolling smoothness at the expense of stability.</string> 
+	<string-array name="extra_caches">
+		<item>0</item>
+		<item>1</item>
+		<item>2</item>
+		<item>4</item>
+		<item>6</item>
+		<item>8</item>
+		<item>10</item>
+	</string-array>
+	<string-array name="extra_cache_labels">
+		<item>none</item>
+		<item>1 MB</item>
+		<item>2 MB</item>
+		<item>4 MB</item>
+		<item>6 MB</item>
+		<item>8 MB</item>
+		<item>10 MB</item>
+	</string-array>
+	<string name="default_extra_cache">0</string>
+	<string name="side_margins">Extra side margins</string>
 </resources>
