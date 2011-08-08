@@ -55,17 +55,19 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 	
 	private MenuItem aboutMenuItem = null;
 	private MenuItem setAsHomeMenuItem = null;
-	private MenuItem deleteMenuItem = null;
 	private MenuItem optionsMenuItem = null;
+	private MenuItem deleteContextMenuItem = null;
+	private MenuItem removeContextMenuItem = null;
+	private MenuItem setAsHomeContextMenuItem = null;
 	
 	private Boolean dirsFirst = true;
 	private Boolean showExtension = false;
-
+	
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
     	
-    	currentPath = getHome(); 
+    	currentPath = getHome();
 
     	this.fileFilter = new FileFilter() {
     		public boolean accept(File f) {
@@ -121,7 +123,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	};
        	this.filesListView.setAdapter(this.fileListAdapter);
     	this.filesListView.setOnItemClickListener(this);
-    	
+
     	registerForContextMenu(this.filesListView);
     }
     
@@ -240,6 +242,12 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     		pdfView(clickedFile);
     	}
     }
+    
+    public void setAsHome() {
+		SharedPreferences.Editor edit = getSharedPreferences(PREF_TAG, 0).edit();
+		edit.putString(PREF_HOME, currentPath);
+		edit.commit();
+    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem menuItem) {
@@ -250,9 +258,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     		return true;
     	}
     	else if (menuItem == this.setAsHomeMenuItem) {
-    		SharedPreferences.Editor edit = getSharedPreferences(PREF_TAG, 0).edit();
-    		edit.putString(PREF_HOME, currentPath);
-    		edit.commit();
+    		setAsHome();
     		return true;
     	}
     	else if (menuItem == this.optionsMenuItem){
@@ -285,19 +291,25 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     public boolean onContextItemSelected(MenuItem item) {
     	int position =  
     		((AdapterView.AdapterContextMenuInfo)item.getMenuInfo()).position;
-    	if (item == deleteMenuItem) {
+    	if (item == deleteContextMenuItem) {
+    		FileListEntry entry = this.fileList.get(position);
+    		if (entry.getType() == FileListEntry.NORMAL &&
+    				! entry.isDirectory()) {
+    			entry.getFile().delete();
+    			update();
+    		}    		
+    		return true;
+    	}
+    	else if (item == removeContextMenuItem) {
     		FileListEntry entry = this.fileList.get(position);
     		if (entry.getType() == FileListEntry.RECENT) {
     			recent.remove(entry.getRecentNumber());
     			recent.commit();
     			update();
     		}
-    		else if (entry.getType() == FileListEntry.NORMAL &&
-    				! entry.isDirectory()) {
-    			entry.getFile().delete();
-    			update();
-    		}    		
-    		return true;
+    	}
+    	else if (item == setAsHomeContextMenuItem) {
+    		setAsHome();
     	}
     	return false;
     }
@@ -316,6 +328,24 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
     	super.onCreateContextMenu(menu, v, menuInfo);
-		deleteMenuItem = menu.add("Delete");
+    	
+    	if (v == this.filesListView) {
+    		AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)menuInfo;
+    		
+    		if (info.position < 0)
+    			return;
+    		
+        	FileListEntry entry = this.fileList.get(info.position);
+        	
+        	if (entry.getType() == FileListEntry.HOME) {
+        		setAsHomeContextMenuItem = menu.add(R.string.set_as_home);
+        	}
+        	else if (entry.getType() == FileListEntry.RECENT) {
+        		removeContextMenuItem = menu.add(R.string.remove_from_recent);
+        	}
+        	else if (! entry.isDirectory()) {
+        		deleteContextMenuItem = menu.add(R.string.delete);
+        	}
+    	}
     }
 }

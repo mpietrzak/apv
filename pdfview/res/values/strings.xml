@@ -172,4 +172,6 @@
 	</string-array>
 	<string name="default_extra_cache">0</string>
 	<string name="side_margins">Extra side margins</string>
+	<string name="remove_from_recent">Remove from recent</string>
+	<string name="delete">Delete file</string>
 </resources>
