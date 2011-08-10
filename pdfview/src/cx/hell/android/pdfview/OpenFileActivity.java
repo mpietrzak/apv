@@ -84,6 +84,8 @@ public class OpenFileActivity extends Activity {
 	private Button findNextButton = null;
 	private Button findHideButton = null;
 	
+	private RelativeLayout activityLayout = null;
+	
 
 	// currently opened file path
 	private String filePath = "/";
@@ -108,6 +110,18 @@ public class OpenFileActivity extends Activity {
 	private int fadeStartOffset = 7000; 
 	
 	private int colorMode = Options.COLOR_MODE_NORMAL;
+	private static final int ZOOM_COLOR_NORMAL = 0;
+	private static final int ZOOM_COLOR_RED = 1;
+	private static final int ZOOM_COLOR_GREEN = 2;
+	private static final int[] zoomUpId = {
+		R.drawable.btn_zoom_up, R.drawable.red_btn_zoom_up, R.drawable.green_btn_zoom_up
+	};
+	private static final int[] zoomDownId = {
+		R.drawable.btn_zoom_down, R.drawable.red_btn_zoom_down, R.drawable.green_btn_zoom_down		
+	};
+	private static final int[] zoomWidthId = {
+		R.drawable.btn_zoom_width, R.drawable.red_btn_zoom_width, R.drawable.green_btn_zoom_width		
+	};
 	
     /**
      * Called when the activity is first created.
@@ -130,11 +144,11 @@ public class OpenFileActivity extends Activity {
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
         
         // use a relative layout to stack the views
-        RelativeLayout layout = new RelativeLayout(this);
+        activityLayout = new RelativeLayout(this);
         
         // the PDF view
         this.pagesView = new PagesView(this);
-        layout.addView(pagesView);
+        activityLayout.addView(pagesView);
         startPDF(options);
         
         // the find buttons
@@ -156,31 +170,8 @@ public class OpenFileActivity extends Activity {
         		RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         lp.addRule(RelativeLayout.CENTER_HORIZONTAL);
         lp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-        layout.addView(this.findButtonsLayout, lp);
+        activityLayout.addView(this.findButtonsLayout, lp);
 
-        // the zoom buttons
-        zoomLayout = new LinearLayout(this);
-        zoomLayout.setOrientation(LinearLayout.HORIZONTAL);
-		zoomDownButton = new ImageButton(this);
-		zoomDownButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_down));
-		zoomDownButton.setBackgroundColor(Color.TRANSPARENT);
-		zoomLayout.addView(zoomDownButton, (int)(80 * metrics.density), (int)(50 * metrics.density));	// TODO: remove hardcoded values
-		zoomWidthButton = new ImageButton(this);
-		zoomWidthButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_width));
-		zoomWidthButton.setBackgroundColor(Color.TRANSPARENT);
-		zoomLayout.addView(zoomWidthButton, (int)(58 * metrics.density), (int)(50 * metrics.density));
-		zoomUpButton = new ImageButton(this);		
-		zoomUpButton.setImageDrawable(getResources().getDrawable(R.drawable.btn_zoom_up));
-		zoomUpButton.setBackgroundColor(Color.TRANSPARENT);
-		zoomLayout.addView(zoomUpButton, (int)(80 * metrics.density), (int)(50 * metrics.density));
-		lp = new RelativeLayout.LayoutParams(
-        		RelativeLayout.LayoutParams.WRAP_CONTENT, 
-        		RelativeLayout.LayoutParams.WRAP_CONTENT);
-        lp.addRule(RelativeLayout.CENTER_HORIZONTAL);
-		lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        setZoomButtonHandlers();
-		layout.addView(zoomLayout,lp);
-		
         this.pageNumberTextView = new TextView(this);
         this.pageNumberTextView.setTextSize(8f*metrics.density);
         lp = new RelativeLayout.LayoutParams(
@@ -188,10 +179,10 @@ public class OpenFileActivity extends Activity {
         		RelativeLayout.LayoutParams.WRAP_CONTENT);
         lp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
         lp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-        layout.addView(this.pageNumberTextView, lp);
+        activityLayout.addView(this.pageNumberTextView, lp);
         
 		// display this
-        this.setContentView(layout);
+        this.setContentView(activityLayout);
         
         // go to last viewed page
 //        gotoLastPage();
@@ -230,7 +221,8 @@ public class OpenFileActivity extends Activity {
 		Options.setOrientation(this);
 		
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
-		
+
+		setZoomLayout(options);
 		this.pagesView.setSideMargins(options.getBoolean(Options.PREF_SIDE_MARGINS, false));
 		
 		int newBox = Integer.parseInt(options.getString(Options.PREF_BOX, "2"));
@@ -639,6 +631,48 @@ public class OpenFileActivity extends Activity {
     	contents.addView(goButton, params);
     	dialog.setContentView(contents);
     	dialog.show();
+    }
+    
+    private void setZoomLayout(SharedPreferences options) {
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        
+        int colorMode = Options.getColorMode(options);
+        int mode = ZOOM_COLOR_NORMAL;
+        
+        if (colorMode == Options.COLOR_MODE_GREEN_ON_BLACK) {
+        	mode = ZOOM_COLOR_GREEN;
+        }
+        else if (colorMode == Options.COLOR_MODE_RED_ON_BLACK) {
+        	mode = ZOOM_COLOR_RED;
+        }
+
+        // the zoom buttons
+    	if (zoomLayout != null) {
+    		activityLayout.removeView(zoomLayout);
+    	}
+    	
+        zoomLayout = new LinearLayout(this);
+        zoomLayout.setOrientation(LinearLayout.HORIZONTAL);
+		zoomDownButton = new ImageButton(this);
+		zoomDownButton.setImageDrawable(getResources().getDrawable(zoomDownId[mode]));
+		zoomDownButton.setBackgroundColor(Color.TRANSPARENT);
+		zoomLayout.addView(zoomDownButton, (int)(80 * metrics.density), (int)(50 * metrics.density));	// TODO: remove hardcoded values
+		zoomWidthButton = new ImageButton(this);
+		zoomWidthButton.setImageDrawable(getResources().getDrawable(zoomWidthId[mode]));
+		zoomWidthButton.setBackgroundColor(Color.TRANSPARENT);
+		zoomLayout.addView(zoomWidthButton, (int)(58 * metrics.density), (int)(50 * metrics.density));
+		zoomUpButton = new ImageButton(this);		
+		zoomUpButton.setImageDrawable(getResources().getDrawable(zoomUpId[mode]));
+		zoomUpButton.setBackgroundColor(Color.TRANSPARENT);
+		zoomLayout.addView(zoomUpButton, (int)(80 * metrics.density), (int)(50 * metrics.density));
+		RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
+        		RelativeLayout.LayoutParams.WRAP_CONTENT, 
+        		RelativeLayout.LayoutParams.WRAP_CONTENT);
+        lp.addRule(RelativeLayout.CENTER_HORIZONTAL);
+		lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        setZoomButtonHandlers();
+		activityLayout.addView(zoomLayout,lp);
     }
     
     private void findText(String text) {
