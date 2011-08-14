@@ -7,6 +7,11 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 public class Recent extends ArrayList<String> {
+	
+	/**
+	 * Default serial version identifier because base class is serializable.
+	 */
+	private static final long serialVersionUID = 1L;
 	private final static int MAX_RECENT=5; /* must be at least 1 */
 	private final String PREF_TAG = "Recent";
 	private final String RECENT_PREFIX = "Recent.";
