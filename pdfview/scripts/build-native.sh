@@ -3,7 +3,7 @@
 
 SCRIPTDIR=`dirname $0`
 MUPDF=mupdf-0.8.165
-FREETYPE=freetype-2.3.11
+FREETYPE=freetype-2.4.6
 OPENJPEG=openjpeg_v1_4_sources_r697
 JBIG2DEC=jbig2dec-0.11
 JPEGSRC=jpegsrc.v8a.tar.gz
@@ -24,10 +24,6 @@ for x in draw fitz pdf ; do
 done
 cp -r $MUPDF/fonts ../jni/mupdf/
 cp -r $FREETYPE/{src,include} ../jni/freetype/
-sed -i 's:^/\*\s\s*#define\s\s*TT_CONFIG_OPTION_BYTECODE_INTERPRETER\s*\*/:#define TT_CONFIG_OPTION_BYTECODE_INTERPRETER:' \
-  ../jni/freetype/include/freetype/config/ftoption.h
-sed -i 's:^#define\s\s*TT_CONFIG_OPTION_UNPATENTED_HINTING:#undef TT_CONFIG_OPTION_UNPATENTED_HINTING:' \
-  ../jni/freetype/include/freetype/config/ftoption.h
 gcc -o ../scripts/fontdump $MUPDF/scripts/fontdump.c
 cd ../jni/mupdf
 mkdir generated 2> /dev/null
