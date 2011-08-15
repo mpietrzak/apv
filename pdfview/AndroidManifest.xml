@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="cx.hell.android.pdfview" android:versionCode="300" android:versionName="0.3.0">
+        package="cx.hell.android.pdfview"
+        android:versionCode="301" android:versionName="0.3.1dev"
+        android:installLocation="auto">
 
     <!-- 3 is 1.5 or later, that's more than 99% of devices -->
 	<uses-sdk android:minSdkVersion="3" />
@@ -13,7 +15,7 @@
             android:resizeable="true"/>    
 
 	<application android:icon="@drawable/pdfviewer"
-		android:label="@string/app_name">
+            android:label="@string/app_name">
 
 		<activity android:name=".ChooseFileActivity" android:label="@string/app_name">
 			<intent-filter>
