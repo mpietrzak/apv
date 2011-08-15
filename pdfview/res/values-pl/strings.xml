@@ -14,8 +14,8 @@
 	<string name="find_cancel_button">Anuluj</string>
 	<string name="clear_find_text">Wyczyść wyniki</string>
 	<string name="cancel">Anuluj</string>
-	<string name="set_as_home">Ustanów katalogiem własnym</string>
-	<string name="go_home">Katalog własny</string>
+	<string name="set_as_home">Ustaw jako katalog domowy</string>
+	<string name="go_home">Katalog domowy</string>
 	<string name="searching_for">Wyszukiwanie "%1$s"</string>
 	<string name="page_of">Strona %1$d z %2$d</string>
 	<string name="page">Strona</string>
