@@ -172,6 +172,9 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	private float lastX = 0;
 	private float lastY = 0;
 	private float maxExcursionY = 0;
+	private int doubleTapAction = Options.DOUBLE_TAP_ZOOM_IN_OUT;
+	private int zoomToRestore = 0;
+	private int leftToRestore;
 	
 	public PagesView(Activity activity) {
 		super(activity);
@@ -222,11 +225,33 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		
 		gestureDetector.setOnDoubleTapListener(new OnDoubleTapListener() {
 			public boolean onDoubleTap(MotionEvent e) {
-				left += e.getX() - width/2;
-				top += e.getY() - height/2;
-				invalidate();
-				zoomUpBig();				
-				return false;
+				switch(doubleTapAction) {
+				case Options.DOUBLE_TAP_ZOOM_IN_OUT:
+					if (zoomToRestore != 0) {
+						left = leftToRestore;
+						top = top * zoomToRestore / zoomLevel;
+						zoomLevel = zoomToRestore;
+						invalidate();
+						zoomToRestore = 0;
+					}
+					else {
+						int oldLeft = left;
+						int oldZoom = zoomLevel;
+						left += e.getX() - width/2;
+						top += e.getY() - height/2;
+						zoomUpBig();
+						zoomToRestore = oldZoom;
+						leftToRestore = oldLeft;
+					}
+					return false;
+				case Options.DOUBLE_TAP_ZOOM:
+					left += e.getX() - width/2;
+					top += e.getY() - height/2;
+					zoomUpBig();
+					return false;
+				default:
+					return false;
+				}
 			}
 
 			public boolean onDoubleTapEvent(MotionEvent e) {
@@ -1126,6 +1151,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		this.left /= step;
 		this.top /= step;
 		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
+		zoomToRestore = 0;
 		this.invalidate();		
 	}
 
@@ -1137,6 +1163,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		this.left /= 2;
 		this.top /= 2;
 		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
+		zoomToRestore = 0;
 		this.invalidate();		
 	}
 
@@ -1148,6 +1175,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		this.left *= step;
 		this.top *= step;
 		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
+		zoomToRestore = 0;
 		this.invalidate();
 	}
 
@@ -1159,6 +1187,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		this.left *= 2;
 		this.top *= 2;
 		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
+		zoomToRestore = 0;
 		this.invalidate();
 	}
 
@@ -1169,6 +1198,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		this.top = (this.top - this.height / 2) * this.width / pageWidth + this.height / 2;
 		this.zoomLevel = this.zoomLevel * (this.width - 2*MARGIN_X) / pageWidth;
 		this.left = (int) (this.width/2);
+		zoomToRestore = 0;
 		this.invalidate();		
 	}
 
@@ -1181,6 +1211,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		Point pos = getPagePositionInDocumentWithZoom(page);
 		this.left = this.width/2 + pos.x;
 		this.top = this.height/2 + pos.y;
+		zoomToRestore = 0;
 		this.invalidate();		
 	}
 
@@ -1192,6 +1223,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			return;
 		this.zoomLevel = zoomLevel;
 		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
+		zoomToRestore = 0;
 		this.invalidate();
 	}
 	
@@ -1294,5 +1326,9 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			this.MARGIN_X = MARGIN_Y;
 		else
 			this.MARGIN_X = 0;
+	}
+	
+	public void setDoubleTap(int doubleTapAction) {
+		this.doubleTapAction = doubleTapAction;
 	}
 }

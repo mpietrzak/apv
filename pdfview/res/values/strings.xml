@@ -174,4 +174,15 @@
 	<string name="side_margins">Extra side margins</string>
 	<string name="remove_from_recent">Remove from recent</string>
 	<string name="delete">Delete file</string>
+	<string-array name = "double_tap_actions">
+	<item>0</item>
+	<item>1</item>
+	<item>2</item>
+	</string-array>
+	<string-array name="double_tap_action_labels">
+	<item>none</item>
+	<item>zoom in</item>
+	<item>zoom in or back out</item>
+	</string-array>
+	<string name="double_tap_action">Double tap action</string>
 </resources>
