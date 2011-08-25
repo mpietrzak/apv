@@ -224,6 +224,8 @@ public class OpenFileActivity extends Activity {
 
 		setZoomLayout(options);
 		this.pagesView.setSideMargins(options.getBoolean(Options.PREF_SIDE_MARGINS, false));
+		this.pagesView.setDoubleTap(Integer.parseInt(options.getString(Options.PREF_DOUBLE_TAP, 
+				""+Options.DOUBLE_TAP_ZOOM_IN_OUT)));
 		
 		int newBox = Integer.parseInt(options.getString(Options.PREF_BOX, "2"));
 		if (this.box != newBox) {

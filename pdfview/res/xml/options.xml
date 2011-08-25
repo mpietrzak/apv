@@ -74,6 +74,13 @@
     	android:key="boxType"
     	/>
     <ListPreference
+    	android:title="@string/double_tap_action"
+    	android:defaultValue="2"
+    	android:entries="@array/double_tap_action_labels"
+    	android:entryValues="@array/double_tap_actions"
+    	android:key="doubleTap"
+    	/>
+    <ListPreference
     	android:title="@string/extra_cache"
     	android:defaultValue="@string/default_extra_cache"
     	android:entries="@array/extra_cache_labels"
