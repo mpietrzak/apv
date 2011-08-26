@@ -31,8 +31,8 @@ public class Options extends PreferenceActivity {
 	public final static String PREF_DOUBLE_TAP = "doubleTap";
 	
 	public final static int DOUBLE_TAP_NONE = 0;
-	public final static int DOUBLE_TAP_ZOOM_IN_OUT = 1;
-	public final static int DOUBLE_TAP_ZOOM = 2;
+	public final static int DOUBLE_TAP_ZOOM = 1;
+	public final static int DOUBLE_TAP_ZOOM_IN_OUT = 2;
 	
 	public final static int COLOR_MODE_NORMAL = 0;
 	public final static int COLOR_MODE_INVERT = 1;
