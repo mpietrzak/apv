@@ -251,18 +251,29 @@ public class OpenFileActivity extends Activity {
 		this.pdfPagesProvider.setRenderAhead(options.getBoolean(Options.PREF_RENDER_AHEAD, true));
 		this.pagesView.setVerticalScrollLock(options.getBoolean(Options.PREF_VERTICAL_SCROLL_LOCK, false));
 		this.pagesView.invalidate();
-		zoomAnim = AnimationUtils.loadAnimation(this,
-				zoomAnimations[
-				    Integer.parseInt(options.getString(Options.PREF_ZOOM_ANIMATION, "2"))]);		
-		pageNumberAnim = AnimationUtils.loadAnimation(this,
-				pageNumberAnimations[
-				    Integer.parseInt(options.getString(Options.PREF_PAGE_ANIMATION, "3"))]);
+		int zoomAnimNumber = Integer.parseInt(options.getString(Options.PREF_ZOOM_ANIMATION, "2"));
+		
+		if (zoomAnimNumber == Options.ZOOM_BUTTONS_DISABLED)
+			zoomAnim = null;
+		else 
+			zoomAnim = AnimationUtils.loadAnimation(this,
+				zoomAnimations[zoomAnimNumber]);		
+		int pageNumberAnimNumber = Integer.parseInt(options.getString(Options.PREF_PAGE_ANIMATION, "3"));
+		
+		if (pageNumberAnimNumber == Options.PAGE_NUMBER_DISABLED)
+			pageNumberAnim = null;
+		else 
+			pageNumberAnim = AnimationUtils.loadAnimation(this,
+				pageNumberAnimations[pageNumberAnimNumber]);		
+
 		fadeStartOffset = 1000 * Integer.parseInt(options.getString(Options.PREF_FADE_SPEED, "7"));
 		
 		if (options.getBoolean(Options.PREF_FULLSCREEN, false))
 			getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		else
 			getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		this.pageNumberTextView.setVisibility(pageNumberAnim == null ? View.GONE : View.VISIBLE);
+		this.zoomLayout.setVisibility(zoomAnim == null ? View.GONE : View.VISIBLE);
         
         showAnimated();
 	}
@@ -422,6 +433,11 @@ public class OpenFileActivity extends Activity {
     };
     
     private void showZoom() {
+    	if (zoomAnim == null) {
+    		zoomLayout.setVisibility(View.GONE);
+    		return;
+    	}
+    	
     	zoomLayout.setVisibility(View.VISIBLE);
     	zoomLayout.clearAnimation();
     	zoomHandler.removeCallbacks(zoomRunnable);
@@ -429,7 +445,7 @@ public class OpenFileActivity extends Activity {
     }
     
     private void fadeZoom() {
-    	if (eink) {
+    	if (eink || zoomAnim == null) {
     		zoomLayout.setVisibility(View.GONE);
     	}
     	else {
@@ -440,10 +456,12 @@ public class OpenFileActivity extends Activity {
     }
     
     public void showPageNumber(boolean force) {
-    	if (eink) {
+    	if (pageNumberAnim == null) {
     		pageNumberTextView.setVisibility(View.GONE);
     		return;
     	}
+    	
+    	pageNumberTextView.setVisibility(View.VISIBLE);
     	String newText = ""+(this.pagesView.getCurrentPage()+1)+"/"+
 				this.pdfPagesProvider.getPageCount();
     	
@@ -458,9 +476,14 @@ public class OpenFileActivity extends Activity {
     }
     
     private void fadePage() {
-    	pageNumberAnim.setStartOffset(0);
-		pageNumberAnim.setFillAfter(true);
-		pageNumberTextView.startAnimation(pageNumberAnim);      	
+    	if (eink || pageNumberAnim == null) {
+    		pageNumberTextView.setVisibility(View.GONE);
+    	}
+    	else {
+    		pageNumberAnim.setStartOffset(0);
+    		pageNumberAnim.setFillAfter(true);
+    		pageNumberTextView.startAnimation(pageNumberAnim);
+    	}
     }    
     
     /**

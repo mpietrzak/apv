@@ -23,11 +23,13 @@
 	<string name="options">Options</string>
 	<string name="zoom_animation">Zoom buttons</string>
 	<string-array name="zoom_animations">
+		<item>100</item>
 		<item>0</item>
 		<item>1</item>
 		<item>2</item>
 	</string-array>
 	<string-array name="zoom_animation_labels">
+		<item>disabled</item>
 		<item>disappear</item>
 		<item>almost disappear</item>
 		<item>fade</item>
@@ -35,12 +37,14 @@
 	<string name="default_zoom_animation">2</string> 
 	<string name="page_animation">Page number/count</string>
 	<string-array name="page_animations">
+		<item>100</item>
 		<item>0</item>
 		<item>1</item>
 		<item>2</item>
 		<item>3</item>
 	</string-array>
 	<string-array name="page_animation_labels">
+		<item>disabled</item>
 		<item>disappear</item>
 		<item>almost disappear</item>
 		<item>fade</item>
@@ -200,4 +204,5 @@
 	<string name="default_right_up_down_pair">1</string>
 	<string name="hw">Hardware Specific Settings</string>
 	<string name="eink">E-ink mode</string>
+	<string name="disabled">Disabled</string>
 </resources>
