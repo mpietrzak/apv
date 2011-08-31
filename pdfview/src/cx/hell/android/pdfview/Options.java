@@ -10,8 +10,6 @@ import android.preference.PreferenceManager;
 
 public class Options extends PreferenceActivity {
 	public final static String PREF_TAG = "Options";
-	public final static String PREF_PAGE_WITH_VOLUME = "pageWithVolume";
-	public final static String PREF_ZOOM_INCREMENT = "zoomIncrement";
 	public final static String PREF_INVERT = "invert";
 	public final static String PREF_ZOOM_ANIMATION = "zoomAnimation";
 	public final static String PREF_DIRS_FIRST = "dirsFirst";
@@ -30,9 +28,27 @@ public class Options extends PreferenceActivity {
 	public final static String PREF_EXTRA_CACHE = "extraCache";
 	public final static String PREF_DOUBLE_TAP = "doubleTap";
 	
+	public final static String PREF_VOLUME_PAIR = "volumePair";
+	public final static String PREF_ZOOM_PAIR = "zoomPair";
+	public final static String PREF_LONG_ZOOM_PAIR = "longZoomPair";
+	public final static String PREF_UP_DOWN_PAIR = "upDownPair";
+	public final static String PREF_LEFT_RIGHT_PAIR = "leftRightPair";
+	public final static String PREF_RIGHT_UP_DOWN_PAIR = "rightUpDownPair";
+	public final static String PREF_EINK = "eink";
+	
 	public final static int DOUBLE_TAP_NONE = 0;
 	public final static int DOUBLE_TAP_ZOOM = 1;
 	public final static int DOUBLE_TAP_ZOOM_IN_OUT = 2;
+	
+	public final static int PAIR_NONE = 0;
+	public final static int PAIR_SCREEN = 1;
+	public final static int PAIR_PAGE = 2;
+	public final static int PAIR_ZOOM_1020 = 3;
+	public final static int PAIR_ZOOM_1050 = 4;
+	public final static int PAIR_ZOOM_1100 = 5;
+	public final static int PAIR_ZOOM_1200 = 6;
+	public final static int PAIR_ZOOM_1414 = 7;
+	public final static int PAIR_ZOOM_2000 = 8;
 	
 	public final static int COLOR_MODE_NORMAL = 0;
 	public final static int COLOR_MODE_INVERT = 1;

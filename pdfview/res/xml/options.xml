@@ -22,12 +22,6 @@
     	android:defaultValue="false"
     	android:key="omitImages"/>
     <ListPreference
-    	android:title="@string/zoom_increment"
-    	android:defaultValue="@string/default_zoom_increment"
-    	android:entries="@array/zoom_increment_labels"
-    	android:entryValues="@array/zoom_increments"
-    	android:key="zoomIncrement"/>
-    <ListPreference
     	android:title="@string/zoom_animation"
     	android:defaultValue="@string/default_zoom_animation"
     	android:entries="@array/zoom_animation_labels"
@@ -54,10 +48,6 @@
     	android:defaultValue="true"
     	android:key="renderAhead"/>
     <CheckBoxPreference
-    	android:title="@string/page_with_volume"
-    	android:defaultValue="true"
-    	android:key="pageWithVolume"/>
-    <CheckBoxPreference
     	android:title="@string/vertical_scroll_lock"
     	android:summary="@string/vertical_scroll_lock_sub"
     	android:defaultValue="false"
@@ -80,6 +70,42 @@
     	android:entryValues="@array/double_tap_actions"
     	android:key="doubleTap"
     	/>
+
+    <ListPreference
+    	android:title="@string/volume_pair"
+    	android:defaultValue="@string/default_volume_pair"
+    	android:entries="@array/action_pair_labels"
+    	android:entryValues="@array/action_pairs"
+    	android:key="volumePair"/>
+
+    <ListPreference
+    	android:title="@string/up_down_pair"
+    	android:defaultValue="@string/default_up_down_pair"
+    	android:entries="@array/action_pair_labels"
+    	android:entryValues="@array/action_pairs"
+    	android:key="upDownPair"/>
+
+    <ListPreference
+    	android:title="@string/left_right_pair"
+    	android:defaultValue="@string/default_left_right_pair"
+    	android:entries="@array/action_pair_labels"
+    	android:entryValues="@array/action_pairs"
+    	android:key="leftRightPair"/>
+
+    <ListPreference
+    	android:title="@string/zoom_pair"
+    	android:defaultValue="@string/default_zoom_pair"
+    	android:entries="@array/action_pair_labels"
+    	android:entryValues="@array/action_pairs"
+    	android:key="zoomPair"/>
+
+    <ListPreference
+    	android:title="@string/long_zoom_pair"
+    	android:defaultValue="@string/default_long_zoom_pair"
+    	android:entries="@array/action_pair_labels"
+    	android:entryValues="@array/action_pairs"
+    	android:key="longZoomPair"/>
+
     <ListPreference
     	android:title="@string/extra_cache"
     	android:defaultValue="@string/default_extra_cache"
@@ -87,7 +113,25 @@
     	android:entryValues="@array/extra_caches"
     	android:key="extraCache"
     	/>
+
+
     </PreferenceCategory>
+
+    <PreferenceCategory
+    android:title="@string/hw">
+    <ListPreference
+    	android:title="@string/right_up_down_pair"
+    	android:defaultValue="@string/default_right_up_down_pair"
+    	android:entries="@array/action_pair_labels"
+    	android:entryValues="@array/action_pairs"
+    	android:key="rightUpDownPair"/>
+    </PreferenceCategory>
+
+    <CheckBoxPreference
+    	android:title="@string/eink"
+    	android:defaultValue="false"
+    	android:key="eink"/>
+
     <PreferenceCategory
     android:title="@string/selector">
     <CheckBoxPreference

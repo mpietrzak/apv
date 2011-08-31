@@ -1,14 +1,21 @@
 package cx.hell.android.pdfview;
 
-public class BookmarkEntry {
+public class BookmarkEntry implements Comparable<BookmarkEntry> {
 	public int numberOfPages;
 	public int page;
 	public float absoluteZoomLevel;
 	public int rotation;
 	public int offsetX;
+	public String comment;
 	
 	public BookmarkEntry(int numberOfPages, int page, float absoluteZoomLevel,
 			int rotation, int offsetX) {
+		this(null, numberOfPages, page, absoluteZoomLevel, rotation, offsetX);
+	}
+	
+	public BookmarkEntry(String comment, int numberOfPages, int page, float absoluteZoomLevel,
+			int rotation, int offsetX) {
+		this.comment = comment;
 		this.numberOfPages = numberOfPages;
 		this.page = page;
 		this.absoluteZoomLevel = absoluteZoomLevel;
@@ -17,6 +24,12 @@ public class BookmarkEntry {
 	}
 	
 	public BookmarkEntry(String s) {
+		this(null, s);
+	}
+	
+	public BookmarkEntry(String comment, String s) {
+		this.comment = comment;
+		
 		String data[] = s.split(" ");
 		
 		if (0 < data.length) {
@@ -57,5 +70,19 @@ public class BookmarkEntry {
 	
 	public String toString() {
 		return ""+numberOfPages+" "+page+" "+absoluteZoomLevel+" "+rotation+" "+offsetX;
+	}
+
+	public int compareTo(BookmarkEntry entry) {
+		if (this.page < entry.page)
+			return -1;
+		else if (entry.page < this.page)
+			return 1;
+		else 
+			return this.comment.compareTo(entry.comment);
+	}
+	
+	public boolean equals(BookmarkEntry entry) {
+		return this.toString() == entry.toString() && 
+				this.comment == entry.comment;
 	}
 }

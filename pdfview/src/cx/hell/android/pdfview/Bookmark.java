@@ -19,8 +19,11 @@
 package cx.hell.android.pdfview;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -50,7 +53,7 @@ public class Bookmark {
 	private static final String DATABASE_CREATE = "create table bookmark "
 			+ "(_id integer primary key autoincrement, "
 			+ "book text not null, name text not null, "
-			+ "entry integer, comment text, time integer);";
+			+ "entry text, comment text, time integer);";
 
 	private final Context context;
 
@@ -132,15 +135,63 @@ public class Bookmark {
 		Cursor cur = db.query(true, "bookmark", new String[] { KEY_ENTRY },
 				KEY_BOOK + "='" + md5 + "' AND " + KEY_NAME + "= 'last'", null,
 				null, null, null, "1");
+
 		if (cur != null) {
 			if (cur.moveToFirst()) {
 				entry = new BookmarkEntry(cur.getString(0));
 			}
+			cur.close();
 		}
-		cur.close();
 		return entry;
 	}
+	
+	public ArrayList<BookmarkEntry> getBookmarks(String file) {
+		ArrayList<BookmarkEntry> list = new ArrayList<BookmarkEntry>();
+		String md5 = nameToMD5(file);
 
+		Cursor cur = db.query(true, "bookmark", new String[] { KEY_ENTRY, KEY_COMMENT },
+				KEY_BOOK + "='" + md5 + "' AND " + KEY_NAME + "= 'user'", null,
+				null, null, null, "1");
+		if (cur != null) {
+			if (cur.moveToFirst()) {
+				do {
+					list.add(new BookmarkEntry(cur.getString(1), cur.getString(0)));
+				} while (cur.moveToNext());
+			}
+			cur.close();
+		}
+		
+		Collections.sort(list);
+		
+		return list;
+	}
+	
+	public void deleteBookmark(String file, BookmarkEntry entry) {
+		String md5 = nameToMD5(file);
+		
+		db.delete("bookmark", KEY_BOOK + "='" + md5 + "' AND " + KEY_NAME + "= 'user' AND " +
+		   KEY_ENTRY + "= ? AND " + KEY_COMMENT + "= ?",
+		   new String[] { entry.toString(), entry.comment });
+	}
+	
+	public void changeBookmark(String file, BookmarkEntry oldEntry, BookmarkEntry newEntry) {
+		deleteBookmark(file, oldEntry);
+		addBookmark(file, newEntry);
+	}
+	
+	public void addBookmark(String file, BookmarkEntry entry) {
+		deleteBookmark(file, entry); // Avoid duplicates
+		
+		String md5 = nameToMD5(file);
+		ContentValues cv = new ContentValues();
+		cv.put(KEY_BOOK, md5);
+		cv.put(KEY_ENTRY, entry.toString());
+		cv.put(KEY_COMMENT, entry.comment);
+		cv.put(KEY_NAME, "user");
+		cv.put(KEY_TIME, System.currentTimeMillis() / 1000);
+		db.insert("bookmark", null, cv);
+	}
+	
 	/**
 	 * Hash the file name to be sure that no strange characters will be in the
 	 * DB, and include file length.
