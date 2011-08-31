@@ -61,6 +61,7 @@ public class OpenFileActivity extends Activity {
 	private PDF pdf = null;
 	private PagesView pagesView = null;
 	private PDFPagesProvider pdfPagesProvider = null;
+	private Actions actions = null;
 	
 	private Handler zoomHandler = null;
 	private Handler pageHandler = null;
@@ -85,7 +86,7 @@ public class OpenFileActivity extends Activity {
 	private Button findHideButton = null;
 	
 	private RelativeLayout activityLayout = null;
-	
+	private boolean eink = false;	
 
 	// currently opened file path
 	private String filePath = "/";
@@ -222,6 +223,9 @@ public class OpenFileActivity extends Activity {
 		
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
 
+		actions = new Actions(options);
+		this.pagesView.setActions(actions);
+
 		setZoomLayout(options);
 		this.pagesView.setSideMargins(options.getBoolean(Options.PREF_SIDE_MARGINS, false));
 		this.pagesView.setDoubleTap(Integer.parseInt(options.getString(Options.PREF_DOUBLE_TAP, 
@@ -236,6 +240,7 @@ public class OpenFileActivity extends Activity {
 		}
 
         this.colorMode = Options.getColorMode(options);
+        this.eink = options.getBoolean(Options.PREF_EINK, false);
         this.pageNumberTextView.setBackgroundColor(Options.getBackColor(colorMode));
         this.pageNumberTextView.setTextColor(Options.getForeColor(colorMode));
         this.pdfPagesProvider.setGray(Options.isGray(this.colorMode));
@@ -243,10 +248,7 @@ public class OpenFileActivity extends Activity {
         this.pdfPagesProvider.setOmitImages(options.getBoolean(Options.PREF_OMIT_IMAGES, false));
 		this.pagesView.setColorMode(this.colorMode);		
 		
-		pagesView.setZoomIncrement(
-				Float.parseFloat(options.getString(Options.PREF_ZOOM_INCREMENT, "1.414")));
 		this.pdfPagesProvider.setRenderAhead(options.getBoolean(Options.PREF_RENDER_AHEAD, true));
-		this.pagesView.setPageWithVolume(options.getBoolean(Options.PREF_PAGE_WITH_VOLUME, true));
 		this.pagesView.setVerticalScrollLock(options.getBoolean(Options.PREF_VERTICAL_SCROLL_LOCK, false));
 		this.pagesView.invalidate();
 		zoomAnim = AnimationUtils.loadAnimation(this,
@@ -292,13 +294,13 @@ public class OpenFileActivity extends Activity {
     private void setZoomButtonHandlers() {
     	this.zoomDownButton.setOnLongClickListener(new View.OnLongClickListener() {
 			public boolean onLongClick(View v) {
-				pagesView.zoomDownBig();
+				pagesView.doAction(actions.getAction(Actions.LONG_ZOOM_IN));
 				return true;
 			}
     	});
     	this.zoomDownButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				pagesView.zoomDown();
+				pagesView.doAction(actions.getAction(Actions.ZOOM_IN));
 			}
     	});
     	this.zoomWidthButton.setOnClickListener(new View.OnClickListener() {
@@ -314,12 +316,12 @@ public class OpenFileActivity extends Activity {
     	});
     	this.zoomUpButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				pagesView.zoomUp();
+				pagesView.doAction(actions.getAction(Actions.ZOOM_OUT));
 			}
     	});
     	this.zoomUpButton.setOnLongClickListener(new View.OnLongClickListener() {
 			public boolean onLongClick(View v) {
-				pagesView.zoomUpBig();
+				pagesView.doAction(actions.getAction(Actions.LONG_ZOOM_OUT));
 				return true;
 			}
     	});
@@ -405,7 +407,8 @@ public class OpenFileActivity extends Activity {
     public boolean dispatchTouchEvent(MotionEvent event) {
     	int action = event.getAction();
     	if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN) {
-    		showAnimated();
+    		if (!eink)
+    			showAnimated();
     	}
 		return super.dispatchTouchEvent(event);    	
     };
@@ -419,18 +422,28 @@ public class OpenFileActivity extends Activity {
     };
     
     private void showZoom() {
+    	zoomLayout.setVisibility(View.VISIBLE);
     	zoomLayout.clearAnimation();
     	zoomHandler.removeCallbacks(zoomRunnable);
     	zoomHandler.postDelayed(zoomRunnable, fadeStartOffset);
     }
     
     private void fadeZoom() {
-    	zoomAnim.setStartOffset(0);
-		zoomAnim.setFillAfter(true);
-		zoomLayout.startAnimation(zoomAnim);
+    	if (eink) {
+    		zoomLayout.setVisibility(View.GONE);
+    	}
+    	else {
+    		zoomAnim.setStartOffset(0);
+    		zoomAnim.setFillAfter(true);
+    		zoomLayout.startAnimation(zoomAnim);
+    	}
     }
     
     public void showPageNumber(boolean force) {
+    	if (eink) {
+    		pageNumberTextView.setVisibility(View.GONE);
+    		return;
+    	}
     	String newText = ""+(this.pagesView.getCurrentPage()+1)+"/"+
 				this.pdfPagesProvider.getPageCount();
     	

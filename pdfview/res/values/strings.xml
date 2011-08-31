@@ -21,7 +21,6 @@
 	<string name="searching_for">Searching for "%1$s"</string>
 	<string name="page_of">Page %1$d of %2$d</string>
 	<string name="options">Options</string>
-	<string name="page_with_volume">Page with volume keys</string>
 	<string name="zoom_animation">Zoom buttons</string>
 	<string-array name="zoom_animations">
 		<item>0</item>
@@ -68,26 +67,6 @@
 		<item>7 seconds</item>
 	</string-array>
 	<string name="default_fade_speed">7</string> 
-	<string name="zoom_increment">Zoom increment</string>
-	<string name="default_zoom_increment">1.414</string>
-	<string-array name="zoom_increment_labels">
-	<item>2%</item>
-	<item>5%</item>
-	<item>10%</item>
-	<item>20%</item>
-	<item>41.4%</item>
-	<item>50%</item>
-	<item>100%</item>
-	</string-array>
-	<string-array name="zoom_increments">
-	<item>1.02</item>
-	<item>1.05</item>
-	<item>1.1</item>
-	<item>1.2</item>
-	<item>1.414</item>
-	<item>1.5</item>
-	<item>2</item>
-	</string-array>
 	<string name="invert">Invert colors</string>
 	<string name="dirs_first">List directories first</string>
 	<string name="show_extension">Show .pdf extension</string>
@@ -185,4 +164,40 @@
 	<item>zoom in or back out</item>
 	</string-array>
 	<string name="double_tap_action">Double tap action</string>
+	<string-array name = "action_pairs">
+	<item>0</item>
+	<item>1</item>
+	<item>2</item>
+	<item>3</item>
+	<item>4</item>
+	<item>5</item>
+	<item>6</item>
+	<item>7</item>
+	<item>8</item>
+	</string-array>
+	<string-array name = "action_pair_labels">
+	<item>none</item>
+	<item>screen up/down</item>
+	<item>page up/down</item>
+	<item>zoom 1.02X</item>
+	<item>zoom 1.05X</item>
+	<item>zoom 1.1X</item>
+	<item>zoom 1.2X</item>
+	<item>zoom 1.414X</item>
+	<item>zoom 2X</item>
+	</string-array>
+	<string name="volume_pair">Volume -/+ key actions</string>
+	<string name="up_down_pair">Up/Down key actions</string>
+	<string name="left_right_pair">Left/Right key actions</string>
+	<string name="zoom_pair">Zoom button actions</string>
+	<string name="long_zoom_pair">Long press zoom button actions</string>
+	<string name="right_up_down_pair">Nook Touch right up/down key actions</string>
+	<string name="default_volume_pair">1</string>
+	<string name="default_up_down_pair">1</string>
+	<string name="default_left_right_pair">2</string>
+	<string name="default_zoom_pair">7</string>
+	<string name="default_long_zoom_pair">8</string>
+	<string name="default_right_up_down_pair">1</string>
+	<string name="hw">Hardware Specific Settings</string>
+	<string name="eink">E-ink mode</string>
 </resources>

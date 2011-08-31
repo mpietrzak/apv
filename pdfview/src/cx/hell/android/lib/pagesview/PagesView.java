@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import cx.hell.android.pdfview.Actions;
 import cx.hell.android.pdfview.Bookmark;
 import cx.hell.android.pdfview.BookmarkEntry;
 import cx.hell.android.pdfview.Options;
@@ -175,10 +176,12 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	private int doubleTapAction = Options.DOUBLE_TAP_ZOOM_IN_OUT;
 	private int zoomToRestore = 0;
 	private int leftToRestore;
+	private Actions actions = null;
 	
 	public PagesView(Activity activity) {
 		super(activity);
 		this.activity = activity;
+		this.actions = null;
 		this.lastControlsUseMillis = System.currentTimeMillis();
 		this.findResultsPaint = new Paint();
 		this.findResultsPaint.setARGB(0xd0, 0xc0, 0, 0);
@@ -239,7 +242,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 						int oldZoom = zoomLevel;
 						left += e.getX() - width/2;
 						top += e.getY() - height/2;
-						zoomUpBig();
+						zoom(2f);
 						zoomToRestore = oldZoom;
 						leftToRestore = oldLeft;
 					}
@@ -247,7 +250,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 				case Options.DOUBLE_TAP_ZOOM:
 					left += e.getX() - width/2;
 					top += e.getY() - height/2;
-					zoomUpBig();
+					zoom(2f);
 					return false;
 				default:
 					return false;
@@ -740,43 +743,50 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		}
 		
 		if (event.getAction() == KeyEvent.ACTION_DOWN) {
+			int action = actions.getAction(keyCode);
+			
 			switch (keyCode) {
 			case KeyEvent.KEYCODE_SEARCH:
 				((cx.hell.android.pdfview.OpenFileActivity)activity).showFindDialog();
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
-				if (!this.pageWithVolume)
+				if (action == Actions.ACTION_NONE)
 					return false;
 				if (!volumeDownIsDown) {
 					/* Disable key repeat as on some devices the keys are a little too
 					 * sticky for key repeat to work well.  TODO: Maybe key repeat disabling
 					 * should be an option?  
 					 */
-					this.top += this.getHeight() - 16;
-					this.invalidate();
+					doAction(action);
 				}
 				volumeDownIsDown = true;
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_UP:
+				if (action == Actions.ACTION_NONE)
+					return false;
 				if (!this.pageWithVolume)
 					return false;
 				if (!volumeUpIsDown) {
-					this.top -= this.getHeight() - 16;
-					this.invalidate();
+					doAction(action);
 				}
 				volumeUpIsDown = true;
 				return true;
 			case KeyEvent.KEYCODE_DPAD_UP:
+			case KeyEvent.KEYCODE_DPAD_DOWN:
+			case KeyEvent.KEYCODE_DPAD_LEFT:
+			case KeyEvent.KEYCODE_DPAD_RIGHT:
+			case 94:
+			case 95:
+				doAction(action);
+				return true;
+				
 			case KeyEvent.KEYCODE_DEL:
 			case KeyEvent.KEYCODE_K:
-				this.top -= this.getHeight() - 16;
-				this.invalidate();
+				doAction(Actions.ACTION_SCREEN_UP);
 				return true;
-			case KeyEvent.KEYCODE_DPAD_DOWN:
 			case KeyEvent.KEYCODE_SPACE:
 			case KeyEvent.KEYCODE_J:
-				this.top += this.getHeight() - 16;
-				this.invalidate();
+				doAction(Actions.ACTION_SCREEN_DOWN);
 				return true;
 			case KeyEvent.KEYCODE_H:
 				this.left -= this.getWidth() / 4;
@@ -786,23 +796,11 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 				this.left += this.getWidth() / 4;
 				this.invalidate();
 				return true;
-			case KeyEvent.KEYCODE_DPAD_LEFT:
-				scrollToPage(currentPage - 1);
-				return true;
-			case KeyEvent.KEYCODE_DPAD_RIGHT:
-				scrollToPage(currentPage + 1);
-				return true;
 			case KeyEvent.KEYCODE_O:
-				this.zoomLevel /= 1.1f;
-				this.left /= 1.1f;
-				this.top /= 1.1f;
-				this.invalidate();
+				zoom(1f/1.1f);
 				return true;
 			case KeyEvent.KEYCODE_P:
-				this.zoomLevel *= 1.1f;
-				this.left *= 1.1f;
-				this.top *= 1.1f;
-				this.invalidate();
+				zoom(1.1f);
 				return true;
 			}
 		}
@@ -1146,49 +1144,13 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	/**
 	 * Zoom down one level
 	 */
-	public void zoomDown() {
-		this.zoomLevel /= step;
-		this.left /= step;
-		this.top /= step;
+	public void zoom(float value) {
+		this.zoomLevel *= value;
+		this.left *= value;
+		this.top *= value;
 		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
 		zoomToRestore = 0;
 		this.invalidate();		
-	}
-
-	/**
-	 * Zoom down big 
-	 */
-	public void zoomDownBig() {
-		this.zoomLevel /= 2;
-		this.left /= 2;
-		this.top /= 2;
-		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
-		zoomToRestore = 0;
-		this.invalidate();		
-	}
-
-	/**
-	 * Zoom up one level
-	 */
-	public void zoomUp() {
-		this.zoomLevel *= step;
-		this.left *= step;
-		this.top *= step;
-		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
-		zoomToRestore = 0;
-		this.invalidate();
-	}
-
-	/**
-	 * Zoom up big level
-	 */
-	public void zoomUpBig() {
-		this.zoomLevel *= 2;
-		this.left *= 2;
-		this.top *= 2;
-		Log.d(TAG, "zoom level changed to " + this.zoomLevel);
-		zoomToRestore = 0;
-		this.invalidate();
 	}
 
 	/* zoom to width */
@@ -1330,5 +1292,35 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	
 	public void setDoubleTap(int doubleTapAction) {
 		this.doubleTapAction = doubleTapAction;
+	}
+	
+	public boolean doAction(int action) {
+		float zoomValue = Actions.getZoomValue(action);
+		if (0f < zoomValue) {
+			zoom(zoomValue);
+			return true;
+		}
+		switch(action) {
+		case Actions.ACTION_FULL_PAGE_DOWN:
+			scrollToPage(currentPage + 1);
+			return true;
+		case Actions.ACTION_FULL_PAGE_UP:
+			scrollToPage(currentPage - 1);
+			return true;
+		case Actions.ACTION_SCREEN_DOWN:
+			this.top += this.getHeight() - 16;
+			this.invalidate();
+			return true;
+		case Actions.ACTION_SCREEN_UP:
+			this.top -= this.getHeight() - 16;
+			this.invalidate();
+			return true;
+		default:
+			return false;
+		}
+	}
+	
+	public void setActions(Actions actions) {
+		this.actions = actions;
 	}
 }
