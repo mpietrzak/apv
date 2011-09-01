@@ -115,8 +115,10 @@ public class Actions {
 			return getAction(this.volume, 0);
 		case KeyEvent.KEYCODE_VOLUME_DOWN:
 			return getAction(this.volume, 1);
+		case 92:
 		case KeyEvent.KEYCODE_DPAD_UP:
 			return getAction(this.upDown, 0);
+		case 93:
 		case KeyEvent.KEYCODE_DPAD_DOWN:
 			return getAction(this.upDown, 1);
 		case KeyEvent.KEYCODE_DPAD_LEFT:
