@@ -775,6 +775,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			case KeyEvent.KEYCODE_DPAD_DOWN:
 			case KeyEvent.KEYCODE_DPAD_LEFT:
 			case KeyEvent.KEYCODE_DPAD_RIGHT:
+			case 92:
+			case 93:
 			case 94:
 			case 95:
 				doAction(action);
