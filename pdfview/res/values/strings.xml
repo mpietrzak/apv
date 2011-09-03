@@ -172,23 +172,31 @@
 	<item>0</item>
 	<item>1</item>
 	<item>2</item>
+	<item>9</item>
 	<item>3</item>
 	<item>4</item>
 	<item>5</item>
 	<item>6</item>
 	<item>7</item>
 	<item>8</item>
+	<item>10</item>
+	<item>11</item>
+	<item>12</item>
 	</string-array>
 	<string-array name = "action_pair_labels">
 	<item>none</item>
 	<item>screen up/down</item>
 	<item>page up/down</item>
+	<item>page prev/next</item>
 	<item>zoom 1.02X</item>
 	<item>zoom 1.05X</item>
 	<item>zoom 1.1X</item>
 	<item>zoom 1.2X</item>
 	<item>zoom 1.414X</item>
 	<item>zoom 2X</item>
+	<item>screen up/down reversed</item>
+	<item>page up/down reversed</item>
+	<item>page prev/next reversed</item>
 	</string-array>
 	<string name="volume_pair">Volume -/+ key actions</string>
 	<string name="up_down_pair">Up/Down key actions</string>

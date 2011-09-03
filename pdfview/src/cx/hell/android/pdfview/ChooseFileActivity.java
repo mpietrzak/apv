@@ -63,9 +63,14 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 	private Boolean dirsFirst = true;
 	private Boolean showExtension = false;
 	
+	private Boolean light = false;
+	
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
+
+    	if (light)
+    		this.setTheme(android.R.style.Theme_Light);
     	
     	currentPath = getHome();
 

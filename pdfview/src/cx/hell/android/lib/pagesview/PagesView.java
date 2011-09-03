@@ -922,20 +922,39 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			}
 		});
 	}
+	
+	synchronized public void scrollToPage(int page) {
+		scrollToPage(page, true);
+	}
+	
+	public float pagePosition(int page) {
+		float top = 0;
+		
+		for(int i = 0; i < page; ++i) {
+			top += this.getCurrentPageHeight(i);
+		}
+		
+		if (page > 0)
+			top += (float)MARGIN_Y * this.zoomLevel * 0.001f * (float)(page);
+		
+		return top;		
+	}
 
 	/**
 	 * Move current viewport over n-th page.
 	 * Page is 0-based.
 	 * @param page 0-based page number
 	 */
-	synchronized public void scrollToPage(int page) {
-		this.left = this.width / 2;
-		float top = this.height / 2;
-		for(int i = 0; i < page; ++i) {
-			top += this.getCurrentPageHeight(i);
+	synchronized public void scrollToPage(int page, boolean positionAtTop) {
+		float top;
+		
+		if (positionAtTop) {
+			top = this.height/2 + pagePosition(page);
 		}
-		if (page > 0)
-			top += (float)MARGIN_Y * this.zoomLevel * 0.001f * (float)(page); 
+		else {
+			top = this.top - pagePosition(currentPage) + pagePosition(page);
+		}
+
 		this.top = (int)top;
 		this.currentPage = page;
 		this.invalidate();
@@ -1304,10 +1323,16 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		}
 		switch(action) {
 		case Actions.ACTION_FULL_PAGE_DOWN:
-			scrollToPage(currentPage + 1);
+			scrollToPage(currentPage + 1, false);
 			return true;
 		case Actions.ACTION_FULL_PAGE_UP:
+			scrollToPage(currentPage - 1, false);
+			return true;
+		case Actions.ACTION_PREV_PAGE:
 			scrollToPage(currentPage - 1);
+			return true;
+		case Actions.ACTION_NEXT_PAGE:
+			scrollToPage(currentPage + 1);
 			return true;
 		case Actions.ACTION_SCREEN_DOWN:
 			this.top += this.getHeight() - 16;

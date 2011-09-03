@@ -52,6 +52,10 @@ public class Options extends PreferenceActivity {
 	public final static int PAIR_ZOOM_1200 = 6;
 	public final static int PAIR_ZOOM_1414 = 7;
 	public final static int PAIR_ZOOM_2000 = 8;
+	public final static int PAIR_PAGE_TOP = 9;
+	public final static int PAIR_SCREEN_REV = 10;
+	public final static int PAIR_PAGE_REV = 11;
+	public final static int PAIR_PAGE_TOP_REV = 12;
 	
 	public final static int COLOR_MODE_NORMAL = 0;
 	public final static int COLOR_MODE_INVERT = 1;
