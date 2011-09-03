@@ -21,18 +21,20 @@ public class Actions {
 	public final static int ACTION_SCREEN_UP = 2;
 	public final static int ACTION_FULL_PAGE_DOWN = 3;
 	public final static int ACTION_FULL_PAGE_UP = 4;
-	public final static int ACTION_ZOOM_IN_1020 = 5;
-	public final static int ACTION_ZOOM_IN_1050 = 6;
-	public final static int ACTION_ZOOM_IN_1100 = 7;
-	public final static int ACTION_ZOOM_IN_1200 = 8;
-	public final static int ACTION_ZOOM_IN_1414 = 9;
-	public final static int ACTION_ZOOM_IN_2000 = 10;
-	public final static int ACTION_ZOOM_OUT_1020 = 11;
-	public final static int ACTION_ZOOM_OUT_1050 = 12;
-	public final static int ACTION_ZOOM_OUT_1100 = 13;
-	public final static int ACTION_ZOOM_OUT_1200 = 14;
-	public final static int ACTION_ZOOM_OUT_1414 = 15;
-	public final static int ACTION_ZOOM_OUT_2000 = 16;
+	public final static int ACTION_PREV_PAGE = 5;
+	public final static int ACTION_NEXT_PAGE = 6;
+	public final static int ACTION_ZOOM_IN_1020 = 7;
+	public final static int ACTION_ZOOM_IN_1050 = 8;
+	public final static int ACTION_ZOOM_IN_1100 = 9;
+	public final static int ACTION_ZOOM_IN_1200 = 10;
+	public final static int ACTION_ZOOM_IN_1414 = 11;
+	public final static int ACTION_ZOOM_IN_2000 = 12;
+	public final static int ACTION_ZOOM_OUT_1020 = 13;
+	public final static int ACTION_ZOOM_OUT_1050 = 14;
+	public final static int ACTION_ZOOM_OUT_1100 = 15;
+	public final static int ACTION_ZOOM_OUT_1200 = 16;
+	public final static int ACTION_ZOOM_OUT_1414 = 17;
+	public final static int ACTION_ZOOM_OUT_2000 = 18;
 	
 	public Actions(SharedPreferences pref) {
 		this.zoom = Integer.parseInt(pref.getString(Options.PREF_ZOOM_PAIR, ""+Options.PAIR_ZOOM_1414));
@@ -80,6 +82,14 @@ public class Actions {
 			return item == 0 ? ACTION_SCREEN_UP : ACTION_SCREEN_DOWN;
 		case Options.PAIR_PAGE:
 			return item == 0 ? ACTION_FULL_PAGE_UP : ACTION_FULL_PAGE_DOWN;
+		case Options.PAIR_PAGE_TOP:
+			return item == 0 ? ACTION_PREV_PAGE : ACTION_NEXT_PAGE;
+		case Options.PAIR_SCREEN_REV:
+			return item == 1 ? ACTION_SCREEN_UP : ACTION_SCREEN_DOWN;
+		case Options.PAIR_PAGE_REV:
+			return item == 1 ? ACTION_FULL_PAGE_UP : ACTION_FULL_PAGE_DOWN;
+		case Options.PAIR_PAGE_TOP_REV:
+			return item == 1 ? ACTION_PREV_PAGE : ACTION_NEXT_PAGE;
 		case Options.PAIR_ZOOM_1020:
 			return item == 0 ? ACTION_ZOOM_OUT_1020 : ACTION_ZOOM_IN_1020;
 		case Options.PAIR_ZOOM_1050:
