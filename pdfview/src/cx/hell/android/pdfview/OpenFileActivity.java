@@ -275,7 +275,7 @@ public class OpenFileActivity extends Activity {
 		this.pageNumberTextView.setVisibility(pageNumberAnim == null ? View.GONE : View.VISIBLE);
 		this.zoomLayout.setVisibility(zoomAnim == null ? View.GONE : View.VISIBLE);
         
-        showAnimated();
+        showAnimated(true);
 	}
 
     /**
@@ -418,8 +418,7 @@ public class OpenFileActivity extends Activity {
     public boolean dispatchTouchEvent(MotionEvent event) {
     	int action = event.getAction();
     	if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN) {
-    		if (!eink)
-    			showAnimated();
+    		showAnimated(true);
     	}
 		return super.dispatchTouchEvent(event);    	
     };
@@ -427,7 +426,8 @@ public class OpenFileActivity extends Activity {
     public boolean dispatchKeyEvent(KeyEvent event) {
     	int action = event.getAction();
     	if (action == KeyEvent.ACTION_UP || action == KeyEvent.ACTION_DOWN) {
-    		showAnimated();
+    		if (!eink)
+    			showAnimated(false);
     	}
 		return super.dispatchKeyEvent(event);    	
     };
@@ -489,8 +489,9 @@ public class OpenFileActivity extends Activity {
     /**
      * Show zoom buttons and page number
      */
-    private void showAnimated() {
-    	showZoom();
+    private void showAnimated(boolean alsoZoom) {
+    	if (alsoZoom)
+    		showZoom();
     	showPageNumber(true);
     }
     
@@ -581,7 +582,7 @@ public class OpenFileActivity extends Activity {
     	Log.i(TAG, "rewind to page " + page);
     	if (this.pagesView != null) {
     		this.pagesView.scrollToPage(page);
-            showAnimated();
+            showAnimated(true);
     	}
     }
     
