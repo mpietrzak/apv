@@ -15,6 +15,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
@@ -161,6 +162,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 * @param activity parent activity
 	 */
 	
+	private boolean eink = false;
 	private boolean volumeUpIsDown = false;
 	private boolean volumeDownIsDown = false;	
 	private GestureDetector gestureDetector = null;
@@ -481,6 +483,10 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 * Also collect info what's visible and push this info to page renderer.
 	 */
 	private void drawPages(Canvas canvas) {
+		if (this.eink) {
+			canvas.drawColor(Color.WHITE);
+		}
+		
 		Rect src = new Rect(); /* TODO: move out of drawPages */
 		Rect dst = new Rect(); /* TODO: move out of drawPages */
 		int pageWidth = 0;
@@ -1349,5 +1355,9 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	
 	public void setActions(Actions actions) {
 		this.actions = actions;
+	}
+	
+	public void setEink(boolean eink) {
+		this.eink = eink;
 	}
 }
