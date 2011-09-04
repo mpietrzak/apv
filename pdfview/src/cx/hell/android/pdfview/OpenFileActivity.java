@@ -223,6 +223,11 @@ public class OpenFileActivity extends Activity {
 		
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
 
+		boolean eink = options.getBoolean(Options.PREF_EINK, false);
+		this.pagesView.setEink(eink);
+		if (eink)
+    		this.setTheme(android.R.style.Theme_Light);
+        
 		actions = new Actions(options);
 		this.pagesView.setActions(actions);
 
