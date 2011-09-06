@@ -179,6 +179,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	private int zoomToRestore = 0;
 	private int leftToRestore;
 	private Actions actions = null;
+	private boolean nook2 = false;
 	
 	public PagesView(Activity activity) {
 		super(activity);
@@ -365,6 +366,9 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	int prevLeft = -1;
 	
 	public void onDraw(Canvas canvas) {
+		if (this.nook2) {
+			N2EpdController.setGL16Mode();
+		}
 		this.drawPages(canvas);
 		if (this.findMode) this.drawFindResults(canvas);
 	}
@@ -1359,5 +1363,9 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	
 	public void setEink(boolean eink) {
 		this.eink = eink;
+	}
+
+	public void setNook2(boolean nook2) {
+		this.nook2 = nook2;
 	}
 }

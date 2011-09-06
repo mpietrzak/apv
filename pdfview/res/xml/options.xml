@@ -131,6 +131,10 @@
     	android:title="@string/eink"
     	android:defaultValue="false"
     	android:key="eink"/>
+    <CheckBoxPreference
+    	android:title="@string/nook2"
+    	android:defaultValue="false"
+    	android:key="nook2"/>
 
     <PreferenceCategory
     android:title="@string/selector">
