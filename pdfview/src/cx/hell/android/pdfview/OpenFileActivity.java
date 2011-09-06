@@ -227,6 +227,7 @@ public class OpenFileActivity extends Activity {
 		this.pagesView.setEink(eink);
 		if (eink)
     		this.setTheme(android.R.style.Theme_Light);
+		this.pagesView.setNook2(options.getBoolean(Options.PREF_NOOK2, false));
         
 		actions = new Actions(options);
 		this.pagesView.setActions(actions);

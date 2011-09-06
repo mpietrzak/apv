@@ -211,6 +211,7 @@
 	<string name="default_long_zoom_pair">8</string>
 	<string name="default_right_up_down_pair">1</string>
 	<string name="hw">Hardware Specific Settings</string>
-	<string name="eink">E-ink mode</string>
+	<string name="eink">E-ink optimizations</string>
+	<string name="nook2">Nook2 fast e-ink refresh</string>
 	<string name="disabled">Disabled</string>
 </resources>

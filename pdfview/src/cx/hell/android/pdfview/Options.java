@@ -35,6 +35,7 @@ public class Options extends PreferenceActivity {
 	public final static String PREF_LEFT_RIGHT_PAIR = "leftRightPair";
 	public final static String PREF_RIGHT_UP_DOWN_PAIR = "rightUpDownPair";
 	public final static String PREF_EINK = "eink";
+	public final static String PREF_NOOK2 = "nook2";
 	
 	public final static int PAGE_NUMBER_DISABLED = 100;
 	public final static int ZOOM_BUTTONS_DISABLED = 100;
