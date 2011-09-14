@@ -113,6 +113,12 @@
     	android:entryValues="@array/extra_caches"
     	android:key="extraCache"
     	/>
+    	
+    <CheckBoxPreference 
+    	android:title="@string/keep_on"
+    	android:key="keepOn"
+    	android:defaultValue="false"
+    />
 
 
     </PreferenceCategory>
