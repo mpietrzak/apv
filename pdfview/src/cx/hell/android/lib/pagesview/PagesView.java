@@ -312,7 +312,9 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	
 	public void goToBookmark() {
 
-		if (this.bookmarkToRestore == null) {
+		if (this.bookmarkToRestore == null || this.bookmarkToRestore.absoluteZoomLevel == 0
+				|| this.bookmarkToRestore.page < 0 
+				|| this.bookmarkToRestore.page >= this.pageSizes.length ) {
 			this.top  = this.height / 2;
 			this.left = this.width / 2;
 		}
@@ -378,7 +380,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 */
 	private int getCurrentMaxPageWidth() {
 		float realpagewidth = this.maxRealPageSize[this.rotation % 2 == 0 ? 0 : 1];
-		return (int)(realpagewidth * scaling0 * (this.zoomLevel*0.001f));
+		return (int)scale(realpagewidth);
 	}
 	
 	/**
@@ -395,7 +397,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	private int getCurrentDocumentHeight() {
 		float realheight = this.realDocumentSize[this.rotation % 2 == 0 ? 1 : 0];
 		/* we add pageSizes.length to account for round-off issues */
-		return (int)(realheight * scaling0 * (this.zoomLevel*0.001f) +  
+		return (int)(scale(realheight) +  
 			(pageSizes.length - 1) * this.getCurrentMarginY());
 	}
 	
@@ -405,8 +407,12 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 */
 	private int getCurrentPageWidth(int pageno) {
 		float realpagewidth = (float)this.pageSizes[pageno][this.rotation % 2 == 0 ? 0 : 1];
-		float currentpagewidth = realpagewidth * scaling0 * (this.zoomLevel*0.001f);
+		float currentpagewidth = scale(realpagewidth);
 		return (int)currentpagewidth;
+	}
+	
+	private float scale(float unscaled) {
+		return unscaled * scaling0 * this.zoomLevel * 0.001f;
 	}
 	
 	/**
@@ -415,16 +421,16 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 */
 	private float getCurrentPageHeight(int pageno) {
 		float realpageheight = (float)this.pageSizes[pageno][this.rotation % 2 == 0 ? 1 : 0];
-		float currentpageheight = realpageheight * scaling0 * (this.zoomLevel*0.001f);
+		float currentpageheight = scale(realpageheight);
 		return currentpageheight;
 	}
 	
 	private float getCurrentMarginX() {
-		return (float)MARGIN_X * this.zoomLevel * 0.001f;
+		return scale((float)MARGIN_X);
 	}
 	
 	private float getCurrentMarginY() {
-		return (float)MARGIN_Y * this.zoomLevel * 0.001f;
+		return scale((float)MARGIN_Y);
 	}
 	
 	/**
@@ -945,7 +951,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		}
 		
 		if (page > 0)
-			top += (float)MARGIN_Y * this.zoomLevel * 0.001f * (float)(page);
+			top += scale((float)MARGIN_Y) * (float)(page);
 		
 		return top;		
 	}
@@ -1068,24 +1074,16 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		if (this.findResults == null || this.findResults.isEmpty()) return;
 		Rect center = new Rect();
 		FindResult findResult = this.findResults.get(n);
+
 		for(Rect marker: findResult.markers) {
 			center.union(marker);
 		}
-		int page = findResult.page;
-		int x = 0;
-		int y = 0;
-		for(int p = 0; p < page; ++p) {
-			Log.d(TAG, "adding page " + p + " to y: " + this.pageSizes[p][1]);
-			y += this.pageSizes[p][1];
-		}
-		x += (center.left + center.right) / 2;
-		y += (center.top + center.bottom) / 2;
+
+		float x = scale((center.left + center.right) / 2);
+		float y = pagePosition(findResult.page) + scale((center.top + center.bottom) / 2);
 		
-		float marginX = this.getCurrentMarginX();
-		float marginY = this.getCurrentMarginX();
-	
-		this.left = (int)(x * scaling0 * this.zoomLevel * 0.001f + marginX);
-		this.top = (int)(y * scaling0 * this.zoomLevel * 0.001f + (page+1)*marginY);
+		this.left = (int)(x + this.getCurrentMarginX());
+		this.top = (int)(y);
 	}
 	
 	/**

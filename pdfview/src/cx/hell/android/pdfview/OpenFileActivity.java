@@ -228,6 +228,11 @@ public class OpenFileActivity extends Activity {
 		if (eink)
     		this.setTheme(android.R.style.Theme_Light);
 		this.pagesView.setNook2(options.getBoolean(Options.PREF_NOOK2, false));
+		
+		if (options.getBoolean(Options.PREF_KEEP_ON, false))
+			this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		else
+			this.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
 		actions = new Actions(options);
 		this.pagesView.setActions(actions);

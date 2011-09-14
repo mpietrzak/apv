@@ -214,4 +214,5 @@
 	<string name="eink">E-ink optimizations</string>
 	<string name="nook2">Nook2 fast e-ink refresh</string>
 	<string name="disabled">Disabled</string>
+	<string name="keep_on">Keep screen on while reading</string>
 </resources>
