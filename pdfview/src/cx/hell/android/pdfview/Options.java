@@ -24,7 +24,8 @@ public class Options extends PreferenceActivity {
 	public final static String PREF_OMIT_IMAGES = "omitImages";
 	public final static String PREF_VERTICAL_SCROLL_LOCK = "verticalScrollLock";
 	public final static String PREF_BOX = "boxType";
-	public final static String PREF_SIDE_MARGINS = "sideMargins";
+	public final static String PREF_SIDE_MARGINS = "sideMargins2"; // sideMargins was boolean
+	public final static String PREF_TOP_MARGIN = "topMargin";
 	public final static String PREF_EXTRA_CACHE = "extraCache";
 	public final static String PREF_DOUBLE_TAP = "doubleTap";
 	

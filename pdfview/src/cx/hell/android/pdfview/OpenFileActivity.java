@@ -238,7 +238,12 @@ public class OpenFileActivity extends Activity {
 		this.pagesView.setActions(actions);
 
 		setZoomLayout(options);
-		this.pagesView.setSideMargins(options.getBoolean(Options.PREF_SIDE_MARGINS, false));
+		
+		this.pagesView.setSideMargins(
+				Integer.parseInt(options.getString(Options.PREF_SIDE_MARGINS, "0")));
+		this.pagesView.setTopMargin(
+				Integer.parseInt(options.getString(Options.PREF_TOP_MARGIN, "0")));
+
 		this.pagesView.setDoubleTap(Integer.parseInt(options.getString(Options.PREF_DOUBLE_TAP, 
 				""+Options.DOUBLE_TAP_ZOOM_IN_OUT)));
 		

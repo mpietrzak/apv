@@ -55,8 +55,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	/**
 	 * Space between screen edge and page and between pages.
 	 */
-	private int MARGIN_X = 0;
-	private static final int MARGIN_Y = 10;
+	private int marginX = 0;
+	private int marginY = 10;
 	
 	/* zoom steps */
 	float step = 1.414f;
@@ -302,8 +302,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		this.height = h;
 		if (this.scaling0 == 0f) {
 			this.scaling0 = Math.min(
-					((float)this.height - 2*MARGIN_Y) / (float)this.pageSizes[0][1],
-					((float)this.width - 2*MARGIN_X) / (float)this.pageSizes[0][0]);
+					((float)this.height - 2*marginY) / (float)this.pageSizes[0][1],
+					((float)this.width - 2*marginX) / (float)this.pageSizes[0][0]);
 		}
 		if (oldw == 0 && oldh == 0) {
 			goToBookmark();
@@ -324,7 +324,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			Point pos = getPagePositionInDocumentWithZoom(this.bookmarkToRestore.page);
 			this.currentPage = this.bookmarkToRestore.page;
 			this.top = pos.y + this.height / 2;
-			this.left = this.getCurrentPageWidth(this.currentPage)/2 + MARGIN_X + this.bookmarkToRestore.offsetX;
+			this.left = this.getCurrentPageWidth(this.currentPage)/2 + marginX + this.bookmarkToRestore.offsetX;
 			this.bookmarkToRestore = null;
 		}
 	}
@@ -348,8 +348,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 			
 			if (this.width > 0 && this.height > 0) {
 				this.scaling0 = Math.min(
-						((float)this.height - 2*MARGIN_Y) / (float)this.pageSizes[0][1],
-						((float)this.width - 2*MARGIN_X) / (float)this.pageSizes[0][0]);
+						((float)this.height - 2*marginY) / (float)this.pageSizes[0][1],
+						((float)this.width - 2*marginX) / (float)this.pageSizes[0][0]);
 				this.left = this.width / 2;
 				this.top = this.height / 2;
 			}
@@ -426,11 +426,11 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	}
 	
 	private float getCurrentMarginX() {
-		return scale((float)MARGIN_X);
+		return scale((float)marginX);
 	}
 	
 	private float getCurrentMarginY() {
-		return scale((float)MARGIN_Y);
+		return scale((float)marginY);
 	}
 	
 	/**
@@ -951,7 +951,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		}
 		
 		if (page > 0)
-			top += scale((float)MARGIN_Y) * (float)(page);
+			top += scale((float)marginY) * (float)(page);
 		
 		return top;		
 	}
@@ -1187,7 +1187,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		int page = currentPage < 0 ? 0 : currentPage;
 		int pageWidth = getCurrentPageWidth(page);
 		this.top = (this.top - this.height / 2) * this.width / pageWidth + this.height / 2;
-		this.zoomLevel = this.zoomLevel * (this.width - 2*MARGIN_X) / pageWidth;
+		this.zoomLevel = this.zoomLevel * (this.width - 2*marginX) / pageWidth;
 		this.left = (int) (this.width/2);
 		zoomToRestore = 0;
 		this.invalidate();		
@@ -1309,14 +1309,17 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	public BookmarkEntry toBookmarkEntry() {
 		return new BookmarkEntry(this.pageSizes.length, 
 				this.currentPage, scaling0*zoomLevel, rotation, 
-				this.left - this.getCurrentPageWidth(this.currentPage)/2 - MARGIN_X);
+				this.left - this.getCurrentPageWidth(this.currentPage)/2 - marginX);
 	}
 	
-	public void setSideMargins(Boolean sideMargins) {
-		if (sideMargins)
-			this.MARGIN_X = MARGIN_Y;
-		else
-			this.MARGIN_X = 0;
+	public void setSideMargins(int margin) {
+		this.marginX = margin;
+	}
+	
+	public void setTopMargin(int margin) {
+		int delta = margin - this.marginY;
+		top += this.currentPage * delta; 
+		this.marginY = margin;
 	}
 	
 	public void setDoubleTap(int doubleTapAction) {
