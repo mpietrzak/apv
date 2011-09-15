@@ -154,7 +154,22 @@
 		<item>10 MB</item>
 	</string-array>
 	<string name="default_extra_cache">0</string>
-	<string name="side_margins">Extra side margins</string>
+	<string name="side_margin">Extra side margins</string>	
+	<string name="default_side_margin">0</string>
+		<string-array name="margins">
+	<item>0</item>
+	<item>5</item>
+	<item>10</item>
+	<item>20</item>
+	</string-array>
+		<string-array name="margin_labels">
+	<item>none</item>
+	<item>small</item>
+	<item>medium</item>
+	<item>large</item>
+	</string-array>
+	<string name="top_margin">Space between pages</string>
+	<string name="default_top_margin">10</string>
 	<string name="remove_from_recent">Remove from recent</string>
 	<string name="delete">Delete file</string>
 	<string-array name = "double_tap_actions">

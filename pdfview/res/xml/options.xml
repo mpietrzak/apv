@@ -52,10 +52,18 @@
     	android:summary="@string/vertical_scroll_lock_sub"
     	android:defaultValue="false"
     	android:key="verticalScrollLock"/>
-    <CheckBoxPreference
-    	android:title="@string/side_margins"
-    	android:defaultValue="false"
-    	android:key="sideMargins"/>
+    <ListPreference
+    	android:title="@string/side_margin"
+    	android:defaultValue="@string/default_side_margin"
+    	android:entries="@array/margin_labels"
+    	android:entryValues="@array/margins"
+    	android:key="sideMargins2"/>
+    <ListPreference
+    	android:title="@string/top_margin"
+    	android:defaultValue="@string/default_top_margin"
+    	android:entries="@array/margin_labels"
+    	android:entryValues="@array/margins"
+    	android:key="topMargin"/>
     <ListPreference
     	android:title="@string/box"
     	android:defaultValue="@string/default_box"

@@ -20,7 +20,6 @@ package cx.hell.android.pdfview;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.List;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
