@@ -1,4 +1,4 @@
- package cx.hell.android.pdfview;
+package cx.hell.android.pdfview;
 
 import java.io.File;
 import java.io.FileDescriptor;
