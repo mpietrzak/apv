@@ -2,7 +2,7 @@
 # make sure ndk-build is in path
 
 SCRIPTDIR=`dirname $0`
-MUPDF=mupdf-0.8.165
+MUPDF=mupdf-0.9
 FREETYPE=freetype-2.4.6
 OPENJPEG=openjpeg_v1_4_sources_r697
 JBIG2DEC=jbig2dec-0.11
@@ -28,6 +28,6 @@ gcc -o ../scripts/fontdump $MUPDF/scripts/fontdump.c
 cd ../jni/mupdf
 mkdir generated 2> /dev/null
 ../../scripts/fontdump generated/font_base14.h fonts/*.cff
-../../scripts/fontdump generated/font_droid.h fonts/droid/DroidSans.ttf
+../../scripts/fontdump generated/font_droid.h fonts/droid/DroidSans.ttf fonts/droid/DroidSansMono.ttf
 cd ..
 ndk-build
