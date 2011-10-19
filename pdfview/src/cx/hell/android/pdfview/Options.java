@@ -38,6 +38,7 @@ public class Options extends PreferenceActivity {
 	public final static String PREF_EINK = "eink";
 	public final static String PREF_NOOK2 = "nook2";
 	public final static String PREF_KEEP_ON = "keepOn";
+	public final static String PREF_SHOW_ZOOM_ON_SCROLL = "showZoomOnScroll";
 	
 	public final static int PAGE_NUMBER_DISABLED = 100;
 	public final static int ZOOM_BUTTONS_DISABLED = 100;
