@@ -108,6 +108,8 @@ public class OpenFileActivity extends Activity {
 	
 	private int box = 2;
 
+	public boolean showZoomOnScroll = false;
+	
 	private int fadeStartOffset = 7000; 
 	
 	private int colorMode = Options.COLOR_MODE_NORMAL;
@@ -239,6 +241,7 @@ public class OpenFileActivity extends Activity {
 
 		setZoomLayout(options);
 		
+		this.showZoomOnScroll = options.getBoolean(Options.PREF_SHOW_ZOOM_ON_SCROLL, false);
 		this.pagesView.setSideMargins(
 				Integer.parseInt(options.getString(Options.PREF_SIDE_MARGINS, "0")));
 		this.pagesView.setTopMargin(
@@ -434,7 +437,10 @@ public class OpenFileActivity extends Activity {
     public boolean dispatchTouchEvent(MotionEvent event) {
     	int action = event.getAction();
     	if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN) {
-    		showAnimated(true);
+	    	showPageNumber(true);
+    		if (showZoomOnScroll) {
+		    	showZoom();
+	    	}
     	}
 		return super.dispatchTouchEvent(event);    	
     };
@@ -448,14 +454,14 @@ public class OpenFileActivity extends Activity {
 		return super.dispatchKeyEvent(event);    	
     };
     
-    private void showZoom() {
+    public void showZoom() {
     	if (zoomAnim == null) {
     		zoomLayout.setVisibility(View.GONE);
     		return;
     	}
     	
-    	zoomLayout.setVisibility(View.VISIBLE);
     	zoomLayout.clearAnimation();
+    	zoomLayout.setVisibility(View.VISIBLE);
     	zoomHandler.removeCallbacks(zoomRunnable);
     	zoomHandler.postDelayed(zoomRunnable, fadeStartOffset);
     }
@@ -505,7 +511,7 @@ public class OpenFileActivity extends Activity {
     /**
      * Show zoom buttons and page number
      */
-    private void showAnimated(boolean alsoZoom) {
+    public void showAnimated(boolean alsoZoom) {
     	if (alsoZoom)
     		showZoom();
     	showPageNumber(true);

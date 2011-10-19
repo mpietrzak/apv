@@ -230,4 +230,5 @@
 	<string name="nook2">Nook2 fast e-ink refresh</string>
 	<string name="disabled">Disabled</string>
 	<string name="keep_on">Keep screen on while reading</string>
+	<string name="show_zoom_on_scroll">Show zoom when scrolling</string>
 </resources>

@@ -8,6 +8,7 @@ import java.util.Map;
 import cx.hell.android.pdfview.Actions;
 import cx.hell.android.pdfview.Bookmark;
 import cx.hell.android.pdfview.BookmarkEntry;
+import cx.hell.android.pdfview.OpenFileActivity;
 import cx.hell.android.pdfview.Options;
 
 import android.app.Activity;
@@ -163,6 +164,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 */
 	
 	private boolean eink = false;
+	private boolean showZoomOnScroll = false;
 	private boolean volumeUpIsDown = false;
 	private boolean volumeDownIsDown = false;	
 	private GestureDetector gestureDetector = null;
@@ -229,6 +231,9 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 					}
 		});
 		
+		final OpenFileActivity openFileActivity = (OpenFileActivity)activity;
+		final PagesView pagesView = this;
+		
 		gestureDetector.setOnDoubleTapListener(new OnDoubleTapListener() {
 			public boolean onDoubleTap(MotionEvent e) {
 				switch(doubleTapAction) {
@@ -264,9 +269,14 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 				return false;
 			}
 
-			public boolean onSingleTapConfirmed(MotionEvent e) {				
+			public boolean onSingleTapConfirmed(MotionEvent e) {
+				if (!showZoomOnScroll) {
+					openFileActivity.showZoom();
+					pagesView.invalidate();
+				}
 				return false;
-			}});
+			}
+		});
 	}
 	
 	public void setStartBookmark(Bookmark b, String bookmarkName) {
@@ -1368,5 +1378,9 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 
 	public void setNook2(boolean nook2) {
 		this.nook2 = nook2;
+	}
+	
+	public void setShowZoomOnScroll(boolean showZoomOnScroll) {
+		this.showZoomOnScroll = showZoomOnScroll;
 	}
 }
