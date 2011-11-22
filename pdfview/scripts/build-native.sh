@@ -2,7 +2,7 @@
 # make sure ndk-build is in path
 
 SCRIPTDIR=`dirname $0`
-MUPDF=mupdf-0.9
+MUPDF=mupdf-snapshot-20111122.tar.gz
 FREETYPE=freetype-2.4.6
 OPENJPEG=openjpeg_v1_4_sources_r697
 JBIG2DEC=jbig2dec-0.11
