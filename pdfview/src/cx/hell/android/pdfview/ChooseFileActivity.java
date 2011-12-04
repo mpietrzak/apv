@@ -62,6 +62,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 	
 	private Boolean dirsFirst = true;
 	private Boolean showExtension = false;
+	private Boolean history = true;
 	
 	private Boolean light = false;
 	
@@ -141,7 +142,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     	
     	FileListEntry entry;
     	
-    	if (isHome(currentPath)) {
+    	if (history && isHome(currentPath)) {
     		recent = new Recent(this);
     		
         	for (int i = 0; i < recent.size() && i < recentIds.length; i++) {
@@ -288,6 +289,7 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);		
 		dirsFirst = options.getBoolean(Options.PREF_DIRS_FIRST, true);
 		showExtension = options.getBoolean(Options.PREF_SHOW_EXTENSION, false);
+		history = options.getBoolean(Options.PREF_HISTORY, true);
     	
     	this.update();
     }
