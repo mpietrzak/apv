@@ -2,7 +2,7 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_CFLAGS := -O3 -DARM_ARCH
+LOCAL_CFLAGS := -O3 -DARCH_ARM
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
   LOCAL_CFLAGS += -DJDCT_FASTEST=JDCT_FLOAT

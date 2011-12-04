@@ -6,7 +6,7 @@ LOCAL_ARM_MODE := arm
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../fitz $(LOCAL_PATH)/../../freetype-overtlay/include $(LOCAL_PATH)/../../freetype/include $(LOCAL_PATH)/..
 LOCAL_MODULE    := pdf
-LOCAL_CFLAGS := -DNOCJK -O3 -DARM_ARCH
+LOCAL_CFLAGS := -DNOCJK -O3 -DARCH_ARM
 LOCAL_SRC_FILES := \
 	apv_pdf_debug.c \
 	pdf_lex.c \
