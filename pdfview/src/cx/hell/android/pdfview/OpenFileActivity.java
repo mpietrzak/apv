@@ -136,6 +136,8 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 
 	private int prevOrientation;
 
+	private boolean history = true;
+
 	/**
      * Called when the activity is first created.
      * TODO: initialize dialog fast, then move file loading to other thread
@@ -257,6 +259,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 		
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
 
+		history  = options.getBoolean(Options.PREF_HISTORY, true);
 		boolean eink = options.getBoolean(Options.PREF_EINK, false);
 		this.pagesView.setEink(eink);
 		if (eink)
@@ -414,9 +417,11 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 		Uri uri = intent.getData();    	
 		filePath = uri.getPath();
 		if (uri.getScheme().equals("file")) {
-			Recent recent = new Recent(this);
-			recent.add(0, filePath);
-			recent.commit();
+			if (history) {
+				Recent recent = new Recent(this);
+				recent.add(0, filePath);
+				recent.commit();
+			}
 			return new PDF(new File(filePath), this.box);
     	} else if (uri.getScheme().equals("content")) {
     		ContentResolver cr = this.getContentResolver();

@@ -2,15 +2,17 @@ package cx.hell.android.pdfview;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.ActivityInfo;
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 
-public class Options extends PreferenceActivity {
+public class Options extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 	public final static String PREF_TAG = "Options";
-	public final static String PREF_INVERT = "invert";
 	public final static String PREF_ZOOM_ANIMATION = "zoomAnimation";
 	public final static String PREF_DIRS_FIRST = "dirsFirst";
 	public final static String PREF_SHOW_EXTENSION = "showExtension";
@@ -19,7 +21,6 @@ public class Options extends PreferenceActivity {
 	public final static String PREF_PAGE_ANIMATION = "pageAnimation";
 	public final static String PREF_FADE_SPEED = "fadeSpeed";
 	public final static String PREF_RENDER_AHEAD = "renderAhead";
-	public final static String PREF_GRAY = "gray";
 	public final static String PREF_COLOR_MODE = "colorMode";
 	public final static String PREF_OMIT_IMAGES = "omitImages";
 	public final static String PREF_VERTICAL_SCROLL_LOCK = "verticalScrollLock";
@@ -28,7 +29,6 @@ public class Options extends PreferenceActivity {
 	public final static String PREF_TOP_MARGIN = "topMargin";
 	public final static String PREF_EXTRA_CACHE = "extraCache";
 	public final static String PREF_DOUBLE_TAP = "doubleTap";
-	
 	public final static String PREF_VOLUME_PAIR = "volumePair";
 	public final static String PREF_ZOOM_PAIR = "zoomPair";
 	public final static String PREF_LONG_ZOOM_PAIR = "longZoomPair";
@@ -39,6 +39,7 @@ public class Options extends PreferenceActivity {
 	public final static String PREF_NOOK2 = "nook2";
 	public final static String PREF_KEEP_ON = "keepOn";
 	public final static String PREF_SHOW_ZOOM_ON_SCROLL = "showZoomOnScroll";
+	public final static String PREF_HISTORY = "history";
 	
 	public final static int PAGE_NUMBER_DISABLED = 100;
 	public final static int ZOOM_BUTTONS_DISABLED = 100;
@@ -110,9 +111,69 @@ public class Options extends PreferenceActivity {
 		0.0f, 0.0f, 0.0f, -1.0f, 255.0f} 
 	};
 	
-	public static int getIntFromString(SharedPreferences pref, String option, int def) {
-		return Integer.parseInt(pref.getString(option, ""+def));
+	private Resources resources;
+	
+	private static final String[] summaryKeys = { PREF_ZOOM_ANIMATION, PREF_ORIENTATION, PREF_PAGE_ANIMATION,
+		PREF_FADE_SPEED, PREF_COLOR_MODE, PREF_BOX, PREF_SIDE_MARGINS, PREF_TOP_MARGIN,
+		PREF_EXTRA_CACHE, PREF_DOUBLE_TAP, PREF_VOLUME_PAIR, PREF_ZOOM_PAIR,
+		PREF_LONG_ZOOM_PAIR, PREF_UP_DOWN_PAIR, PREF_LEFT_RIGHT_PAIR, PREF_RIGHT_UP_DOWN_PAIR };
+	private static final int[] summaryEntryValues = { R.array.zoom_animations, R.array.orientations, R.array.page_animations,
+		R.array.fade_speeds, R.array.color_modes, R.array.boxes, R.array.margins, R.array.margins,
+		R.array.extra_caches, R.array.double_tap_actions, R.array.action_pairs, R.array.action_pairs,
+		R.array.action_pairs, R.array.action_pairs, R.array.action_pairs, R.array.action_pairs };
+	private static final int[] summaryEntries = { R.array.zoom_animation_labels, R.array.orientation_labels, R.array.page_animation_labels,
+		R.array.fade_speed_labels, R.array.color_mode_labels, R.array.box_labels, R.array.margin_labels, R.array.margin_labels,
+		R.array.extra_cache_labels, R.array.double_tap_action_labels, R.array.action_pair_labels, R.array.action_pair_labels,
+		R.array.action_pair_labels, R.array.action_pair_labels, R.array.action_pair_labels, R.array.action_pair_labels };
+	private static final int[] summaryDefaults = { R.string.default_zoom_animation, R.string.default_orientation, R.string.default_page_animation,
+		R.string.default_fade_speed, R.string.default_color_mode, R.string.default_box, R.string.default_side_margin, R.string.default_top_margin,
+		R.string.default_extra_cache, R.string.default_double_tap_action, R.string.default_volume_pair, R.string.default_zoom_pair,
+		R.string.default_long_zoom_pair, R.string.default_up_down_pair, R.string.default_left_right_pair, R.string.default_right_up_down_pair };
+
+	public String getString(SharedPreferences options, String key) {
+		return getString(this.resources, options, key);
+	}
+	
+	public static String getString(Resources resources, SharedPreferences options, String key) {
+		for (int i=0; i<summaryKeys.length; i++)
+			if (summaryKeys[i].equals(key)) 
+				return options.getString(key, resources.getString(summaryDefaults[i]));
+		return options.getString(key, "");
+	}
+
+	public void setSummaries() {
+		for (int i=0; i<summaryKeys.length; i++) {
+			setSummary(i);
+		}
+	}
+
+	public void setSummary(String key) {
+		for (int i=0; i<summaryKeys.length; i++) {
+			if (summaryKeys[i].equals(key)) {
+				setSummary(i);
+				return;
+			}
+		}
+	}
+	
+	public void setSummary(int i) {
+		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
 		
+		Preference pref = findPreference(summaryKeys[i]);
+		String value = options.getString(summaryKeys[i], resources.getString(summaryDefaults[i]));
+		
+		String[] valueArray = resources.getStringArray(summaryEntryValues[i]);
+		String[] entryArray = resources.getStringArray(summaryEntries[i]);
+		
+		for (int j=0; j<valueArray.length; j++) 
+			if (valueArray[j].equals(value)) {
+				pref.setSummary(entryArray[j]);
+				return;
+			}
+	}
+	
+	public static int getIntFromString(SharedPreferences pref, String option, int def) {
+		return Integer.parseInt(pref.getString(option, ""+def));	
 	}
 
 	public static float[] getColorModeMatrix(int colorMode) {
@@ -139,6 +200,8 @@ public class Options extends PreferenceActivity {
 	public void onCreate(Bundle icicle) {
 		super.onCreate(icicle);
 		
+		this.resources = getResources();
+		
 		addPreferencesFromResource(R.xml.options);
 	}
 	
@@ -147,7 +210,12 @@ public class Options extends PreferenceActivity {
 		super.onResume();
 		
 		setOrientation(this);
+
+		getPreferenceScreen().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
+		setSummaries();
 	}
+	
+	
 	
 	/* returns true when the calling app is responsible for monitoring */
 	public static boolean setOrientation(Activity activity) {
@@ -170,5 +238,9 @@ public class Options extends PreferenceActivity {
 			break;
 		}
 		return false;
+	}
+
+	public void onSharedPreferenceChanged(SharedPreferences options, String key) {
+		setSummary(key);
 	}
 }

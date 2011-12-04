@@ -184,6 +184,7 @@
 	<item>zoom in</item>
 	<item>zoom in or back out</item>
 	</string-array>
+	<string name="default_double_tap_action">2</string>
 	<string name="double_tap_action">Double tap action</string>
 	<string-array name = "action_pairs">
 	<item>0</item>
@@ -233,4 +234,5 @@
 	<string name="disabled">Disabled</string>
 	<string name="keep_on">Keep screen on while reading</string>
 	<string name="show_zoom_on_scroll">Show zoom when scrolling</string>
+	<string name="history">Show recent files</string>
 </resources>
