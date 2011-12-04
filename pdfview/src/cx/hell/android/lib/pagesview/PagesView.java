@@ -1161,9 +1161,9 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 				getCurrentMaxPageWidth());
 		int maxx = this.width/2 + getUpperBound(this.width, marginX, 
 				getCurrentMaxPageWidth());
-		int miny = this.height/2 + getLowerBound(this.width, marginY,
+		int miny = this.height/2 + getLowerBound(this.height, marginY,
 				  getCurrentDocumentHeight());
-		int maxy = this.height/2 + getUpperBound(this.width, marginY,
+		int maxy = this.height/2 + getUpperBound(this.height, marginY,
 				  getCurrentDocumentHeight());
 
 		this.scroller = new Scroller(activity);
