@@ -12,8 +12,13 @@ import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -45,7 +50,7 @@ import cx.hell.android.lib.pagesview.PagesView;
 /**
  * Document display activity.
  */
-public class OpenFileActivity extends Activity {
+public class OpenFileActivity extends Activity implements SensorEventListener {
 	
 	private final static String TAG = "cx.hell.android.pdfview";
 	
@@ -113,6 +118,8 @@ public class OpenFileActivity extends Activity {
 	private int fadeStartOffset = 7000; 
 	
 	private int colorMode = Options.COLOR_MODE_NORMAL;
+
+	private SensorManager sensorManager;
 	private static final int ZOOM_COLOR_NORMAL = 0;
 	private static final int ZOOM_COLOR_RED = 1;
 	private static final int ZOOM_COLOR_GREEN = 2;
@@ -125,8 +132,11 @@ public class OpenFileActivity extends Activity {
 	private static final int[] zoomWidthId = {
 		R.drawable.btn_zoom_width, R.drawable.red_btn_zoom_width, R.drawable.green_btn_zoom_width		
 	};
-	
-    /**
+	private float[] gravity = { 0f, -9.81f, 0f};
+
+	private int prevOrientation;
+
+	/**
      * Called when the activity is first created.
      * TODO: initialize dialog fast, then move file loading to other thread
      * TODO: add progress bar for file load
@@ -213,15 +223,37 @@ public class OpenFileActivity extends Activity {
 	 */
 	@Override
 	protected void onPause() {
-		saveLastPage();
 		super.onPause();
+
+		saveLastPage();
+		
+		if (sensorManager != null) {
+			sensorManager.unregisterListener(this);
+			sensorManager = null;
+		}		
 	}
 	
 	@Override
 	protected void onResume() {
 		super.onResume();
+
+		sensorManager = null;
 		
-		Options.setOrientation(this);
+		if (Options.setOrientation(this)) {
+			sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+			if (sensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER).size() > 0) {
+				gravity[0] = 0f;
+				gravity[1] = -9.81f;
+				gravity[2] = 0f;
+				sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+						SensorManager.SENSOR_DELAY_NORMAL);
+				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_BEHIND);
+				this.prevOrientation = ActivityInfo.SCREEN_ORIENTATION_BEHIND;
+			}
+			else {
+				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+			}
+		}
 		
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -430,7 +462,16 @@ public class OpenFileActivity extends Activity {
     	return false;
     }
     
-    /**
+    private void setOrientation(int orientation) {
+    	if (orientation != this.prevOrientation) {
+    		setRequestedOrientation(orientation);
+    		this.prevOrientation = orientation;
+    	}
+    }
+    
+ 
+
+	/**
      * Intercept touch events to handle the zoom buttons animation
      */
     @Override
@@ -923,4 +964,22 @@ public class OpenFileActivity extends Activity {
     	Thread finderThread = new Thread(finder);
     	finderThread.start();
     }
+
+	public void onAccuracyChanged(Sensor sensor, int accuracy) {
+	}
+
+	public void onSensorChanged(SensorEvent event) {
+		gravity[0] = 0.8f * gravity[0] + 0.2f * event.values[0];
+		gravity[1] = 0.8f * gravity[1] + 0.2f * event.values[1];
+		gravity[2] = 0.8f * gravity[2] + 0.2f * event.values[2];
+
+		float[] sq = { gravity[0]*gravity[0], gravity[1]*gravity[1], gravity[2]*gravity[2] };
+
+		if (sq[1] > .85 * (sq[0] + sq[2]) && gravity[1] > 4) {
+			setOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+		}
+		else if (sq[0] > .85 * (sq[1] + sq[2]) && gravity[0] > 4) {
+			setOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+		}
+	}
 }

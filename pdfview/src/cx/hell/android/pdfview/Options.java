@@ -149,7 +149,8 @@ public class Options extends PreferenceActivity {
 		setOrientation(this);
 	}
 	
-	public static void setOrientation(Activity activity) {
+	/* returns true when the calling app is responsible for monitoring */
+	public static boolean setOrientation(Activity activity) {
 		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(activity);
 		int orientation = Integer.parseInt(options.getString(PREF_ORIENTATION, "0"));
 		switch(orientation) {
@@ -162,8 +163,12 @@ public class Options extends PreferenceActivity {
 		case 2:
 			activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 			break;			
+		case 3:
+			activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_BEHIND);
+			return true;
 		default:
 			break;
-		}		
+		}
+		return false;
 	}
 }
