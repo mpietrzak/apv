@@ -973,12 +973,14 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 		gravity[1] = 0.8f * gravity[1] + 0.2f * event.values[1];
 		gravity[2] = 0.8f * gravity[2] + 0.2f * event.values[2];
 
-		float[] sq = { gravity[0]*gravity[0], gravity[1]*gravity[1], gravity[2]*gravity[2] };
-
-		if (sq[1] > .85 * (sq[0] + sq[2]) && gravity[1] > 4) {
+		float sq0 = gravity[0]*gravity[0];
+		float sq1 = gravity[1]*gravity[1];
+		float sq2 = gravity[2]*gravity[2];
+		
+		if (sq1 > .85 * (sq0 + sq2) && gravity[1] > 4) {
 			setOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		}
-		else if (sq[0] > .85 * (sq[1] + sq[2]) && gravity[0] > 4) {
+		else if (sq0 > .85 * (sq1 + sq2) && gravity[0] > 4) {
 			setOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 		}
 	}
