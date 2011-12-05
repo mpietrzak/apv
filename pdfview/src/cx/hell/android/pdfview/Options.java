@@ -40,6 +40,7 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 	public final static String PREF_KEEP_ON = "keepOn";
 	public final static String PREF_SHOW_ZOOM_ON_SCROLL = "showZoomOnScroll";
 	public final static String PREF_HISTORY = "history";
+	public final static String PREF_TOP_BOTTOM_TAP_PAIR = "topBottomTapPair";
 	
 	public final static int PAGE_NUMBER_DISABLED = 100;
 	public final static int ZOOM_BUTTONS_DISABLED = 100;
@@ -116,19 +117,20 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 	private static final String[] summaryKeys = { PREF_ZOOM_ANIMATION, PREF_ORIENTATION, PREF_PAGE_ANIMATION,
 		PREF_FADE_SPEED, PREF_COLOR_MODE, PREF_BOX, PREF_SIDE_MARGINS, PREF_TOP_MARGIN,
 		PREF_EXTRA_CACHE, PREF_DOUBLE_TAP, PREF_VOLUME_PAIR, PREF_ZOOM_PAIR,
-		PREF_LONG_ZOOM_PAIR, PREF_UP_DOWN_PAIR, PREF_LEFT_RIGHT_PAIR, PREF_RIGHT_UP_DOWN_PAIR };
+		PREF_LONG_ZOOM_PAIR, PREF_UP_DOWN_PAIR, PREF_LEFT_RIGHT_PAIR, PREF_RIGHT_UP_DOWN_PAIR,
+		PREF_TOP_BOTTOM_TAP_PAIR };
 	private static final int[] summaryEntryValues = { R.array.zoom_animations, R.array.orientations, R.array.page_animations,
 		R.array.fade_speeds, R.array.color_modes, R.array.boxes, R.array.margins, R.array.margins,
 		R.array.extra_caches, R.array.double_tap_actions, R.array.action_pairs, R.array.action_pairs,
-		R.array.action_pairs, R.array.action_pairs, R.array.action_pairs, R.array.action_pairs };
+		R.array.action_pairs, R.array.action_pairs, R.array.action_pairs, R.array.action_pairs, R.array.action_pairs };
 	private static final int[] summaryEntries = { R.array.zoom_animation_labels, R.array.orientation_labels, R.array.page_animation_labels,
 		R.array.fade_speed_labels, R.array.color_mode_labels, R.array.box_labels, R.array.margin_labels, R.array.margin_labels,
 		R.array.extra_cache_labels, R.array.double_tap_action_labels, R.array.action_pair_labels, R.array.action_pair_labels,
-		R.array.action_pair_labels, R.array.action_pair_labels, R.array.action_pair_labels, R.array.action_pair_labels };
+		R.array.action_pair_labels, R.array.action_pair_labels, R.array.action_pair_labels, R.array.action_pair_labels, R.array.action_pair_labels };
 	private static final int[] summaryDefaults = { R.string.default_zoom_animation, R.string.default_orientation, R.string.default_page_animation,
 		R.string.default_fade_speed, R.string.default_color_mode, R.string.default_box, R.string.default_side_margin, R.string.default_top_margin,
 		R.string.default_extra_cache, R.string.default_double_tap_action, R.string.default_volume_pair, R.string.default_zoom_pair,
-		R.string.default_long_zoom_pair, R.string.default_up_down_pair, R.string.default_left_right_pair, R.string.default_right_up_down_pair };
+		R.string.default_long_zoom_pair, R.string.default_up_down_pair, R.string.default_left_right_pair, R.string.default_right_up_down_pair, R.string.default_top_bottom_tap_pair };
 
 	public String getString(SharedPreferences options, String key) {
 		return getString(this.resources, options, key);
