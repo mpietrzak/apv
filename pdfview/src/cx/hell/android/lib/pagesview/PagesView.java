@@ -28,6 +28,7 @@ import android.view.GestureDetector.OnDoubleTapListener;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.Scroller;
 
 /**
@@ -150,7 +151,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	/**
 	 * avoid too much allocations in rectsintersect()
 	 */
-	private static Rect r1 = new Rect();
+	private Rect r1 = new Rect();
 	
 
 	/**
@@ -182,7 +183,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	private int leftToRestore;
 	private Actions actions = null;
 	private boolean nook2 = false;
-	
+	private LinearLayout zoomLayout = null;
+		
 	public PagesView(Activity activity) {
 		super(activity);
 		this.activity = activity;
@@ -254,12 +256,12 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 						zoomToRestore = oldZoom;
 						leftToRestore = oldLeft;
 					}
-					return false;
+					return true;
 				case Options.DOUBLE_TAP_ZOOM:
 					left += e.getX() - width/2;
 					top += e.getY() - height/2;
 					zoom(2f);
-					return false;
+					return true;
 				default:
 					return false;
 				}
@@ -274,7 +276,19 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 					openFileActivity.showZoom();
 					pagesView.invalidate();
 				}
-				return false;
+				
+				if (zoomLayout != null) {
+					Rect r = new Rect();
+					
+					zoomLayout.getDrawingRect(r);
+					
+					r.set(r.left - 5, r.top - 5, r.right + 5, r.bottom + 5);
+					
+					if (r.contains((int)e.getX(), (int)e.getY()))
+						return false;
+				}
+				
+				return doAction(actions.getAction(e.getY() < height / 2 ? Actions.TOP_TAP : Actions.BOTTOM_TAP));
 			}
 		});
 	}
@@ -376,7 +390,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	
 	int prevTop = -1;
 	int prevLeft = -1;
-	
+
 	public void onDraw(Canvas canvas) {
 		if (this.nook2) {
 			N2EpdController.setGL16Mode();
@@ -839,7 +853,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 * Test if specified rectangles intersect with each other.
 	 * Uses Androids standard Rect class.
 	 */
-	private static boolean rectsintersect(
+	private boolean rectsintersect(
 			int r1x0, int r1y0, int r1x1, int r1y1,
 			int r2x0, int r2y0, int r2x1, int r2y1) {
 		r1.set(r1x0, r1y0, r1x1, r1y1);
@@ -1382,5 +1396,9 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	
 	public void setShowZoomOnScroll(boolean showZoomOnScroll) {
 		this.showZoomOnScroll = showZoomOnScroll;
+	}
+
+	public void setZoomLayout(LinearLayout zoomLayout) {
+		this.zoomLayout = zoomLayout;
 	}
 }

@@ -222,12 +222,14 @@
 	<string name="zoom_pair">Zoom button actions</string>
 	<string name="long_zoom_pair">Long press zoom button actions</string>
 	<string name="right_up_down_pair">Nook Touch right up/down key actions</string>
+	<string name="top_bottom_tap_pair">Action for top/bottom tap</string>
 	<string name="default_volume_pair">1</string>
 	<string name="default_up_down_pair">1</string>
 	<string name="default_left_right_pair">2</string>
 	<string name="default_zoom_pair">7</string>
 	<string name="default_long_zoom_pair">8</string>
 	<string name="default_right_up_down_pair">1</string>
+	<string name="default_top_bottom_tap_pair">0</string>
 	<string name="hw">Hardware Specific Settings</string>
 	<string name="eink">E-ink optimizations</string>
 	<string name="nook2">Nook2 fast e-ink refresh</string>

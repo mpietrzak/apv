@@ -276,6 +276,8 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 
 		setZoomLayout(options);
 		
+		this.pagesView.setZoomLayout(zoomLayout);
+		
 		this.showZoomOnScroll = options.getBoolean(Options.PREF_SHOW_ZOOM_ON_SCROLL, false);
 		this.pagesView.setSideMargins(
 				Integer.parseInt(options.getString(Options.PREF_SIDE_MARGINS, "0")));

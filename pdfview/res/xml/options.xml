@@ -119,6 +119,13 @@
     	android:key="longZoomPair"/>
 
     <ListPreference
+    	android:title="@string/top_bottom_tap_pair"
+    	android:defaultValue="@string/default_top_bottom_tap_pair"
+    	android:entries="@array/action_pair_labels"
+    	android:entryValues="@array/action_pairs"
+    	android:key="topBottomTapPair"/>
+
+    <ListPreference
     	android:title="@string/extra_cache"
     	android:defaultValue="@string/default_extra_cache"
     	android:entries="@array/extra_cache_labels"

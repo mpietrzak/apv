@@ -10,11 +10,14 @@ public class Actions {
 	public int volume;
 	public int leftRight;
 	public int rightUpDown;
+	public int topBottomTap;
 
 	public static final int ZOOM_IN = 1000000;
 	public static final int ZOOM_OUT = 1000001;
 	public static final int LONG_ZOOM_IN = 1000002;
 	public static final int LONG_ZOOM_OUT = 1000003;
+	public static final int TOP_TAP = 1000004;
+	public static final int BOTTOM_TAP = 1000005;
 	
 	public final static int ACTION_NONE = 0;
 	public final static int ACTION_SCREEN_DOWN = 1;
@@ -43,6 +46,7 @@ public class Actions {
 		this.volume = Integer.parseInt(pref.getString(Options.PREF_VOLUME_PAIR, ""+Options.PAIR_SCREEN));
 		this.leftRight = Integer.parseInt(pref.getString(Options.PREF_UP_DOWN_PAIR, ""+Options.PAIR_PAGE));
 		this.rightUpDown = Integer.parseInt(pref.getString(Options.PREF_RIGHT_UP_DOWN_PAIR, ""+Options.PAIR_SCREEN));
+		this.topBottomTap = Integer.parseInt(pref.getString(Options.PREF_TOP_BOTTOM_TAP_PAIR, ""+Options.PAIR_NONE));
 	}
 	
 	public static float getZoomValue(int action) {
@@ -109,6 +113,10 @@ public class Actions {
 	
 	public int getAction(int key) {
 		switch(key) {
+		case TOP_TAP:
+			return getAction(this.topBottomTap, 0);
+		case BOTTOM_TAP:
+			return getAction(this.topBottomTap, 1);
 		case ZOOM_OUT:
 			return getAction(this.zoom, 0);
 		case ZOOM_IN:
