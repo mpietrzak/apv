@@ -20,6 +20,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -43,6 +44,7 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import cx.hell.android.lib.pagesview.FindResult;
 import cx.hell.android.lib.pagesview.PagesView;
 
@@ -165,6 +167,9 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
         this.pagesView = new PagesView(this);
         activityLayout.addView(pagesView);
         startPDF(options);
+        if (!this.pdf.isValid()) {
+        	finish();
+        }
         
         // the find buttons
         this.findButtonsLayout = new LinearLayout(this);
@@ -396,6 +401,16 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 
     private void startPDF(SharedPreferences options) {
 	    this.pdf = this.getPDF();
+	    if (!this.pdf.isValid()) {
+	    	Log.v(TAG, "Invalid PDF");
+	    	if (this.pdf.isInvalidPassword()) {
+	    		Toast.makeText(this, "This file needs a password", 4000).show();
+	    	}
+	    	else {
+	    		Toast.makeText(this, "Invalid PDF file", 4000).show();
+	    	}
+	    	return;
+	    }
 	    this.colorMode = Options.getColorMode(options);
 	    this.pdfPagesProvider = new PDFPagesProvider(this, pdf,        		
 	    		Options.isGray(this.colorMode), 
@@ -984,11 +999,17 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 		float sq1 = gravity[1]*gravity[1];
 		float sq2 = gravity[2]*gravity[2];
 		
-		if (sq1 > .85 * (sq0 + sq2) && gravity[1] > 4) {
-			setOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+		if (sq1 > .85 * (sq0 + sq2)) {
+			if (gravity[1] > 4) 
+				setOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+			else if (gravity[1] < -4 && Integer.parseInt(Build.VERSION.SDK) >= 9) 
+				setOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
 		}
-		else if (sq0 > .85 * (sq1 + sq2) && gravity[0] > 4) {
-			setOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+		else if (sq0 > .85 * (sq1 + sq2)) {
+			if (gravity[0] > 4)
+				setOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+			else if (gravity[0] < -4 && Integer.parseInt(Build.VERSION.SDK) >= 9) 
+				setOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
 		}
 	}
 }

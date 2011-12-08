@@ -17,7 +17,7 @@ public class PDF {
 	
 	/**
 	 * Simple size class used in JNI to simplify parameter passing.
-	 * This shouldn't be used anywhere outide of pdf-related code.
+	 * This shouldn't be used anywhere outside of pdf-related code.
 	 */
 	public static class Size implements Cloneable {
 		public int width;
@@ -42,7 +42,16 @@ public class PDF {
 	/**
 	 * Holds pointer to native pdf_t struct.
 	 */
-	private int pdf_ptr = 0;
+	private int pdf_ptr = -1;
+	private int invalid_password = 0;
+	
+	public boolean isValid() {
+		return pdf_ptr != 0;
+	}
+	
+	public boolean isInvalidPassword() {
+		return invalid_password != 0;
+	}
 
 	/**
 	 * Parse bytes as PDF file and store resulting pdf_t struct in pdf_ptr.
@@ -55,14 +64,14 @@ public class PDF {
 	 * @param fileName pdf file name
 	 * @return error code
 	 */
-	synchronized private native int parseFile(String fileName, int box);
+	synchronized private native int parseFile(String fileName, int box, String password);
 	
 	/**
 	 * Parse PDF file.
 	 * @param fd opened file descriptor
 	 * @return error code
 	 */
-	synchronized private native int parseFileDescriptor(FileDescriptor fd, int box);
+	synchronized private native int parseFileDescriptor(FileDescriptor fd, int box, String password);
 
 	/**
 	 * Construct PDF structures from bytes stored in memory.
@@ -75,7 +84,7 @@ public class PDF {
 	 * Construct PDF structures from file sitting on local filesystem.
 	 */
 	public PDF(File file, int box) {
-		this.parseFile(file.getAbsolutePath(), box);
+		this.parseFile(file.getAbsolutePath(), box, "");
 	}
 	
 	/**
@@ -83,7 +92,7 @@ public class PDF {
 	 * @param file opened file descriptor
 	 */
 	public PDF(FileDescriptor file, int box) {
-		this.parseFileDescriptor(file, box);
+		this.parseFileDescriptor(file, box, "");
 	}
 	
 	/**

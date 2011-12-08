@@ -52,24 +52,48 @@ Java_cx_hell_android_pdfview_PDF_parseFile(
         JNIEnv *env,
         jobject jthis,
         jstring file_name,
-        jint box_type) {
+        jint box_type,
+        jstring password
+        ) {
     const char *c_file_name = NULL;
+    const char *c_password = NULL;
     jboolean iscopy;
     jclass this_class;
     jfieldID pdf_field_id;
+    jfieldID invalid_password_field_id;
     pdf_t *pdf = NULL;
 
     c_file_name = (*env)->GetStringUTFChars(env, file_name, &iscopy);
-	this_class = (*env)->GetObjectClass(env, jthis);
-	pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
-	pdf = parse_pdf_file(c_file_name, 0);
-    if (NUM_BOXES <= box_type)
-        strcpy(pdf->box, "CropBox");
-    else
-        strcpy(pdf->box, boxes[box_type]);
+    c_password = (*env)->GetStringUTFChars(env, password, &iscopy);
+    this_class = (*env)->GetObjectClass(env, jthis);
+    pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
+    invalid_password_field_id = (*env)->GetFieldID(env, this_class, "invalid_password", "I");
+    __android_log_print(ANDROID_LOG_INFO, PDFVIEW_LOG_TAG, "Parsing");
+    pdf = parse_pdf_file(c_file_name, 0, c_password);
+
+    if (pdf != NULL && pdf->invalid_password) {
+       (*env)->SetIntField(env, jthis, invalid_password_field_id, 1);
+       free (pdf);
+       pdf = NULL;
+    }
+    else {
+       (*env)->SetIntField(env, jthis, invalid_password_field_id, 0);
+    }
+
+    if (pdf != NULL) {
+        if (NUM_BOXES <= box_type)
+            strcpy(pdf->box, "CropBox");
+        else
+            strcpy(pdf->box, boxes[box_type]);
+    }
+
     (*env)->ReleaseStringUTFChars(env, file_name, c_file_name);
-	(*env)->SetIntField(env, jthis, pdf_field_id, (int)pdf);
-    __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "Loading %s in page mode %s.", c_file_name, pdf->box);
+    (*env)->ReleaseStringUTFChars(env, password, c_password);
+
+    (*env)->SetIntField(env, jthis, pdf_field_id, (int)pdf);
+
+    if (pdf != NULL)
+       __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "Loading %s in page mode %s.", c_file_name, pdf->box);
 }
 
 
@@ -81,23 +105,42 @@ Java_cx_hell_android_pdfview_PDF_parseFileDescriptor(
         JNIEnv *env,
         jobject jthis,
         jobject fileDescriptor,
-        jint box_type
+        jint box_type,
+        jstring password
         ) {
     int fileno;
     jclass this_class;
     jfieldID pdf_field_id;
     pdf_t *pdf = NULL;
+    jfieldID invalid_password_field_id;
     jboolean iscopy;
+    const char* c_password;
 
+    c_password = (*env)->GetStringUTFChars(env, password, &iscopy);
 	this_class = (*env)->GetObjectClass(env, jthis);
 	pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
+    invalid_password_field_id = (*env)->GetFieldID(env, this_class, "invalid_password", "I");
+
     fileno = get_descriptor_from_file_descriptor(env, fileDescriptor);
-	pdf = parse_pdf_file(NULL, fileno);
-    if (NUM_BOXES <= box_type)
-        strcpy(pdf->box, "CropBox");
-    else
-        strcpy(pdf->box, boxes[box_type]);
-	(*env)->SetIntField(env, jthis, pdf_field_id, (int)pdf);
+	pdf = parse_pdf_file(NULL, fileno, c_password);
+
+    if (pdf != NULL && pdf->invalid_password) {
+       (*env)->SetIntField(env, jthis, invalid_password_field_id, 1);
+       free (pdf);
+       pdf = NULL;
+    }
+    else {
+       (*env)->SetIntField(env, jthis, invalid_password_field_id, 0);
+    }
+
+    if (pdf != NULL) {
+        if (NUM_BOXES <= box_type)
+            strcpy(pdf->box, "CropBox");
+        else
+            strcpy(pdf->box, boxes[box_type]);
+    }
+    (*env)->ReleaseStringUTFChars(env, password, c_password);
+    (*env)->SetIntField(env, jthis, pdf_field_id, (int)pdf);
 }
 
 
@@ -707,6 +750,8 @@ pdf_t* create_pdf_t() {
     pdf->fileno = -1;
     pdf->pages = NULL;
     pdf->glyph_cache = NULL;
+    
+    return pdf;
 }
 
 
@@ -768,7 +813,7 @@ pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len, jstring box_name) {
  * Parse file into PDF struct.
  * Use filename if it's not null, otherwise use fileno.
  */
-pdf_t* parse_pdf_file(const char *filename, int fileno) {
+pdf_t* parse_pdf_file(const char *filename, int fileno, const char* password) {
     pdf_t *pdf;
     fz_error error;
     int fd;
@@ -781,6 +826,7 @@ pdf_t* parse_pdf_file(const char *filename, int fileno) {
     if (filename) {
         fd = open(filename, O_BINARY | O_RDONLY, 0666);
         if (fd < 0) {
+            free(pdf);
             return NULL;
         }
     } else {
@@ -793,6 +839,7 @@ pdf_t* parse_pdf_file(const char *filename, int fileno) {
     if (!pdf->xref) {
         __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "got NULL from pdf_openxref");
         /* __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "fz errors:\n%s", fz_errorbuf); */
+        free(pdf);
         return NULL;
     }
 
@@ -803,13 +850,16 @@ pdf_t* parse_pdf_file(const char *filename, int fileno) {
     }
     */
 
+    pdf->invalid_password = 0;
+
     if (pdf_needs_password(pdf->xref)) {
         int authenticated = 0;
-        authenticated = pdf_authenticate_password(pdf->xref, "");
+        authenticated = pdf_authenticate_password(pdf->xref, (char*)password);
         if (!authenticated) {
             /* TODO: ask for password */
-            __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "failed to authenticate with empty password");
-            return NULL;
+            __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "failed to authenticate");
+            pdf->invalid_password = 1;
+            return pdf;
         }
     }
 
