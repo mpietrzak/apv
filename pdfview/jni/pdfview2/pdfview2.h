@@ -20,6 +20,7 @@ typedef struct {
 	pdf_xref *xref;
 	pdf_outline *outline;
     int fileno; /* used only when opening by file descriptor */
+    int invalid_password;
     pdf_page **pages; /* lazy-loaded pages */
     fz_glyph_cache *glyph_cache;
     char box[MAX_BOX_NAME + 1];
@@ -34,7 +35,7 @@ typedef struct {
 
 
 pdf_t* create_pdf_t();
-pdf_t* parse_pdf_file(const char *filename, int fileno);
+pdf_t* parse_pdf_file(const char *filename, int fileno, const char* password);
 pdf_t* get_pdf_from_this(JNIEnv *env, jobject this);
 void get_size(JNIEnv *env, jobject size, int *width, int *height);
 void save_size(JNIEnv *env, jobject size, int width, int height);
