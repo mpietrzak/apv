@@ -17,8 +17,8 @@
  */
 typedef struct {
     int last_pageno;
-	pdf_xref *xref;
-	pdf_outline *outline;
+    pdf_xref *xref;
+    fz_outline *outline;
     int fileno; /* used only when opening by file descriptor */
     int invalid_password;
     pdf_page **pages; /* lazy-loaded pages */
