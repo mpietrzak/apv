@@ -2,7 +2,8 @@
 # make sure ndk-build is in path
 
 SCRIPTDIR=`dirname $0`
-MUPDF=mupdf-snapshot-20111122.tar.gz
+MUPDF_FILE=mupdf-snapshot-20111122.tar.gz
+MUPDF=mupdf
 FREETYPE=freetype-2.4.6
 OPENJPEG=openjpeg_v1_4_sources_r697
 JBIG2DEC=jbig2dec-0.11
@@ -12,7 +13,7 @@ JPEGDIR=jpeg-8a
 cd $SCRIPTDIR/../deps
 tar xvf $FREETYPE.tar.bz2
 tar xvf $JPEGSRC
-tar xvf $MUPDF-source.tar.gz
+tar xvf $MUPDF_FILE
 tar xvf $OPENJPEG.tgz
 tar xvf $JBIG2DEC.tar.gz
 cp $OPENJPEG/libopenjpeg/*.[ch] ../jni/openjpeg/
