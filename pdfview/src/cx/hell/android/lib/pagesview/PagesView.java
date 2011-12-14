@@ -91,7 +91,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 * Current height of this view.
 	 */
 	private int height = 0;
-	
+
 	/**
 	 * Position over book, not counting drag.
 	 * This is position of viewports center, not top-left corner. 
@@ -184,7 +184,8 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	private Actions actions = null;
 	private boolean nook2 = false;
 	private LinearLayout zoomLayout = null;
-		
+
+
 	public PagesView(Activity activity) {
 		super(activity);
 		this.activity = activity;
@@ -198,10 +199,10 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		this.setOnTouchListener(this);
 		this.setOnKeyListener(this);
 		activity.setDefaultKeyMode(Activity.DEFAULT_KEYS_SEARCH_LOCAL);
-		
+
 		this.scroller = null; // new Scroller(activity);
-		
-		this.gestureDetector = new GestureDetector(activity, 
+
+		this.gestureDetector = new GestureDetector(activity,
 				new GestureDetector.OnGestureListener() {
 					public boolean onDown(MotionEvent e) {
 						return false;
@@ -209,17 +210,17 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 
 					public boolean onFling(MotionEvent e1, MotionEvent e2,
 							float velocityX, float velocityY) {
-						
-						if (lockedVertically) 
+
+						if (lockedVertically)
 							velocityX = 0;
-						
+
 						doFling(velocityX, velocityY);
 						return true;
 					}
 
 					public void onLongPress(MotionEvent e) {
 					}
-					
+
 					public boolean onScroll(MotionEvent e1, MotionEvent e2,
 							float distanceX, float distanceY) {
 						return false;
@@ -520,7 +521,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		if (this.eink) {
 			canvas.drawColor(Color.WHITE);
 		}
-		
+
 		Rect src = new Rect(); /* TODO: move out of drawPages */
 		Rect dst = new Rect(); /* TODO: move out of drawPages */
 		int pageWidth = 0;
@@ -532,40 +533,43 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		float currentMarginX = this.getCurrentMarginX();
 		float currentMarginY = this.getCurrentMarginY();
 		float renderAhead = this.pagesProvider.getRenderAhead();
-		
+
 		if (this.pagesProvider != null) {
+                        if (this.zoomLevel < 5)
+                            this.zoomLevel = 5;
+
 			viewx0 = left - width/2;
 			viewy0 = top - height/2;
-			
+
 			int pageCount = this.pageSizes.length;
-			
+
 			/* We now adjust the position to make sure we don't scroll too
 			 * far away from the document text.
 			 */
 			int oldviewx0 = viewx0;
 			int oldviewy0 = viewy0;
-			
-			viewx0 = adjustPosition(viewx0, width, (int)currentMarginX, 
+
+			viewx0 = adjustPosition(viewx0, width, (int)currentMarginX,
 					getCurrentMaxPageWidth());
 			viewy0 = adjustPosition(viewy0, height, (int)currentMarginY,
 					(int)getCurrentDocumentHeight());
-			
+
 			left += viewx0 - oldviewx0;
 			top += viewy0 - oldviewy0;
-			
+
 			float currpageoff = currentMarginY;
-			
+
 			this.currentPage = -1;
-			
+
 			pagey0 = 0;
 			int[] tileSizes = new int[2];
-			
+
 			for(int i = 0; i < pageCount; ++i) {
 				// is page i visible?
 
 				pageWidth = this.getCurrentPageWidth(i);
 				pageHeight = (int) this.getCurrentPageHeight(i);
-				
+
 				pagex0 = currentMarginX;
 				pagex1 = (int)(currentMarginX + pageWidth);
 				pagey0 = currpageoff;
@@ -731,8 +735,9 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	 */
 	public boolean onTouch(View v, MotionEvent event) {
 		this.lastControlsUseMillis = System.currentTimeMillis();
-		
+		Log.v(TAG, ""+event.getAction());
 		if (!gestureDetector.onTouchEvent(event)) {
+			Log.v(TAG, ""+event.getAction());
 			if (event.getAction() == MotionEvent.ACTION_DOWN) {
 				downX = event.getX();
 				downY = event.getY();
