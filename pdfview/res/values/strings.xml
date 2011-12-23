@@ -2,17 +2,17 @@
 <resources>
 	<string name="app_name">PDF Viewer</string>
 	<string name="about">About</string>
-	<string name="goto_page">Go to page...</string>
+	<string name="goto_page">Go to page…</string>
 	<string name="goto_page_dialog_title">Go to page</string>
 	<string name="goto_page_go_button">Go</string>
 	<string name="rotate_page_left">Rotate left</string>
 	<string name="rotate_page_right">Rotate right</string>
-	<string name="find_text">Find...</string>
+	<string name="find_text">Find…</string>
 	<string name="find_dialog_title">Find text</string>
 	<string name="find_go_button">Find</string>
 	<string name="find_cancel_button">Cancel</string>
 	<string name="clear_find_text">Clear find</string>
-	<string name="choose_file">Open...</string>
+	<string name="choose_file">Open…</string>
 	<string name="toggle_invert">Invert</string>
 	<string name="toggle_fine_zoom">Toggle fine zoom</string>
 	<string name="set_as_home">Set current folder as home</string>

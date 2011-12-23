@@ -2,13 +2,13 @@
 <resources>
 	<string name="app_name">PDF Viewer</string>
 	<string name="about">O programie</string>
-	<string name="goto_page">Przejdź do strony...</string>
+	<string name="goto_page">Przejdź do strony…</string>
 	<string name="goto_page_dialog_title">Przejdź do strony</string>
 	<string name="goto_page_go_button">Przejdź</string>
 	<string name="rotate_page_left">Obróć w lewo</string>
 	<string name="rotate_page_right">Obróć w prawo</string>
-	<string name="find_text">Szukaj...</string>
-	<string name="choose_file">Otwórz...</string>
+	<string name="find_text">Szukaj…</string>
+	<string name="choose_file">Otwórz…</string>
 	<string name="find_dialog_title">Wyszukiwanie</string>
 	<string name="find_go_button">Szukaj</string>
 	<string name="find_cancel_button">Anuluj</string>
