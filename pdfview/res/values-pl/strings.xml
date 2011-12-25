@@ -11,7 +11,7 @@
 	<string name="choose_file">Otwórz…</string>
 	<string name="find_dialog_title">Wyszukiwanie</string>
 	<string name="find_go_button">Szukaj</string>
-	<string name="find_cancel_button">Anuluj</string>
+	<!-- <string name="find_cancel_button">Anuluj</string> -->
 	<string name="clear_find_text">Wyczyść wyniki</string>
 	<string name="cancel">Anuluj</string>
 	<string name="set_as_home">Ustaw jako katalog domowy</string>
@@ -19,4 +19,7 @@
 	<string name="searching_for">Wyszukiwanie "%1$s"</string>
 	<string name="page_of">Strona %1$d z %2$d</string>
 	<string name="page">Strona</string>
+    <string name="table_of_contents">Spis Treści</string>
+    <string name="toc_dialog_title">Spis Treści</string>
+    <string name="close">Zamknij</string>
 </resources>

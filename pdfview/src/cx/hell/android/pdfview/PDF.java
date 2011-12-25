@@ -37,7 +37,30 @@ public class PDF {
 			return new Size(this.width, this.height);
 		}
 	}
-
+	
+	// #ifdef APVPRO
+	/**
+	 * Java version of fz_outline.
+	 */
+	public static class Outline {
+		public String title;
+		int page;
+		public Outline next;
+		public Outline down;
+		
+		public String toString() {
+			String s = "Outline(title: " + this.title + ", page: " + page;
+			if (this.down != null) {
+				s += "down: " + this.down;
+			}
+			if (this.next != null) {
+				s += "next: " + this.next;
+			}
+			s += ")";
+			return s;
+		}
+	}
+	// #endif
 	
 	/**
 	 * Holds pointer to native pdf_t struct.
@@ -140,11 +163,18 @@ public class PDF {
 	 */
 	synchronized public native List<FindResult> findOnPage(int page, String text);
 
+	// #ifdef APVPRO
+	/**
+	 * Get document outline.
+	 */
+	synchronized public native Outline getOutline();
+	// #endif
+	
 	/**
 	 * Free memory allocated in native code.
 	 */
 	synchronized private native void freeMemory();
-	
+
 	public void finalize() {
 		try {
 			super.finalize();

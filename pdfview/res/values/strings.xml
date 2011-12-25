@@ -237,4 +237,7 @@
 	<string name="keep_on">Keep screen on while reading</string>
 	<string name="show_zoom_on_scroll">Show zoom when scrolling</string>
 	<string name="history">Show recent files</string>
+    <string name="table_of_contents">Table of Contents</string>
+    <string name="toc_dialog_title">Table of Contents</string>
+    <string name="close">Close</string>
 </resources>
