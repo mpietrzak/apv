@@ -3,6 +3,7 @@ package cx.hell.android.pdfview;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
@@ -33,20 +34,25 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
-import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import cx.hell.android.lib.pagesview.FindResult;
 import cx.hell.android.lib.pagesview.PagesView;
+import cx.hell.android.pdfview.PDF.Outline;
 
 
 /**
@@ -83,6 +89,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 	private MenuItem clearFindTextMenuItem = null;
 	private MenuItem chooseFileMenuItem = null;
 	private MenuItem optionsMenuItem = null;
+	private MenuItem tableOfContentsMenuItem = null;
 	
 	private EditText pageNumberInputField = null;
 	private EditText findTextInputField = null;
@@ -480,7 +487,16 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
     		startActivity(new Intent(this, ChooseFileActivity.class));
     	} else if (menuItem == this.optionsMenuItem) {
     		startActivity(new Intent(this, Options.class));
-		} 
+		} else if (menuItem == this.tableOfContentsMenuItem) {
+			Log.d(TAG, "table of contents:");
+			Outline outline = this.pdf.getOutline();
+			if (outline == null) {
+				Log.d(TAG, "null");
+			} else {
+				Log.d(TAG, outline.toString());
+			}
+			this.showTableOfContentsDialog(outline);
+		}
     	return false;
     }
     
@@ -701,6 +717,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
     	/* The following appear on the second page.  The find item can safely be kept
     	 * there since it can also be accessed from the search key on most devices.
     	 */
+    	this.tableOfContentsMenuItem = menu.add(R.string.table_of_contents);
 		this.findTextMenuItem = menu.add(R.string.find_text);
     	this.aboutMenuItem = menu.add(R.string.about);
     	return true;
@@ -985,6 +1002,43 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
     	Finder finder = new Finder(this, forward);
     	Thread finderThread = new Thread(finder);
     	finderThread.start();
+    }
+    
+    private void showTableOfContentsDialog(Outline outline) {
+    	Log.d(TAG, "table of contents dialog...");
+    	final Dialog dialog = new Dialog(this);
+    	dialog.setTitle(R.string.toc_dialog_title);
+    	LinearLayout contents = new LinearLayout(this);
+    	contents.setOrientation(LinearLayout.VERTICAL);
+    	LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+    	params.leftMargin = 5;
+    	params.rightMargin = 5;
+    	params.bottomMargin = 2;
+    	params.topMargin = 2;
+    	final ArrayList<String> tocList = new ArrayList<String>();
+    	final ArrayList<Integer> tocPages = new ArrayList<Integer>();
+    	this.outlineToArrayList(tocList, tocPages, outline, 0);
+    	ListView tableOfContentsListView = new ListView(this);
+    	tableOfContentsListView.setAdapter(new ArrayAdapter<String>(this, R.layout.toc_list_item, tocList));
+    	tableOfContentsListView.setOnItemClickListener(new OnItemClickListener() {
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+				int pageNumber = tocPages.get(position);
+				OpenFileActivity.this.gotoPage(pageNumber);
+				dialog.dismiss();
+			}});
+    	contents.addView(tableOfContentsListView, params);
+    	dialog.setContentView(contents);
+    	dialog.show();
+    }
+    
+    private void outlineToArrayList(List<String> list, List<Integer> pages, Outline outline, int level) {
+    	String s = "";
+    	for(int i = 0; i < level; ++i) s += " ";
+    	s += outline.title;
+    	list.add(s);
+    	pages.add(outline.page);
+    	if (outline.down != null) this.outlineToArrayList(list, pages, outline.down, level+1);
+    	if (outline.next != null) this.outlineToArrayList(list, pages, outline.next, level);
     }
 
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
