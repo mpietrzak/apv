@@ -1,4 +1,4 @@
-package cx.hell.android.pdfview;
+package cx.hell.android.lib.pdf;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -44,7 +44,7 @@ public class PDF {
 	 */
 	public static class Outline {
 		public String title;
-		int page;
+		public int page;
 		public Outline next;
 		public Outline down;
 		

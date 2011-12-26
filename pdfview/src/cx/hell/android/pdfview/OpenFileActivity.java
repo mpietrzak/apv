@@ -52,7 +52,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 import cx.hell.android.lib.pagesview.FindResult;
 import cx.hell.android.lib.pagesview.PagesView;
-import cx.hell.android.pdfview.PDF.Outline;
+import cx.hell.android.lib.pdf.PDF;
+import cx.hell.android.lib.pdf.PDF.Outline;
 
 
 /**
@@ -1006,6 +1007,10 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
     
     private void showTableOfContentsDialog(Outline outline) {
     	Log.d(TAG, "table of contents dialog...");
+    	if (outline == null) {
+    		// TODO: toast about no toc
+    		return;
+    	}
     	final Dialog dialog = new Dialog(this);
     	dialog.setTitle(R.string.toc_dialog_title);
     	LinearLayout contents = new LinearLayout(this);
@@ -1032,6 +1037,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
     }
     
     private void outlineToArrayList(List<String> list, List<Integer> pages, Outline outline, int level) {
+    	if (outline == null) return;
     	String s = "";
     	for(int i = 0; i < level; ++i) s += " ";
     	s += outline.title;

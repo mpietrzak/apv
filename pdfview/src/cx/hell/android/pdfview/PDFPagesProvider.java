@@ -16,6 +16,7 @@ import cx.hell.android.lib.pagesview.OnImageRenderedListener;
 import cx.hell.android.lib.pagesview.PagesProvider;
 import cx.hell.android.lib.pagesview.RenderingException;
 import cx.hell.android.lib.pagesview.Tile;
+import cx.hell.android.lib.pdf.PDF;
 
 /**
  * Provide rendered bitmaps of pages.
