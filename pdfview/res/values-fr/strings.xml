@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="app_name">PDF Viewer</string>
+	<string name="app_name">APV PDF Viewer</string>
 	<string name="about">A propos</string>
 	<string name="goto_page">Aller à la page…</string>
 	<string name="goto_page_dialog_title">Aller à la page</string>

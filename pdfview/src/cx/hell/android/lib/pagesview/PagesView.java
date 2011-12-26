@@ -5,12 +5,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import cx.hell.android.pdfview.Actions;
-import cx.hell.android.pdfview.Bookmark;
-import cx.hell.android.pdfview.BookmarkEntry;
-import cx.hell.android.pdfview.OpenFileActivity;
-import cx.hell.android.pdfview.Options;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -30,6 +24,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Scroller;
+import cx.hell.android.pdfview.Actions;
+import cx.hell.android.pdfview.Bookmark;
+import cx.hell.android.pdfview.BookmarkEntry;
+import cx.hell.android.pdfview.OpenFileActivity;
+import cx.hell.android.pdfview.Options;
 
 /**
  * View that simplifies displaying of paged documents.
