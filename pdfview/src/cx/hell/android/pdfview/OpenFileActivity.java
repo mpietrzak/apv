@@ -53,7 +53,10 @@ import android.widget.Toast;
 import cx.hell.android.lib.pagesview.FindResult;
 import cx.hell.android.lib.pagesview.PagesView;
 import cx.hell.android.lib.pdf.PDF;
-import cx.hell.android.lib.pdf.PDF.Outline;
+
+// #ifdef pro
+// import cx.hell.android.lib.pdf.PDF.Outline;
+// #endif
 
 
 /**
@@ -90,7 +93,9 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 	private MenuItem clearFindTextMenuItem = null;
 	private MenuItem chooseFileMenuItem = null;
 	private MenuItem optionsMenuItem = null;
-	private MenuItem tableOfContentsMenuItem = null;
+	// #ifdef pro
+// 	private MenuItem tableOfContentsMenuItem = null;
+	// #endif
 	
 	private EditText pageNumberInputField = null;
 	private EditText findTextInputField = null;
@@ -488,15 +493,17 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
     		startActivity(new Intent(this, ChooseFileActivity.class));
     	} else if (menuItem == this.optionsMenuItem) {
     		startActivity(new Intent(this, Options.class));
-		} else if (menuItem == this.tableOfContentsMenuItem) {
-			Log.d(TAG, "table of contents:");
-			Outline outline = this.pdf.getOutline();
-			if (outline == null) {
-				Log.d(TAG, "null");
-			} else {
-				Log.d(TAG, outline.toString());
-			}
-			this.showTableOfContentsDialog(outline);
+    	// #ifdef pro
+// 		} else if (menuItem == this.tableOfContentsMenuItem) {
+// 			Log.d(TAG, "table of contents:");
+// 			Outline outline = this.pdf.getOutline();
+// 			if (outline == null) {
+// 				Log.d(TAG, "null");
+// 			} else {
+// 				Log.d(TAG, outline.toString());
+// 			}
+// 			this.showTableOfContentsDialog(outline);
+		// #endif
 		}
     	return false;
     }
@@ -718,7 +725,10 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
     	/* The following appear on the second page.  The find item can safely be kept
     	 * there since it can also be accessed from the search key on most devices.
     	 */
-    	this.tableOfContentsMenuItem = menu.add(R.string.table_of_contents);
+    	
+    	// #ifdef pro
+//     	this.tableOfContentsMenuItem = menu.add(R.string.table_of_contents);
+    	// #endif
 		this.findTextMenuItem = menu.add(R.string.find_text);
     	this.aboutMenuItem = menu.add(R.string.about);
     	return true;
@@ -1005,48 +1015,51 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
     	finderThread.start();
     }
     
-    private void showTableOfContentsDialog(Outline outline) {
-    	Log.d(TAG, "table of contents dialog...");
-    	if (outline == null) {
-    		// TODO: toast about no toc
-    		return;
-    	}
-    	final Dialog dialog = new Dialog(this);
-    	dialog.setTitle(R.string.toc_dialog_title);
-    	LinearLayout contents = new LinearLayout(this);
-    	contents.setOrientation(LinearLayout.VERTICAL);
-    	LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-    	params.leftMargin = 5;
-    	params.rightMargin = 5;
-    	params.bottomMargin = 2;
-    	params.topMargin = 2;
-    	final ArrayList<String> tocList = new ArrayList<String>();
-    	final ArrayList<Integer> tocPages = new ArrayList<Integer>();
-    	this.outlineToArrayList(tocList, tocPages, outline, 0);
-    	ListView tableOfContentsListView = new ListView(this);
-    	tableOfContentsListView.setAdapter(new ArrayAdapter<String>(this, R.layout.toc_list_item, tocList));
-    	tableOfContentsListView.setOnItemClickListener(new OnItemClickListener() {
-			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				int pageNumber = tocPages.get(position);
-				OpenFileActivity.this.gotoPage(pageNumber);
-				dialog.dismiss();
-			}});
-    	contents.addView(tableOfContentsListView, params);
-    	dialog.setContentView(contents);
-    	dialog.show();
-    }
+    // #ifdef pro
+//     private void showTableOfContentsDialog(Outline outline) {
+//     	Log.d(TAG, "table of contents dialog...");
+//     	if (outline == null) {
+//  		// TODO: toast about no toc
+//     		return;
+//     	}
+//     	final Dialog dialog = new Dialog(this);
+//     	dialog.setTitle(R.string.toc_dialog_title);
+//     	LinearLayout contents = new LinearLayout(this);
+//     	contents.setOrientation(LinearLayout.VERTICAL);
+//     	LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+//     	params.leftMargin = 5;
+//     	params.rightMargin = 5;
+//     	params.bottomMargin = 2;
+//     	params.topMargin = 2;
+//     	final ArrayList<String> tocList = new ArrayList<String>();
+//     	final ArrayList<Integer> tocPages = new ArrayList<Integer>();
+//     	this.outlineToArrayList(tocList, tocPages, outline, 0);
+//     	ListView tableOfContentsListView = new ListView(this);
+//     	tableOfContentsListView.setAdapter(new ArrayAdapter<String>(this, R.layout.toc_list_item, tocList));
+//     	tableOfContentsListView.setOnItemClickListener(new OnItemClickListener() {
+// 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+// 				int pageNumber = tocPages.get(position);
+// 				OpenFileActivity.this.gotoPage(pageNumber);
+// 				dialog.dismiss();
+// 			}});
+//     	contents.addView(tableOfContentsListView, params);
+//     	dialog.setContentView(contents);
+//     	dialog.show();
+//     }
+// 
+//     
+//     private void outlineToArrayList(List<String> list, List<Integer> pages, Outline outline, int level) {
+//     	if (outline == null) return;
+//     	String s = "";
+//     	for(int i = 0; i < level; ++i) s += " ";
+//     	s += outline.title;
+//     	list.add(s);
+//     	pages.add(outline.page);
+//     	if (outline.down != null) this.outlineToArrayList(list, pages, outline.down, level+1);
+//     	if (outline.next != null) this.outlineToArrayList(list, pages, outline.next, level);
+//     }
+    // #endif
     
-    private void outlineToArrayList(List<String> list, List<Integer> pages, Outline outline, int level) {
-    	if (outline == null) return;
-    	String s = "";
-    	for(int i = 0; i < level; ++i) s += " ";
-    	s += outline.title;
-    	list.add(s);
-    	pages.add(outline.page);
-    	if (outline.down != null) this.outlineToArrayList(list, pages, outline.down, level+1);
-    	if (outline.next != null) this.outlineToArrayList(list, pages, outline.next, level);
-    }
-
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
 	}
 

@@ -38,28 +38,28 @@ public class PDF {
 		}
 	}
 	
-	// #ifdef APVPRO
-	/**
-	 * Java version of fz_outline.
-	 */
-	public static class Outline {
-		public String title;
-		public int page;
-		public Outline next;
-		public Outline down;
-		
-		public String toString() {
-			String s = "Outline(title: " + this.title + ", page: " + page;
-			if (this.down != null) {
-				s += "down: " + this.down;
-			}
-			if (this.next != null) {
-				s += "next: " + this.next;
-			}
-			s += ")";
-			return s;
-		}
-	}
+	// #ifdef pro
+// 	/**
+// 	 * Java version of fz_outline.
+// 	 */
+// 	public static class Outline {
+// 		public String title;
+// 		public int page;
+// 		public Outline next;
+// 		public Outline down;
+// 		
+// 		public String toString() {
+// 			String s = "Outline(title: " + this.title + ", page: " + page;
+// 			if (this.down != null) {
+// 				s += "down: " + this.down;
+// 			}
+// 			if (this.next != null) {
+// 				s += "next: " + this.next;
+// 			}
+// 			s += ")";
+// 			return s;
+// 		}
+// 	}
 	// #endif
 	
 	/**
@@ -163,11 +163,11 @@ public class PDF {
 	 */
 	synchronized public native List<FindResult> findOnPage(int page, String text);
 
-	// #ifdef APVPRO
-	/**
-	 * Get document outline.
-	 */
-	synchronized public native Outline getOutline();
+	// #ifdef pro
+// 	/**
+// 	 * Get document outline.
+// 	 */
+// 	synchronized public native Outline getOutline();
 	// #endif
 	
 	/**
