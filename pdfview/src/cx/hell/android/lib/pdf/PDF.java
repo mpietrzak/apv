@@ -47,21 +47,9 @@ public class PDF {
 // 		public int page;
 // 		public Outline next;
 // 		public Outline down;
-// 		
-// 		public String toString() {
-// 			String s = "Outline(title: " + this.title + ", page: " + page;
-// 			if (this.down != null) {
-// 				s += "down: " + this.down;
-// 			}
-// 			if (this.next != null) {
-// 				s += "next: " + this.next;
-// 			}
-// 			s += ")";
-// 			return s;
-// 		}
 // 	}
 	// #endif
-	
+
 	/**
 	 * Holds pointer to native pdf_t struct.
 	 */

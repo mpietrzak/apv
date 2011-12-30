@@ -55,7 +55,7 @@ pdf_page* get_page(pdf_t *pdf, int pageno);
 
 
 // #ifdef APVPRO
-jobject create_outline_recursive(JNIEnv *env, const fz_outline *outline);
+jobject create_outline_recursive(JNIEnv *env, jclass outline_class, const fz_outline *outline);
 // #endif
 
 
