@@ -5,6 +5,7 @@ import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Date;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -55,6 +56,7 @@ import cx.hell.android.lib.pagesview.PagesView;
 import cx.hell.android.lib.pdf.PDF;
 
 // #ifdef pro
+// import java.util.Stack;
 // import cx.hell.android.lib.pdf.PDF.Outline;
 // #endif
 
@@ -62,6 +64,7 @@ import cx.hell.android.lib.pdf.PDF;
 /**
  * Document display activity.
  */
+@SuppressWarnings("unused")
 public class OpenFileActivity extends Activity implements SensorEventListener {
 	
 	private final static String TAG = "cx.hell.android.pdfview";
@@ -497,12 +500,11 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 // 		} else if (menuItem == this.tableOfContentsMenuItem) {
 // 			Log.d(TAG, "table of contents:");
 // 			Outline outline = this.pdf.getOutline();
-// 			if (outline == null) {
-// 				Log.d(TAG, "null");
+// 			if (outline != null) {
+// 				this.showTableOfContentsDialog(outline);
 // 			} else {
-// 				Log.d(TAG, outline.toString());
+// 				/* TODO: show toast info about toc not found */
 // 			}
-// 			this.showTableOfContentsDialog(outline);
 		// #endif
 		}
     	return false;
@@ -1035,6 +1037,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 //     	final ArrayList<Integer> tocPages = new ArrayList<Integer>();
 //     	this.outlineToArrayList(tocList, tocPages, outline, 0);
 //     	ListView tableOfContentsListView = new ListView(this);
+//     	tableOfContentsListView.setCacheColorHint(0);
 //     	tableOfContentsListView.setAdapter(new ArrayAdapter<String>(this, R.layout.toc_list_item, tocList));
 //     	tableOfContentsListView.setOnItemClickListener(new OnItemClickListener() {
 // 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -1049,6 +1052,33 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 // 
 //     
 //     private void outlineToArrayList(List<String> list, List<Integer> pages, Outline outline, int level) {
+//     	final class Pair {
+//     		public Pair(int level, Outline outline) {
+//     			this.level = level;
+//     			this.outline = outline;
+//     		}
+//     		public int level;
+//     		public Outline outline;
+//     	};
+//     	Stack<Pair> stack = new Stack<Pair>();
+//     	stack.push(new Pair(0, outline));
+//     	
+//     	while(! stack.empty()) {
+//     		Pair p = stack.pop();
+//     		String s = "";
+//     		for(int i = 0; i < p.level; ++i) s += " ";
+//     		s += p.outline.title;
+//     		list.add(s);
+//     		pages.add(p.outline.page);
+//     		if (p.outline.down != null) {
+//     			stack.push(new Pair(p.level + 1, p.outline.down));
+//     		}
+//     		if (p.outline.next != null) {
+//     			stack.push(new Pair(p.level, p.outline.next));
+//     		}
+//     	}
+//     	
+//     	/*
 //     	if (outline == null) return;
 //     	String s = "";
 //     	for(int i = 0; i < level; ++i) s += " ";
@@ -1057,6 +1087,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 //     	pages.add(outline.page);
 //     	if (outline.down != null) this.outlineToArrayList(list, pages, outline.down, level+1);
 //     	if (outline.next != null) this.outlineToArrayList(list, pages, outline.next, level);
+//     	*/
 //     }
     // #endif
     

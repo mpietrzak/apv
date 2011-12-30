@@ -42,7 +42,7 @@ def make_comment(file_type, line):
 def remove_comment(file_type, line):
     """Remove comment from line, but only if line is commented, otherwise return unchanged line."""
     if file_type == 'java':
-        if line.strip().startswith('// '): return line[3:]
+        if line.startswith('// '): return line[3:]
         else: return line
     elif file_type in ('html', 'xml'):
         if line.strip().startswith('<!-- ') and line.strip().endswith(' -->'): return line.strip()[5:-4] + '\n'
