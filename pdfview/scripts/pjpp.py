@@ -20,18 +20,20 @@ file_replaces = {
         'cx.hell.android.pdfview.',
         '"cx.hell.android.pdfview"',
         'package cx.hell.android.pdfview;',
+        'android:icon="@drawable/pdfviewer"',
     ),
     'pro': (
         'cx.hell.android.pdfviewpro.',
         '"cx.hell.android.pdfviewpro"',
         'package cx.hell.android.pdfviewpro;',
+        'android:icon="@drawable/apvpro_icon"',
     ),
 }
 
 
 def make_comment(file_type, line):
     """Add comment to line and return modified line, but try not to add comments to already commented out lines."""
-    if file_type == 'java':
+    if file_type in ('java', 'c'):
         return '// ' + line if not line.startswith('//') else line
     elif file_type in ('html', 'xml'):
         return '<!-- ' + line.strip() + ' -->\n' if not line.strip().startswith('<!--') else line
@@ -41,7 +43,7 @@ def make_comment(file_type, line):
 
 def remove_comment(file_type, line):
     """Remove comment from line, but only if line is commented, otherwise return unchanged line."""
-    if file_type == 'java':
+    if file_type in ('java', 'c'):
         if line.startswith('// '): return line[3:]
         else: return line
     elif file_type in ('html', 'xml'):
@@ -168,8 +170,11 @@ def fix_html_files(conf):
 def fix_c_files(conf):
     filenames = find_files('jni/pdfview2', name='*.c')
     replace_in_files(conf, filenames)
+    handle_comments_in_files(conf, 'c', filenames)
+
     filenames = find_files('jni/pdfview2', name='*.h')
     replace_in_files(conf, filenames)
+    handle_comments_in_files(conf, 'c', filenames)
 
 
 def fix_resources(conf):

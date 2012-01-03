@@ -36,7 +36,7 @@ import cx.hell.android.pdfview.Options;
  * TODO: use more floats for better align, or use more ints for performance ;) (that is, really analyse what should be used when)
  */
 public class PagesView extends View implements 
-View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
+		View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 	/**
 	 * Logging tag.
 	 */
@@ -736,7 +736,7 @@ View.OnTouchListener, OnImageRenderedListener, View.OnKeyListener {
 		this.lastControlsUseMillis = System.currentTimeMillis();
 		Log.v(TAG, ""+event.getAction());
 		if (!gestureDetector.onTouchEvent(event)) {
-			Log.v(TAG, ""+event.getAction());
+			// Log.v(TAG, ""+event.getAction());
 			if (event.getAction() == MotionEvent.ACTION_DOWN) {
 				downX = event.getX();
 				downY = event.getY();
