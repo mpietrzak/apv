@@ -14,6 +14,10 @@ import android.webkit.WebView;
  */
 public class AboutPDFViewActivity extends Activity {
 	
+	/**
+	 * Load about html document and display it via WebView.
+	 * @param state saved instance state
+	 */
 	@Override
 	public void onCreate(Bundle state) {
 		super.onCreate(state);

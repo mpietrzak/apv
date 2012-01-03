@@ -156,6 +156,11 @@ public class PDF {
 // 	 * Get document outline.
 // 	 */
 // 	synchronized public native Outline getOutline();
+// 	
+// 	/**
+// 	 * Get page text (usually known as text reflow in some apps). Better text reflow coming... eventually.
+// 	 */
+// 	synchronized public native String getText(int page);
 	// #endif
 	
 	/**
