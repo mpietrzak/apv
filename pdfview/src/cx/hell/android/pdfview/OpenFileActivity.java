@@ -84,9 +84,25 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 	private PDF pdf = null;
 	private PagesView pagesView = null;
 // #ifdef pro
+// 	
+// 	/**
+// 	 * Complete top-level view (layout) of text reflow.
+// 	 * Hidden (with Visibility.GONE) when not in text reflow mode.
+// 	 */
 // 	private View textReflowView = null;
+// 	
+// 	/**
+// 	 * View that contains scrollable view(s) visible in text reflow mode.
+// 	 */
+// 	private ScrollView textReflowScrollView = null;
+// 	
+// 	/**
+// 	 * TextView visible in text reflow mode, contains text extracted from PDF file.
+// 	 */
 // 	private TextView textReflowTextView = null;
+// 
 // #endif
+
 	private PDFPagesProvider pdfPagesProvider = null;
 	private Actions actions = null;
 	
@@ -207,20 +223,30 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 //         LinearLayout textReflowLayout = new LinearLayout(this);
 //         this.textReflowView = textReflowLayout;
 //         textReflowLayout.setOrientation(LinearLayout.VERTICAL);
-//         ScrollView textReflowScrollView = new ScrollView(this);
+//         this.textReflowScrollView = new ScrollView(this);
 //         this.textReflowTextView = new TextView(this);
 //         LinearLayout textReflowButtonsLayout = new LinearLayout(this);
 //         textReflowButtonsLayout.setGravity(Gravity.CENTER);
 //         textReflowButtonsLayout.setOrientation(LinearLayout.HORIZONTAL);
 //         Button textReflowPrevPageButton = new Button(this);
 //         textReflowPrevPageButton.setText("Prev");
+//         textReflowPrevPageButton.setOnClickListener(new OnClickListener() {
+// 			public void onClick(View v) {
+// 				OpenFileActivity.this.nextPage(-1);
+// 			}
+//         });
 //         Button textReflowNextPageButton = new Button(this);
 //         textReflowNextPageButton.setText("Next");
+//         textReflowNextPageButton.setOnClickListener(new OnClickListener() {
+//         	public void onClick(View v) {
+//         		OpenFileActivity.this.nextPage(1);
+//         	}
+//         });
 //         textReflowButtonsLayout.addView(textReflowPrevPageButton);
 //         textReflowButtonsLayout.addView(textReflowNextPageButton);
 // 
-//         textReflowScrollView.addView(this.textReflowTextView);
-//         textReflowLayout.addView(textReflowScrollView, new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT, 1));
+//         this.textReflowScrollView.addView(this.textReflowTextView);
+//         textReflowLayout.addView(this.textReflowScrollView, new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT, 1));
 //         textReflowLayout.addView(textReflowButtonsLayout, new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT, 0));
 // 
 //         activityLayout.addView(this.textReflowView);
@@ -1226,6 +1252,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 // 			String text = this.pdf.getText(page);
 // 			Log.d(TAG, "text of page " + page + " is: " + text);
 // 			this.textReflowTextView.setText(text);
+// 			this.textReflowScrollView.scrollTo(0,0);
 // 			this.textReflowMenuItem.setTitle("Close Text Reflow");
 // 			this.pagesView.setVisibility(View.GONE);
 // 	    	this.zoomLayout.clearAnimation();
@@ -1239,6 +1266,27 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 // 			this.pagesView.setVisibility(View.VISIBLE);
 // 			this.textReflowMode = false;
 // 			this.showZoom();
+// 		}
+// 	}
+// 	
+// 	/**
+// 	 * Change to next or prev page.
+// 	 * Called from text reflow mode buttons.
+// 	 * @param offset if 1 then go to next page, if -1 then go to prev page, otherwise raise IllegalArgumentException
+// 	 */
+// 	private void nextPage(int offset) {
+// 		if (offset == 1) {
+// 			this.pagesView.doAction(Actions.ACTION_FULL_PAGE_DOWN);
+// 		} else if (offset == -1) {
+// 			this.pagesView.doAction(Actions.ACTION_FULL_PAGE_UP);
+// 		} else {
+// 			throw new IllegalArgumentException("invalid offset: " + offset);
+// 		}
+// 		if (this.textReflowMode) {
+// 			int page = this.pagesView.getCurrentPage();
+// 			String text = this.pdf.getText(page);
+// 			this.textReflowTextView.setText(text);
+// 			this.textReflowScrollView.scrollTo(0,0);
 // 		}
 // 	}
 // #endif

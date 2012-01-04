@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
         package="cx.hell.android.pdfview"
-        android:installLocation="auto" android:versionCode="3104" android:versionName="0.3.2dev04">
+        android:installLocation="auto" android:versionCode="3105" android:versionName="0.3.2dev05">
         
     <!--
         version code:
-        xyz00 for x.y.z           : 5.4.3 becomes 54300
+        xyz00 for x.y.z           : 5.4.3     becomes 54300
         xyzDD for x.y.(z+1)devDD  : 5.4.4dev5 becomes 54305
     -->
     
