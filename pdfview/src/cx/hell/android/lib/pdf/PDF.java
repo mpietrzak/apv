@@ -6,6 +6,14 @@ import java.util.List;
 
 import cx.hell.android.lib.pagesview.FindResult;
 
+// #ifdef pro
+// import java.util.ArrayList;
+// import java.util.HashMap;
+// import java.util.Stack;
+// import cx.hell.android.lib.view.TreeView;
+// import cx.hell.android.lib.view.TreeView.TreeNode;
+// #endif
+
 
 /**
  * Native PDF - interface to native code.
@@ -42,11 +50,141 @@ public class PDF {
 // 	/**
 // 	 * Java version of fz_outline.
 // 	 */
-// 	public static class Outline {
+// 	public static class Outline implements TreeView.TreeNode {
+// 
+// 		/**
+// 		 * Very special kind of "persistent" id.
+// 		 * 
+// 		 * This should be the same each time Outline is parsed for every given file.
+// 		 * This will eventually be used to save TOC view state for each file.
+// 		 * Format is: "x.y.z(...)", where x, y, z are 0-based indexes in current tree level.
+// 		 * For example, first top level element of TOC will have string id "0".
+// 		 * Third child of second top level element will have id "1.2".
+// 		 * 
+// 		 * Another example of TOC tree:
+// 		 * <ul>
+// 		 * 	<li>
+// 		 * 		0
+// 		 * 		<ul>
+// 		 * 			<li>0.0</li>
+// 		 * 			<li>0.1</li>
+// 		 * 			<li>0.2</li>
+// 		 * 		</ul>
+// 		 * 	</li>
+// 		 * 	<li>1</li>
+// 		 * 	<li>
+// 		 * 		2
+// 		 * 		<ul>
+// 		 * 			<li>2.0</li>
+// 		 * 		</ul>
+// 		 * 	</li>
+// 		 * 
+// 		 * This value is not returnet from native code, so it is not always mandatory.
+// 		 * 
+// 		 * Usually TOC should not be changed after it's returned from getOutline method.
+// 		 * Numbers must be updated if any change is made to the structure.
+// 		 * 
+// 		 * Structure consistency is not in any way enforced.
+// 		 */ 
+// 		private String stringId;
+// 		
+// 		/**
+// 		 * Numeric id. Used in TreeView.
+// 		 * Must uniquely identify each element in tree.
+// 		 */
+// 		private long id;
+// 		
 // 		public String title;
 // 		public int page;
 // 		public Outline next;
 // 		public Outline down;
+// 		
+// 		/**
+// 		 * Set string id.
+// 		 * @param stringId new string id
+// 		 */
+// 		public void setStringId(String stringId) {
+// 			this.stringId = stringId;
+// 		}
+// 		
+// 		/**
+// 		 * Return this.stringId.
+// 		 * @see stringId.
+// 		 */
+// 		public String getStringId() {
+// 			return this.stringId;
+// 		}
+// 		
+// 		/**
+// 		 * Set id.
+// 		 * @param id new id
+// 		 */
+// 		public void setId(long id) {
+// 			this.id = id;
+// 		}
+// 		
+// 		/**
+// 		 * Get numeric id.
+// 		 * @see id
+// 		 */
+// 		public long getId() {
+// 			return this.id;
+// 		}
+// 		
+// 		/**
+// 		 * Get next element in tree.
+// 		 */
+// 		public TreeNode getNext() {
+// 			return this.next;
+// 		}
+// 		
+// 		/**
+// 		 * Get first child.
+// 		 */
+// 		public TreeNode getDown() {
+// 			return this.down;
+// 		}
+// 		
+// 		/**
+// 		 * Return true if this outline element has children.
+// 		 * @return true if has children
+// 		 */
+// 		public boolean hasChildren() {
+// 			return this.down != null;
+// 		}
+// 		
+// 		/**
+// 		 * Get list of children of this tree node.
+// 		 */
+// 		public List<TreeNode> getChildren() {
+// 			ArrayList<TreeNode> children = new ArrayList<TreeNode>();
+// 			for(Outline child = this.down; child != null; child = child.next) {
+// 				children.add(child);
+// 			}
+// 			return children;
+// 		}
+// 		
+// 		/**
+// 		 * Return text.
+// 		 */
+// 		public String getText() {
+// 			return this.title;
+// 		}
+// 		
+// 		/**
+// 		 * Get level.
+// 		 * Currently it splits stringId by dots and returns length of resulting array minus 1.
+// 		 * This way "1.1" gives 1 and "3" gives 0 etc.
+// 		 * TODO: optimize
+// 		 */
+// 		public int getLevel() {
+// 			if (stringId != null) {
+// 				String[] ids = this.stringId.split("\\.");
+// 				return ids.length - 1;
+// 			} else {
+// 				throw new IllegalStateException("can't get level if stringId is not set");
+// 			}
+// 		}
 // 	}
 	// #endif
 
@@ -155,7 +293,64 @@ public class PDF {
 // 	/**
 // 	 * Get document outline.
 // 	 */
-// 	synchronized public native Outline getOutline();
+// 	synchronized public native Outline getOutlineNative();
+// 	
+// 	/**
+// 	 * Get outline.
+// 	 * Calls getOutlineNative and then calculates stringIds and ids.
+// 	 * @return outline with correct stringId and id fields set.
+// 	 */
+// 	synchronized public Outline getOutline() {
+// 		Outline outlineRoot = this.getOutlineNative();
+// 		Stack<Outline> stack = new Stack<Outline>();
+// 		stack.push(outlineRoot);
+// 		long id = 0;
+// 		while(!stack.empty()) {
+// 			Outline node = stack.pop();
+// 			if (node == null) throw new RuntimeException("internal error");
+// 			node.setId(id);
+// 			id++;
+// 			if (node.next != null) stack.push(node.next);
+// 			if (node.down != null) stack.push(node.down);
+// 		}
+// 		
+// 		/* create parent map */
+// 		HashMap<Long, Outline> parentMap = new HashMap<Long, Outline>();
+// 		HashMap<Long, Integer> order = new HashMap<Long, Integer>();
+// 		int i = 0;
+// 		for(Outline child = outlineRoot; child != null; child = child.next) {
+// 			order.put(child.getId(), i);
+// 			i++;
+// 		}
+// 		stack.clear();
+// 		stack.push(outlineRoot);
+// 		while(!stack.empty()) {
+// 			Outline node = stack.pop();
+// 			i = 0;
+// 			for(Outline child = node.down; child != null; child = child.next) {
+// 				parentMap.put(child.getId(), node);
+// 				stack.push(child);
+// 				order.put(child.getId(), i);
+// 				i++;
+// 			}
+// 		}
+// 		
+// 		/* now for each node create string id */
+// 		stack.clear();
+// 		stack.push(outlineRoot);
+// 		while(!stack.empty()) {
+// 			Outline node = stack.pop();
+// 			if (node.next != null) stack.push(node.next);
+// 			if (node.down != null) stack.push(node.down);
+// 			String stringId = "";
+// 			for(Outline n = node; n != null; n = parentMap.containsKey(n.getId()) ? parentMap.get(n.getId()) : null) {
+// 				stringId += order.get(n.getId());
+// 				if (parentMap.containsKey(n.getId())) stringId += ".";
+// 			}
+// 			node.setStringId(stringId);
+// 		}
+// 		return outlineRoot;
+// 	}
 // 	
 // 	/**
 // 	 * Get page text (usually known as text reflow in some apps). Better text reflow coming... eventually.

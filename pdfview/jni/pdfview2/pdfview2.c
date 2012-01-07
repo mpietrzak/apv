@@ -236,7 +236,7 @@ Java_cx_hell_android_lib_pdf_PDF_getPageSize(
 //  * Get document outline.
 //  */
 // JNIEXPORT jobject JNICALL
-// Java_cx_hell_android_lib_pdf_PDF_getOutline(
+// Java_cx_hell_android_lib_pdf_PDF_getOutlineNative(
 //         JNIEnv *env,
 //         jobject this) {
 //     int error;
