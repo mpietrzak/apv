@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <resources>
-	<string name="app_name">APV PDF Visualizzatore</string>
+    
+<!-- #ifdef lite -->
+<string name="app_name">APV PDF Visualizzatore</string>
+<!--  #endif -->
+
+<!-- #ifdef pro -->
+<!-- <string name="app_name">APV PDF Visualizzatore Pro</string> -->
+<!--  #endif -->
+    
 	<string name="about">Info</string>
 	<string name="goto_page">Vai alla pagina…</string>
 	<string name="goto_page_dialog_title">Vai alla pagina</string>

@@ -61,6 +61,7 @@ import cx.hell.android.lib.pdf.PDF;
 // import android.widget.ScrollView;
 // import android.text.method.ScrollingMovementMethod;
 // import cx.hell.android.lib.pdf.PDF.Outline;
+// import cx.hell.android.lib.view.TreeView;
 // #endif
 
 
@@ -1146,19 +1147,35 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 //     	params.rightMargin = 5;
 //     	params.bottomMargin = 2;
 //     	params.topMargin = 2;
-//     	final ArrayList<String> tocList = new ArrayList<String>();
-//     	final ArrayList<Integer> tocPages = new ArrayList<Integer>();
-//     	this.outlineToArrayList(tocList, tocPages, outline, 0);
-//     	ListView tableOfContentsListView = new ListView(this);
-//     	tableOfContentsListView.setCacheColorHint(0);
-//     	tableOfContentsListView.setAdapter(new ArrayAdapter<String>(this, R.layout.toc_list_item, tocList));
-//     	tableOfContentsListView.setOnItemClickListener(new OnItemClickListener() {
-// 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-// 				int pageNumber = tocPages.get(position);
-// 				OpenFileActivity.this.gotoPage(pageNumber);
-// 				dialog.dismiss();
-// 			}});
-//     	contents.addView(tableOfContentsListView, params);
+//     	
+//     	TreeView tocTree = new TreeView(this);
+//     	tocTree.setCacheColorHint(0);
+//     	tocTree.setTree(outline);
+//     	tocTree.setOnItemClickListener(new OnItemClickListener() {
+//     		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//     			Log.d(TAG, "onItemClick(" + parent + ", " + view + ", " + position + ", " + id);
+//     			TreeView treeView = (TreeView)parent;
+//     			TreeView.TreeNode treeNode = treeView.getTreeNodeAtPosition(position);
+//     			Outline outline = (Outline) treeNode;
+//     			int pageNumber = outline.page;
+//     			OpenFileActivity.this.gotoPage(pageNumber);
+//     			dialog.dismiss();
+//     		}
+//     	});
+//     	
+//     	//final ArrayList<String> tocList = new ArrayList<String>();
+//     	//final ArrayList<Integer> tocPages = new ArrayList<Integer>();
+//     	//this.outlineToArrayList(tocList, tocPages, outline, 0);
+//     	//ListView tableOfContentsListView = new ListView(this);
+//     	//tableOfContentsListView.setCacheColorHint(0);
+//     	//tableOfContentsListView.setAdapter(new ArrayAdapter<String>(this, R.layout.toc_list_item, tocList));
+//     	//tableOfContentsListView.setOnItemClickListener(new OnItemClickListener() {
+// 		//	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+// 		//		int pageNumber = tocPages.get(position);
+// 		//		OpenFileActivity.this.gotoPage(pageNumber);
+// 		//		dialog.dismiss();
+// 		//	}});
+//     	contents.addView(tocTree, params);
 //     	dialog.setContentView(contents);
 //     	dialog.show();
 //     }
