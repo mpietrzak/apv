@@ -41,6 +41,7 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 	public final static String PREF_SHOW_ZOOM_ON_SCROLL = "showZoomOnScroll";
 	public final static String PREF_HISTORY = "history";
 	public final static String PREF_TOP_BOTTOM_TAP_PAIR = "topBottomTapPair";
+	public final static String PREF_PREV_ORIENTATION = "prevOrientation";
 	
 	public final static int PAGE_NUMBER_DISABLED = 100;
 	public final static int ZOOM_BUTTONS_DISABLED = 100;
@@ -234,7 +235,7 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 			activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 			break;			
 		case 3:
-			activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_BEHIND);
+			activity.setRequestedOrientation(options.getInt(Options.PREF_PREV_ORIENTATION, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));
 			return true;
 		default:
 			break;
