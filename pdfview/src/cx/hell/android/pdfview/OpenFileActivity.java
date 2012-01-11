@@ -321,6 +321,9 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 		if (sensorManager != null) {
 			sensorManager.unregisterListener(this);
 			sensorManager = null;
+			SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(this).edit();
+			edit.putInt(Options.PREF_PREV_ORIENTATION, prevOrientation);
+			edit.commit();
 		}		
 	}
 	
@@ -330,6 +333,8 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 
 		sensorManager = null;
 		
+		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
+
 		if (Options.setOrientation(this)) {
 			sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
 			if (sensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER).size() > 0) {
@@ -338,16 +343,13 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 				gravity[2] = 0f;
 				sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
 						SensorManager.SENSOR_DELAY_NORMAL);
-				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_BEHIND);
-				this.prevOrientation = ActivityInfo.SCREEN_ORIENTATION_BEHIND;
+				this.prevOrientation = options.getInt(Options.PREF_PREV_ORIENTATION, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 			}
 			else {
 				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 			}
 		}
 		
-		SharedPreferences options = PreferenceManager.getDefaultSharedPreferences(this);
-
 		history  = options.getBoolean(Options.PREF_HISTORY, true);
 		boolean eink = options.getBoolean(Options.PREF_EINK, false);
 		this.pagesView.setEink(eink);
@@ -610,7 +612,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
     private void setOrientation(int orientation) {
     	if (orientation != this.prevOrientation) {
     		setRequestedOrientation(orientation);
-    		this.prevOrientation = orientation;
+    		this.prevOrientation = orientation;    	
     	}
     }
     
@@ -1242,13 +1244,13 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 		float sq1 = gravity[1]*gravity[1];
 		float sq2 = gravity[2]*gravity[2];
 		
-		if (sq1 > .85 * (sq0 + sq2)) {
+		if (sq1 > 3 * (sq0 + sq2)) {
 			if (gravity[1] > 4) 
 				setOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 			else if (gravity[1] < -4 && Integer.parseInt(Build.VERSION.SDK) >= 9) 
 				setOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
 		}
-		else if (sq0 > .85 * (sq1 + sq2)) {
+		else if (sq0 > 3 * (sq1 + sq2)) {
 			if (gravity[0] > 4)
 				setOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 			else if (gravity[0] < -4 && Integer.parseInt(Build.VERSION.SDK) >= 9) 
