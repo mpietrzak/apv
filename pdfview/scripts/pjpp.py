@@ -126,7 +126,10 @@ def handle_comments_in_files(conf, file_type, filenames):
         new_lines = handle_comments(conf, file_type, lines, filename)
         if lines != new_lines:
             logging.debug("file %s comments changed" % filename)
-            open(filename, 'w').write(''.join(new_lines))
+            f = open(filename, 'w')
+            f.write(''.join(new_lines))
+            f.close()
+            del f
 
 
 def replace_in_files(conf, filenames):
@@ -145,7 +148,10 @@ def replace_in_files(conf, filenames):
             new_lines.append(new_line)
         if new_lines != lines:
             logging.debug("file %s changed, writing..." % filename)
-            open(filename, 'w').write(''.join(new_lines))
+            f = open(filename, 'w')
+            f.write(''.join(new_lines))
+            f.close()
+            del f
         else:
             logging.debug("file %s didn't change, no need to rewrite" % filename)
 
