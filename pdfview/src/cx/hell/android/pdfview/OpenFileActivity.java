@@ -57,6 +57,8 @@ import cx.hell.android.lib.pdf.PDF;
 
 // #ifdef pro
 // import java.util.Stack;
+// import java.util.Map;
+// import android.content.DialogInterface.OnDismissListener;
 // import android.view.ViewGroup.LayoutParams;
 // import android.widget.ScrollView;
 // import android.text.method.ScrollingMovementMethod;
@@ -599,7 +601,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 // 			if (outline != null) {
 // 				this.showTableOfContentsDialog(outline);
 // 			} else {
-// 				/* TODO: show toast info about toc not found */
+// 				Toast.makeText(this, "Table of Contents not found", Toast.LENGTH_SHORT).show();
 // 			}
 // 		} else if (menuItem == this.textReflowMenuItem) {
 // 			this.setTextReflowMode(! this.textReflowMode);
@@ -612,7 +614,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
     private void setOrientation(int orientation) {
     	if (orientation != this.prevOrientation) {
     		setRequestedOrientation(orientation);
-    		this.prevOrientation = orientation;    	
+    		this.prevOrientation = orientation;
     	}
     }
     
@@ -1135,11 +1137,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 //      * @param outline root of TOC tree
 //      */
 //     private void showTableOfContentsDialog(Outline outline) {
-//     	Log.d(TAG, "table of contents dialog...");
-//     	if (outline == null) {
-//  		// TODO: toast about no toc
-//     		return;
-//     	}
+//     	if (outline == null) throw new IllegalArgumentException("nothing to show");
 //     	final Dialog dialog = new Dialog(this);
 //     	dialog.setTitle(R.string.toc_dialog_title);
 //     	LinearLayout contents = new LinearLayout(this);
@@ -1149,10 +1147,28 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 //     	params.rightMargin = 5;
 //     	params.bottomMargin = 2;
 //     	params.topMargin = 2;
-//     	
-//     	TreeView tocTree = new TreeView(this);
+//     	final TreeView tocTree = new TreeView(this);
 //     	tocTree.setCacheColorHint(0);
 //     	tocTree.setTree(outline);
+//     	DocumentOptions documentOptions = new DocumentOptions(this.getApplicationContext());
+//     	try {
+// 	    	String openNodesString = documentOptions.getValue(this.filePath, "toc_open_nodes");
+// 	    	if (openNodesString != null) {
+// 		    	String[] openNodes = documentOptions.getValue(this.filePath, "toc_open_nodes").split(",");
+// 		    	for(String openNode: openNodes) {
+// 		    		long nodeId = -1;
+// 		    		try {
+// 		    			nodeId = Long.parseLong(openNode);
+// 		    		} catch (NumberFormatException e) {
+// 		    			Log.w(TAG, "failed to parse " + openNode + " as long: " + e);
+// 		    			continue;
+// 		    		}
+// 		    		tocTree.open(nodeId);
+// 		    	}
+// 	    	}
+//     	} finally {
+//     		documentOptions.close();
+//     	}
 //     	tocTree.setOnItemClickListener(new OnItemClickListener() {
 //     		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 //     			Log.d(TAG, "onItemClick(" + parent + ", " + view + ", " + position + ", " + id);
@@ -1164,21 +1180,28 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 //     			dialog.dismiss();
 //     		}
 //     	});
-//     	
-//     	//final ArrayList<String> tocList = new ArrayList<String>();
-//     	//final ArrayList<Integer> tocPages = new ArrayList<Integer>();
-//     	//this.outlineToArrayList(tocList, tocPages, outline, 0);
-//     	//ListView tableOfContentsListView = new ListView(this);
-//     	//tableOfContentsListView.setCacheColorHint(0);
-//     	//tableOfContentsListView.setAdapter(new ArrayAdapter<String>(this, R.layout.toc_list_item, tocList));
-//     	//tableOfContentsListView.setOnItemClickListener(new OnItemClickListener() {
-// 		//	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-// 		//		int pageNumber = tocPages.get(position);
-// 		//		OpenFileActivity.this.gotoPage(pageNumber);
-// 		//		dialog.dismiss();
-// 		//	}});
 //     	contents.addView(tocTree, params);
 //     	dialog.setContentView(contents);
+//     	dialog.setOnDismissListener(new OnDismissListener() {
+// 			public void onDismiss(DialogInterface dialog) {
+// 				/* save state */
+// 				Log.d(TAG, "saving TOC tree state");
+// 				Map<Long,Boolean> state = tocTree.getState();
+//     			String openNodes = "";
+//     			for(long key: state.keySet()) {
+//     				if (state.get(key)) {
+//     					if (openNodes.length() > 0) openNodes += ",";
+//     					openNodes += key;
+//     				}
+//     			}
+//     			DocumentOptions documentOptions = new DocumentOptions(OpenFileActivity.this.getApplicationContext());
+//     			try {
+//     				documentOptions.setValue(filePath, "toc_open_nodes", openNodes);
+//     			} finally {
+//     				documentOptions.close();
+//     			}
+// 			}
+//     	});
 //     	dialog.show();
 //     }
 // 

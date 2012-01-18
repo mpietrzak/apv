@@ -8,7 +8,6 @@ import cx.hell.android.lib.pagesview.FindResult;
 
 // #ifdef pro
 // import java.util.ArrayList;
-// import java.util.HashMap;
 // import java.util.Stack;
 // import cx.hell.android.lib.view.TreeView;
 // import cx.hell.android.lib.view.TreeView.TreeNode;
@@ -19,6 +18,9 @@ import cx.hell.android.lib.pagesview.FindResult;
  * Native PDF - interface to native code.
  */
 public class PDF {
+	
+	private final static String TAG = "cx.hell.android.pdfview";
+	
 	static {
         System.loadLibrary("pdfview2");
 	}
@@ -52,71 +54,43 @@ public class PDF {
 // 	 */
 // 	public static class Outline implements TreeView.TreeNode {
 // 
-// 		/**
-// 		 * Very special kind of "persistent" id.
-// 		 * 
-// 		 * This should be the same each time Outline is parsed for every given file.
-// 		 * This will eventually be used to save TOC view state for each file.
-// 		 * Format is: "x.y.z(...)", where x, y, z are 0-based indexes in current tree level.
-// 		 * For example, first top level element of TOC will have string id "0".
-// 		 * Third child of second top level element will have id "1.2".
-// 		 * 
-// 		 * Another example of TOC tree:
-// 		 * <ul>
-// 		 * 	<li>
-// 		 * 		0
-// 		 * 		<ul>
-// 		 * 			<li>0.0</li>
-// 		 * 			<li>0.1</li>
-// 		 * 			<li>0.2</li>
-// 		 * 		</ul>
-// 		 * 	</li>
-// 		 * 	<li>1</li>
-// 		 * 	<li>
-// 		 * 		2
-// 		 * 		<ul>
-// 		 * 			<li>2.0</li>
-// 		 * 		</ul>
-// 		 * 	</li>
-// 		 * 
-// 		 * This value is not returnet from native code, so it is not always mandatory.
-// 		 * 
-// 		 * Usually TOC should not be changed after it's returned from getOutline method.
-// 		 * Numbers must be updated if any change is made to the structure.
-// 		 * 
-// 		 * Structure consistency is not in any way enforced.
-// 		 */ 
-// 		private String stringId;
 // 		
 // 		/**
 // 		 * Numeric id. Used in TreeView.
 // 		 * Must uniquely identify each element in tree.
 // 		 */
-// 		private long id;
-// 		
-// 		public String title;
-// 		public int page;
-// 		public Outline next;
-// 		public Outline down;
+// 		private long id = -1;
 // 		
 // 		/**
-// 		 * Set string id.
-// 		 * @param stringId new string id
+// 		 * Text of the outline entry.
 // 		 */
-// 		public void setStringId(String stringId) {
-// 			this.stringId = stringId;
-// 		}
+// 		public String title = null;
 // 		
 // 		/**
-// 		 * Return this.stringId.
-// 		 * @see stringId.
+// 		 * Page number.
 // 		 */
-// 		public String getStringId() {
-// 			return this.stringId;
-// 		}
+// 		public int page = 0;
+// 		
+// 		/**
+// 		 * Next element at this level of TOC.
+// 		 */
+// 		public Outline next = null;
+// 		
+// 		/**
+// 		 * Child.
+// 		 */
+// 		public Outline down = null;
+// 		
+// 		/**
+// 		 * Level in TOC. Top level elements have level 0, children of top level elements have level 1 and so on.
+// 		 */
+// 		public int level = -1;
+// 		
 // 		
 // 		/**
 // 		 * Set id.
+// 		 * This is local to this TOC and its 0-based index of the element
+// 		 * when list is displayed with all children expanded.
 // 		 * @param id new id
 // 		 */
 // 		public void setId(long id) {
@@ -132,7 +106,7 @@ public class PDF {
 // 		}
 // 		
 // 		/**
-// 		 * Get next element in tree.
+// 		 * Get next element.
 // 		 */
 // 		public TreeNode getNext() {
 // 			return this.next;
@@ -173,17 +147,27 @@ public class PDF {
 // 		
 // 		/**
 // 		 * Get level.
-// 		 * Currently it splits stringId by dots and returns length of resulting array minus 1.
-// 		 * This way "1.1" gives 1 and "3" gives 0 etc.
-// 		 * TODO: optimize
+// 		 * This is calculated in getOutline.
+// 		 * @return value of level field
 // 		 */
 // 		public int getLevel() {
-// 			if (stringId != null) {
-// 				String[] ids = this.stringId.split("\\.");
-// 				return ids.length - 1;
-// 			} else {
-// 				throw new IllegalStateException("can't get level if stringId is not set");
-// 			}
+// 			return this.level;
+// 		}
+// 		
+// 		/**
+// 		 * Set level.
+// 		 * @param level new level
+// 		 */
+// 		public void setLevel(int level) {
+// 			this.level = level;
+// 		}
+// 		
+// 		/**
+// 		 * Return human readable description.
+// 		 * @param human readable description of this object
+// 		 */
+// 		public String toString() {
+// 			return "Outline(" + this.id + ", \"" + this.title + "\", " + this.page + ")";
 // 		}
 // 	}
 	// #endif
@@ -293,62 +277,44 @@ public class PDF {
 // 	/**
 // 	 * Get document outline.
 // 	 */
-// 	synchronized public native Outline getOutlineNative();
+// 	synchronized private native Outline getOutlineNative();
 // 	
 // 	/**
 // 	 * Get outline.
-// 	 * Calls getOutlineNative and then calculates stringIds and ids.
-// 	 * @return outline with correct stringId and id fields set.
+// 	 * Calls getOutlineNative and then calculates ids and levels.
+// 	 * @return outline with correct id and level fields set.
 // 	 */
 // 	synchronized public Outline getOutline() {
 // 		Outline outlineRoot = this.getOutlineNative();
+// 		if (outlineRoot == null) return null;
 // 		Stack<Outline> stack = new Stack<Outline>();
+// 
+// 		/* ids */
 // 		stack.push(outlineRoot);
 // 		long id = 0;
 // 		while(!stack.empty()) {
 // 			Outline node = stack.pop();
-// 			if (node == null) throw new RuntimeException("internal error");
 // 			node.setId(id);
 // 			id++;
 // 			if (node.next != null) stack.push(node.next);
 // 			if (node.down != null) stack.push(node.down);
 // 		}
 // 		
-// 		/* create parent map */
-// 		HashMap<Long, Outline> parentMap = new HashMap<Long, Outline>();
-// 		HashMap<Long, Integer> order = new HashMap<Long, Integer>();
-// 		int i = 0;
-// 		for(Outline child = outlineRoot; child != null; child = child.next) {
-// 			order.put(child.getId(), i);
-// 			i++;
-// 		}
+// 		/* levels */
 // 		stack.clear();
-// 		stack.push(outlineRoot);
+// 		for(Outline node = outlineRoot; node != null; node = node.next) {
+// 			node.setLevel(0);
+// 			stack.push(node);
+// 		}
 // 		while(!stack.empty()) {
 // 			Outline node = stack.pop();
-// 			i = 0;
 // 			for(Outline child = node.down; child != null; child = child.next) {
-// 				parentMap.put(child.getId(), node);
+// 				//parentMap.put(child.getId(), node);
+// 				child.setLevel(node.getLevel() + 1);
 // 				stack.push(child);
-// 				order.put(child.getId(), i);
-// 				i++;
 // 			}
 // 		}
-// 		
-// 		/* now for each node create string id */
-// 		stack.clear();
-// 		stack.push(outlineRoot);
-// 		while(!stack.empty()) {
-// 			Outline node = stack.pop();
-// 			if (node.next != null) stack.push(node.next);
-// 			if (node.down != null) stack.push(node.down);
-// 			String stringId = "";
-// 			for(Outline n = node; n != null; n = parentMap.containsKey(n.getId()) ? parentMap.get(n.getId()) : null) {
-// 				stringId += order.get(n.getId());
-// 				if (parentMap.containsKey(n.getId())) stringId += ".";
-// 			}
-// 			node.setStringId(stringId);
-// 		}
+// 
 // 		return outlineRoot;
 // 	}
 // 	
