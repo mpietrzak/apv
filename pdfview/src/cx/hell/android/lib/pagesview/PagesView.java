@@ -992,6 +992,9 @@ public class PagesView extends View implements
 	synchronized public void scrollToPage(int page, boolean positionAtTop) {
 		float top;
 		
+		if (page < 0) page = 0;
+		else if (page >= this.getPageCount()) page = this.getPageCount() - 1;
+		
 		if (positionAtTop) {
 			top = this.height/2 + pagePosition(page);
 		}

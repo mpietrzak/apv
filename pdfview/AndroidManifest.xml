@@ -10,7 +10,7 @@
         
         where E is eabi version:
 
-         - both is 0        
+         - both is 0
          - armeabi is 1
          - armeabi-v7a is 2
          
@@ -27,7 +27,7 @@
 
 	<supports-screens
             android:smallScreens="true"
-            android:normalScreens="true" 
+            android:normalScreens="true"
             android:largeScreens="true"
             android:anyDensity="true"/>
 
