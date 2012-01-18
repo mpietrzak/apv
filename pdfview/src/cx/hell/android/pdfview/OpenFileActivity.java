@@ -226,8 +226,12 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 //         LinearLayout textReflowLayout = new LinearLayout(this);
 //         this.textReflowView = textReflowLayout;
 //         textReflowLayout.setOrientation(LinearLayout.VERTICAL);
+//         
 //         this.textReflowScrollView = new ScrollView(this);
+//         this.textReflowScrollView.setFillViewport(true);
+//         
 //         this.textReflowTextView = new TextView(this);
+//         
 //         LinearLayout textReflowButtonsLayout = new LinearLayout(this);
 //         textReflowButtonsLayout.setGravity(Gravity.CENTER);
 //         textReflowButtonsLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -249,10 +253,11 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 //         textReflowButtonsLayout.addView(textReflowNextPageButton);
 // 
 //         this.textReflowScrollView.addView(this.textReflowTextView);
-//         textReflowLayout.addView(this.textReflowScrollView, new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT, 1));
+//         LinearLayout.LayoutParams textReflowScrollViewLayoutParams = new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT, 1);
+//         textReflowLayout.addView(this.textReflowScrollView, textReflowScrollViewLayoutParams);
 //         textReflowLayout.addView(textReflowButtonsLayout, new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT, 0));
 // 
-//         activityLayout.addView(this.textReflowView);
+//         activityLayout.addView(this.textReflowView, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
 //         this.textReflowView.setVisibility(View.GONE);
 //         AndroidReflections.setScrollbarFadingEnabled(this.textReflowView, true);
 // #endif
@@ -1292,6 +1297,8 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 // 			Log.d(TAG, "text reflow");
 // 			int page = this.pagesView.getCurrentPage();
 // 			String text = this.pdf.getText(page);
+// 			if (text == null) text = "";
+// 			text = text.trim();
 // 			Log.d(TAG, "text of page " + page + " is: " + text);
 // 			this.textReflowTextView.setText(text);
 // 			this.textReflowScrollView.scrollTo(0,0);
@@ -1327,6 +1334,8 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 // 		if (this.textReflowMode) {
 // 			int page = this.pagesView.getCurrentPage();
 // 			String text = this.pdf.getText(page);
+// 			if (text == null) text = "";
+// 			text = text.trim();
 // 			this.textReflowTextView.setText(text);
 // 			this.textReflowScrollView.scrollTo(0,0);
 // 		}
