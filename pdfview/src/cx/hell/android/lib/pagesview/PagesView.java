@@ -25,11 +25,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Scroller;
-import cx.hell.android.pdfviewpro.Actions;
-import cx.hell.android.pdfviewpro.Bookmark;
-import cx.hell.android.pdfviewpro.BookmarkEntry;
-import cx.hell.android.pdfviewpro.OpenFileActivity;
-import cx.hell.android.pdfviewpro.Options;
+import cx.hell.android.pdfview.Actions;
+import cx.hell.android.pdfview.Bookmark;
+import cx.hell.android.pdfview.BookmarkEntry;
+import cx.hell.android.pdfview.OpenFileActivity;
+import cx.hell.android.pdfview.Options;
 
 /**
  * View that simplifies displaying of paged documents.
@@ -41,7 +41,7 @@ public class PagesView extends View implements
 	/**
 	 * Logging tag.
 	 */
-	private static final String TAG = "cx.hell.android.pdfviewpro";
+	private static final String TAG = "cx.hell.android.pdfview";
 	
 	/* Experiments show that larger tiles are faster, but the gains do drop off,
 	 * and must be balanced against the size of memory chunks being requested.
@@ -523,7 +523,7 @@ public class PagesView extends View implements
 		if (this.scroller.computeScrollOffset()) {
 			left = this.scroller.getCurrX();
 			top = this.scroller.getCurrY();
-			((cx.hell.android.pdfviewpro.OpenFileActivity)activity).showPageNumber(false);
+			((cx.hell.android.pdfview.OpenFileActivity)activity).showPageNumber(false);
 			postInvalidate();
 		}
 	}
@@ -856,7 +856,7 @@ public class PagesView extends View implements
 			
 			switch (keyCode) {
 			case KeyEvent.KEYCODE_SEARCH:
-				((cx.hell.android.pdfviewpro.OpenFileActivity)activity).showFindDialog();
+				((cx.hell.android.pdfview.OpenFileActivity)activity).showFindDialog();
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				if (action == Actions.ACTION_NONE)
