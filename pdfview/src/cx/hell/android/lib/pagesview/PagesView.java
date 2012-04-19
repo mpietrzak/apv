@@ -16,6 +16,7 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.GestureDetector.OnDoubleTapListener;
@@ -24,11 +25,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Scroller;
-import cx.hell.android.pdfview.Actions;
-import cx.hell.android.pdfview.Bookmark;
-import cx.hell.android.pdfview.BookmarkEntry;
-import cx.hell.android.pdfview.OpenFileActivity;
-import cx.hell.android.pdfview.Options;
+import cx.hell.android.pdfviewpro.Actions;
+import cx.hell.android.pdfviewpro.Bookmark;
+import cx.hell.android.pdfviewpro.BookmarkEntry;
+import cx.hell.android.pdfviewpro.OpenFileActivity;
+import cx.hell.android.pdfviewpro.Options;
 
 /**
  * View that simplifies displaying of paged documents.
@@ -40,7 +41,7 @@ public class PagesView extends View implements
 	/**
 	 * Logging tag.
 	 */
-	private static final String TAG = "cx.hell.android.pdfview";
+	private static final String TAG = "cx.hell.android.pdfviewpro";
 	
 	/* Experiments show that larger tiles are faster, but the gains do drop off,
 	 * and must be balanced against the size of memory chunks being requested.
@@ -58,6 +59,13 @@ public class PagesView extends View implements
 	 */
 	private int marginX = 0;
 	private int marginY = 10;
+	
+	/* multitouch zoom */
+	private boolean mtZoomActive = false;
+	private float mtZoomValue;
+	private float mtLastDistance;
+	private float mtDistanceStart;
+	private long mtDebounce;
 	
 	/* zoom steps */
 	float step = 1.414f;
@@ -198,6 +206,9 @@ public class PagesView extends View implements
 		this.setOnTouchListener(this);
 		this.setOnKeyListener(this);
 		activity.setDefaultKeyMode(Activity.DEFAULT_KEYS_SEARCH_LOCAL);
+		
+		this.mtZoomActive = false;
+		this.mtDebounce = 0;
 
 		this.scroller = null; // new Scroller(activity);
 
@@ -272,6 +283,11 @@ public class PagesView extends View implements
 			}
 
 			public boolean onSingleTapConfirmed(MotionEvent e) {
+    			if (mtDebounce + 600 > SystemClock.uptimeMillis()) 
+    				return false;
+
+				
+				
 				if (!showZoomOnScroll) {
 					openFileActivity.showZoom();
 					pagesView.invalidate();
@@ -507,7 +523,7 @@ public class PagesView extends View implements
 		if (this.scroller.computeScrollOffset()) {
 			left = this.scroller.getCurrX();
 			top = this.scroller.getCurrY();
-			((cx.hell.android.pdfview.OpenFileActivity)activity).showPageNumber(false);
+			((cx.hell.android.pdfviewpro.OpenFileActivity)activity).showPageNumber(false);
 			postInvalidate();
 		}
 	}
@@ -532,13 +548,13 @@ public class PagesView extends View implements
 		float currentMarginX = this.getCurrentMarginX();
 		float currentMarginY = this.getCurrentMarginY();
 		float renderAhead = this.pagesProvider.getRenderAhead();
-
+		
 		if (this.pagesProvider != null) {
-                        if (this.zoomLevel < 5)
-                            this.zoomLevel = 5;
+            if (this.zoomLevel < 5)
+                this.zoomLevel = 5;            
 
-			viewx0 = left - width/2;
-			viewy0 = top - height/2;
+			viewx0 = this.left - this.width/2;
+			viewy0 = this.top - this.height/2;
 
 			int pageCount = this.pageSizes.length;
 
@@ -552,14 +568,14 @@ public class PagesView extends View implements
 					getCurrentMaxPageWidth());
 			viewy0 = adjustPosition(viewy0, height, (int)currentMarginY,
 					(int)getCurrentDocumentHeight());
-
-			left += viewx0 - oldviewx0;
-			top += viewy0 - oldviewy0;
+			
+			this.left += viewx0 - oldviewx0;
+			this.top += viewy0 - oldviewy0;
 
 			float currpageoff = currentMarginY;
 
 			this.currentPage = -1;
-
+			
 			pagey0 = 0;
 			int[] tileSizes = new int[2];
 
@@ -626,7 +642,8 @@ public class PagesView extends View implements
 										
 									}
 								}
-								visibleTiles.add(tile);
+								if (!mtZoomActive)
+									visibleTiles.add(tile);
 							}
 						}
 				}
@@ -728,6 +745,20 @@ public class PagesView extends View implements
 		
 		return dx > width/5 || dx > height/5;
 	}
+	
+
+	/**
+	 * 
+	 * @param event
+	 * @return distance in multitouch event
+	 */
+	private float distance(MotionEvent event) {
+		double dx = event.getX(0)-event.getX(1);
+		double dy = event.getY(0)-event.getY(1);
+		return (float)Math.sqrt(dx*dx+dy*dy);
+	}
+
+
 
 	/**
 	 * Handle touch event coming from Android system.
@@ -746,26 +777,60 @@ public class PagesView extends View implements
 				maxExcursionY = 0;
 				scroller = null;
 			}
+	        else if (event.getAction() == MotionEvent.ACTION_POINTER_2_DOWN
+	        		&& event.getPointerCount() >= 2) {
+	        	float d = distance(event);
+	        	if (d > 20f) {
+		        	this.mtZoomActive = true;
+		        	this.mtZoomValue = 1f;
+		        	this.mtDistanceStart = distance(event);
+		        	this.mtLastDistance = this.mtDistanceStart;
+	        	}
+	        }
 			else if (event.getAction() == MotionEvent.ACTION_MOVE){
-				if (lockedVertically && unlocksVerticalLock(event)) 
-					lockedVertically = false;
-				
-				float dx = event.getX() - lastX;
-				float dy = event.getY() - lastY;
-				
-				float excursionY = Math.abs(event.getY() - downY);
-
-				if (excursionY > maxExcursionY)
-					maxExcursionY = excursionY;
-				
-				if (lockedVertically)
-					dx = 0;
-				
-				doScroll((int)-dx, (int)-dy);
-				
-				lastX = event.getX();
-				lastY = event.getY();
+				if (this.mtZoomActive && event.getPointerCount() >= 2) {
+					float d = distance(event);
+					if (d > 20f) {
+						d = .6f * this.mtLastDistance + .4f * d;
+						this.mtLastDistance = d;
+						this.mtZoomValue = d / this.mtDistanceStart;
+						if (this.mtZoomValue < 0.1f)
+							this.mtZoomValue = 0.1f;
+						else if (mtZoomValue > 10f)
+							this.mtZoomValue = 10f;
+						Log.v(TAG, "MT zoom "+this.mtZoomValue);
+						invalidate();
+					}
+				}
+				else {
+					if (lockedVertically && unlocksVerticalLock(event)) 
+						lockedVertically = false;
+					
+					float dx = event.getX() - lastX;
+					float dy = event.getY() - lastY;
+					
+					float excursionY = Math.abs(event.getY() - downY);
+	
+					if (excursionY > maxExcursionY)
+						maxExcursionY = excursionY;
+					
+					if (lockedVertically)
+						dx = 0;
+					
+					doScroll((int)-dx, (int)-dy);
+					
+					lastX = event.getX();
+					lastY = event.getY();
+				}
 			}
+			else if (event.getAction() == MotionEvent.ACTION_UP ||
+					event.getAction() == MotionEvent.ACTION_POINTER_2_UP) {
+				if (this.mtZoomActive) {
+					this.mtDebounce = SystemClock.uptimeMillis();
+					this.mtZoomActive = false;
+					zoom(this.mtZoomValue);
+				}
+			}						
 		}
 		return true;
 	}
@@ -791,7 +856,7 @@ public class PagesView extends View implements
 			
 			switch (keyCode) {
 			case KeyEvent.KEYCODE_SEARCH:
-				((cx.hell.android.pdfview.OpenFileActivity)activity).showFindDialog();
+				((cx.hell.android.pdfviewpro.OpenFileActivity)activity).showFindDialog();
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				if (action == Actions.ACTION_NONE)
