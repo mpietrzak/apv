@@ -7,10 +7,10 @@ import java.util.List;
 import cx.hell.android.lib.pagesview.FindResult;
 
 // #ifdef pro
-import java.util.ArrayList;
-import java.util.Stack;
-import cx.hell.android.lib.view.TreeView;
-import cx.hell.android.lib.view.TreeView.TreeNode;
+// import java.util.ArrayList;
+// import java.util.Stack;
+// import cx.hell.android.lib.view.TreeView;
+// import cx.hell.android.lib.view.TreeView.TreeNode;
 // #endif
 
 
@@ -19,7 +19,7 @@ import cx.hell.android.lib.view.TreeView.TreeNode;
  */
 public class PDF {
 	
-	private final static String TAG = "cx.hell.android.pdfviewpro";
+	private final static String TAG = "cx.hell.android.pdfview";
 	
 	static {
         System.loadLibrary("pdfview2");
@@ -49,127 +49,127 @@ public class PDF {
 	}
 	
 	// #ifdef pro
-	/**
-	 * Java version of fz_outline.
-	 */
-	public static class Outline implements TreeView.TreeNode {
-
-		
-		/**
-		 * Numeric id. Used in TreeView.
-		 * Must uniquely identify each element in tree.
-		 */
-		private long id = -1;
-		
-		/**
-		 * Text of the outline entry.
-		 */
-		public String title = null;
-		
-		/**
-		 * Page number.
-		 */
-		public int page = 0;
-		
-		/**
-		 * Next element at this level of TOC.
-		 */
-		public Outline next = null;
-		
-		/**
-		 * Child.
-		 */
-		public Outline down = null;
-		
-		/**
-		 * Level in TOC. Top level elements have level 0, children of top level elements have level 1 and so on.
-		 */
-		public int level = -1;
-		
-		
-		/**
-		 * Set id.
-		 * This is local to this TOC and its 0-based index of the element
-		 * when list is displayed with all children expanded.
-		 * @param id new id
-		 */
-		public void setId(long id) {
-			this.id = id;
-		}
-		
-		/**
-		 * Get numeric id.
-		 * @see id
-		 */
-		public long getId() {
-			return this.id;
-		}
-		
-		/**
-		 * Get next element.
-		 */
-		public TreeNode getNext() {
-			return this.next;
-		}
-		
-		/**
-		 * Get first child.
-		 */
-		public TreeNode getDown() {
-			return this.down;
-		}
-		
-		/**
-		 * Return true if this outline element has children.
-		 * @return true if has children
-		 */
-		public boolean hasChildren() {
-			return this.down != null;
-		}
-		
-		/**
-		 * Get list of children of this tree node.
-		 */
-		public List<TreeNode> getChildren() {
-			ArrayList<TreeNode> children = new ArrayList<TreeNode>();
-			for(Outline child = this.down; child != null; child = child.next) {
-				children.add(child);
-			}
-			return children;
-		}
-		
-		/**
-		 * Return text.
-		 */
-		public String getText() {
-			return this.title;
-		}
-		
-		/**
-		 * Get level.
-		 * This is calculated in getOutline.
-		 * @return value of level field
-		 */
-		public int getLevel() {
-			return this.level;
-		}
-		
-		/**
-		 * Set level.
-		 * @param level new level
-		 */
-		public void setLevel(int level) {
-			this.level = level;
-		}
-		
-		/**
-		 * Return human readable description.
-		 * @param human readable description of this object
-		 */
-		public String toString() {
-			return "Outline(" + this.id + ", \"" + this.title + "\", " + this.page + ")";
-		}
-	}
+// 	/**
+// 	 * Java version of fz_outline.
+// 	 */
+// 	public static class Outline implements TreeView.TreeNode {
+// 
+// 		
+// 		/**
+// 		 * Numeric id. Used in TreeView.
+// 		 * Must uniquely identify each element in tree.
+// 		 */
+// 		private long id = -1;
+// 		
+// 		/**
+// 		 * Text of the outline entry.
+// 		 */
+// 		public String title = null;
+// 		
+// 		/**
+// 		 * Page number.
+// 		 */
+// 		public int page = 0;
+// 		
+// 		/**
+// 		 * Next element at this level of TOC.
+// 		 */
+// 		public Outline next = null;
+// 		
+// 		/**
+// 		 * Child.
+// 		 */
+// 		public Outline down = null;
+// 		
+// 		/**
+// 		 * Level in TOC. Top level elements have level 0, children of top level elements have level 1 and so on.
+// 		 */
+// 		public int level = -1;
+// 		
+// 		
+// 		/**
+// 		 * Set id.
+// 		 * This is local to this TOC and its 0-based index of the element
+// 		 * when list is displayed with all children expanded.
+// 		 * @param id new id
+// 		 */
+// 		public void setId(long id) {
+// 			this.id = id;
+// 		}
+// 		
+// 		/**
+// 		 * Get numeric id.
+// 		 * @see id
+// 		 */
+// 		public long getId() {
+// 			return this.id;
+// 		}
+// 		
+// 		/**
+// 		 * Get next element.
+// 		 */
+// 		public TreeNode getNext() {
+// 			return this.next;
+// 		}
+// 		
+// 		/**
+// 		 * Get first child.
+// 		 */
+// 		public TreeNode getDown() {
+// 			return this.down;
+// 		}
+// 		
+// 		/**
+// 		 * Return true if this outline element has children.
+// 		 * @return true if has children
+// 		 */
+// 		public boolean hasChildren() {
+// 			return this.down != null;
+// 		}
+// 		
+// 		/**
+// 		 * Get list of children of this tree node.
+// 		 */
+// 		public List<TreeNode> getChildren() {
+// 			ArrayList<TreeNode> children = new ArrayList<TreeNode>();
+// 			for(Outline child = this.down; child != null; child = child.next) {
+// 				children.add(child);
+// 			}
+// 			return children;
+// 		}
+// 		
+// 		/**
+// 		 * Return text.
+// 		 */
+// 		public String getText() {
+// 			return this.title;
+// 		}
+// 		
+// 		/**
+// 		 * Get level.
+// 		 * This is calculated in getOutline.
+// 		 * @return value of level field
+// 		 */
+// 		public int getLevel() {
+// 			return this.level;
+// 		}
+// 		
+// 		/**
+// 		 * Set level.
+// 		 * @param level new level
+// 		 */
+// 		public void setLevel(int level) {
+// 			this.level = level;
+// 		}
+// 		
+// 		/**
+// 		 * Return human readable description.
+// 		 * @param human readable description of this object
+// 		 */
+// 		public String toString() {
+// 			return "Outline(" + this.id + ", \"" + this.title + "\", " + this.page + ")";
+// 		}
+// 	}
 	// #endif
 
 	/**
@@ -274,54 +274,54 @@ public class PDF {
 	synchronized public native List<FindResult> findOnPage(int page, String text);
 
 	// #ifdef pro
-	/**
-	 * Get document outline.
-	 */
-	synchronized private native Outline getOutlineNative();
-	
-	/**
-	 * Get outline.
-	 * Calls getOutlineNative and then calculates ids and levels.
-	 * @return outline with correct id and level fields set.
-	 */
-	synchronized public Outline getOutline() {
-		Outline outlineRoot = this.getOutlineNative();
-		if (outlineRoot == null) return null;
-		Stack<Outline> stack = new Stack<Outline>();
-
-		/* ids */
-		stack.push(outlineRoot);
-		long id = 0;
-		while(!stack.empty()) {
-			Outline node = stack.pop();
-			node.setId(id);
-			id++;
-			if (node.next != null) stack.push(node.next);
-			if (node.down != null) stack.push(node.down);
-		}
-		
-		/* levels */
-		stack.clear();
-		for(Outline node = outlineRoot; node != null; node = node.next) {
-			node.setLevel(0);
-			stack.push(node);
-		}
-		while(!stack.empty()) {
-			Outline node = stack.pop();
-			for(Outline child = node.down; child != null; child = child.next) {
-				//parentMap.put(child.getId(), node);
-				child.setLevel(node.getLevel() + 1);
-				stack.push(child);
-			}
-		}
-
-		return outlineRoot;
-	}
-	
-	/**
-	 * Get page text (usually known as text reflow in some apps). Better text reflow coming... eventually.
-	 */
-	synchronized public native String getText(int page);
+// 	/**
+// 	 * Get document outline.
+// 	 */
+// 	synchronized private native Outline getOutlineNative();
+// 	
+// 	/**
+// 	 * Get outline.
+// 	 * Calls getOutlineNative and then calculates ids and levels.
+// 	 * @return outline with correct id and level fields set.
+// 	 */
+// 	synchronized public Outline getOutline() {
+// 		Outline outlineRoot = this.getOutlineNative();
+// 		if (outlineRoot == null) return null;
+// 		Stack<Outline> stack = new Stack<Outline>();
+// 
+// 		/* ids */
+// 		stack.push(outlineRoot);
+// 		long id = 0;
+// 		while(!stack.empty()) {
+// 			Outline node = stack.pop();
+// 			node.setId(id);
+// 			id++;
+// 			if (node.next != null) stack.push(node.next);
+// 			if (node.down != null) stack.push(node.down);
+// 		}
+// 		
+// 		/* levels */
+// 		stack.clear();
+// 		for(Outline node = outlineRoot; node != null; node = node.next) {
+// 			node.setLevel(0);
+// 			stack.push(node);
+// 		}
+// 		while(!stack.empty()) {
+// 			Outline node = stack.pop();
+// 			for(Outline child = node.down; child != null; child = child.next) {
+// 				//parentMap.put(child.getId(), node);
+// 				child.setLevel(node.getLevel() + 1);
+// 				stack.push(child);
+// 			}
+// 		}
+// 
+// 		return outlineRoot;
+// 	}
+// 	
+// 	/**
+// 	 * Get page text (usually known as text reflow in some apps). Better text reflow coming... eventually.
+// 	 */
+// 	synchronized public native String getText(int page);
 	// #endif
 	
 	/**

@@ -2,11 +2,11 @@
 <resources>
     
 <!-- #ifdef lite -->
-<!-- <string name="app_name">APV PDF Visualizzatore</string> -->
+<string name="app_name">APV PDF Visualizzatore</string>
 <!--  #endif -->
 
 <!-- #ifdef pro -->
-<string name="app_name">APV PDF Visualizzatore Pro</string>
+<!-- <string name="app_name">APV PDF Visualizzatore Pro</string> -->
 <!--  #endif -->
     
 	<string name="about">Info</string>

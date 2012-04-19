@@ -16,7 +16,7 @@ public class FindResult {
 	/**
 	 * Logging tag.
 	 */
-	public static final String TAG = "cx.hell.android.pdfviewpro";
+	public static final String TAG = "cx.hell.android.pdfview";
 	
 	/**
 	 * Page number.
