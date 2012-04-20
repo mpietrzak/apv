@@ -35,6 +35,7 @@ public class PDFPagesProvider extends PagesProvider {
 	private int extraCache = 0;
 	private boolean omitImages;
 	Activity activity = null;
+	private static final int MB = 1024*1024;
 
 	public void setGray(boolean gray) {
 		if (this.gray == gray)
@@ -56,8 +57,20 @@ public class PDFPagesProvider extends PagesProvider {
 	
 	/* also calculates renderAhead */
 	private void setMaxCacheSize() {
-		int maxMax = (int)(7*1024*1024) + this.extraCache; /* at most allocate this much unless absolutely necessary */
-		int minMax = 4*1024*1024; /* at least allocate this much */
+		long availLong = (long)(Runtime.getRuntime().maxMemory() - 4 * MB);
+		
+		int avail;
+		if (availLong > 256*MB)
+			avail = 256*MB;
+		else
+			avail = (int)availLong;
+		
+		int maxMax = 7*MB + this.extraCache; /* at most allocate this much unless absolutely necessary */
+		if (maxMax < avail)
+			maxMax = avail;		
+		int minMax = 4*MB; /* at least allocate this much */
+		if (maxMax < minMax)
+			maxMax = minMax;
 
 		int screenHeight = activity.getWindowManager().getDefaultDisplay().getHeight();
 		int screenWidth = activity.getWindowManager().getDefaultDisplay().getWidth(); 
@@ -88,15 +101,18 @@ public class PDFPagesProvider extends PagesProvider {
 		if (m < minMax)
 			m = minMax;
 
+		if (m + 20*MB <= maxMax)
+			m = maxMax - 20 * MB;
+		
 		if (m < maxMax) {
 			m += this.extraCache;
 			if (maxMax < m)
 				m = maxMax;
 		}
 		
-		Log.v(TAG, "Setting cache size="+m+ " renderAhead="+renderAhead+" for "+screenWidth+"x"+screenHeight);
+		Log.v(TAG, "Setting cache size="+m+ " renderAhead="+renderAhead+" for "+screenWidth+"x"+screenHeight+" (avail="+avail+")");
 		
-		this.bitmapCache.setMaxCacheSizeBytes(m);
+		this.bitmapCache.setMaxCacheSizeBytes((int)m);
 	}
 	
 
