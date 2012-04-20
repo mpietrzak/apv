@@ -547,30 +547,52 @@ public class PagesView extends View implements
 		LinkedList<Tile> visibleTiles = new LinkedList<Tile>();
 		float currentMarginX = this.getCurrentMarginX();
 		float currentMarginY = this.getCurrentMarginY();
-		float renderAhead = this.pagesProvider.getRenderAhead();
 		
 		if (this.pagesProvider != null) {
             if (this.zoomLevel < 5)
-                this.zoomLevel = 5;            
+                this.zoomLevel = 5;
+
+			int pageCount = this.pageSizes.length;
 
 			viewx0 = this.left - this.width/2;
 			viewy0 = this.top - this.height/2;
 
-			int pageCount = this.pageSizes.length;
-
-			/* We now adjust the position to make sure we don't scroll too
-			 * far away from the document text.
-			 */
-			int oldviewx0 = viewx0;
-			int oldviewy0 = viewy0;
-
-			viewx0 = adjustPosition(viewx0, width, (int)currentMarginX,
-					getCurrentMaxPageWidth());
-			viewy0 = adjustPosition(viewy0, height, (int)currentMarginY,
-					(int)getCurrentDocumentHeight());
+			int adjScreenLeft;
+			int adjScreenTop;
+			int adjScreenWidth;
+			int adjScreenHeight;
+			float renderAhead;
 			
-			this.left += viewx0 - oldviewx0;
-			this.top += viewy0 - oldviewy0;
+			if (mtZoomActive) {
+				adjScreenWidth = (int)(this.width / mtZoomValue);
+				adjScreenLeft = this.width/2 - adjScreenWidth/2;
+				adjScreenHeight = (int)(this.height / mtZoomValue);
+				adjScreenTop = this.height/2 - adjScreenHeight/2;
+				renderAhead = 1f;
+				Log.v(TAG, "adj:"+ adjScreenLeft+" "+adjScreenTop+" "+adjScreenWidth+" "+adjScreenHeight);
+			}
+			else {
+				/* We now adjust the position to make sure we don't scroll too
+				 * far away from the document text.
+				 */
+				int oldviewx0 = viewx0;
+				int oldviewy0 = viewy0;
+	
+				viewx0 = adjustPosition(viewx0, width, (int)currentMarginX,
+						getCurrentMaxPageWidth());
+				viewy0 = adjustPosition(viewy0, height, (int)currentMarginY,
+						(int)getCurrentDocumentHeight());
+				
+				this.left += viewx0 - oldviewx0;
+				this.top += viewy0 - oldviewy0;
+
+				adjScreenWidth = this.width;
+				adjScreenLeft = 0;
+				adjScreenHeight = this.height;
+				adjScreenTop = 0;
+				
+				renderAhead = this.pagesProvider.getRenderAhead();
+			}
 
 			float currpageoff = currentMarginY;
 
@@ -578,7 +600,7 @@ public class PagesView extends View implements
 			
 			pagey0 = 0;
 			int[] tileSizes = new int[2];
-
+			
 			for(int i = 0; i < pageCount; ++i) {
 				// is page i visible?
 
@@ -592,17 +614,19 @@ public class PagesView extends View implements
 				
 				if (rectsintersect(
 							(int)pagex0, (int)pagey0, (int)pagex1, (int)pagey1, // page rect in doc
-							viewx0, viewy0, viewx0 + this.width, 
-							viewy0 + (int)(renderAhead*this.height) // viewport rect in doc, or close enough to it 
+							viewx0 + adjScreenLeft, 
+							viewy0 + adjScreenTop, 
+							viewx0 + adjScreenLeft + adjScreenWidth, 
+							viewy0 + adjScreenTop + (int)(renderAhead*adjScreenHeight) // viewport rect in doc, or close enough to it
 						))
 				{
 					if (this.currentPage == -1)  {
 						// remember the currently displayed page
 						this.currentPage = i;
 					}
-					
-					x = (int)pagex0 - viewx0;
-					y = (int)pagey0 - viewy0;
+									
+					x = (int)pagex0 - viewx0 - adjScreenLeft;
+					y = (int)pagey0 - viewy0 - adjScreenTop;
 					
 					getGoodTileSizes(tileSizes, pageWidth, pageHeight);
 					
@@ -614,12 +638,16 @@ public class PagesView extends View implements
 							dst.right = dst.left + tileSizes[0];
 							dst.bottom = dst.top + tileSizes[1];	
 						
-							if (dst.intersects(0, 0, this.width, (int)(renderAhead*this.height))) {
+							if (dst.intersects(0, 0, adjScreenWidth, 
+									(int)(renderAhead*adjScreenHeight))) {
 
 								Tile tile = new Tile(i, (int)(this.zoomLevel * scaling0), 
 										tileix*tileSizes[0], tileiy*tileSizes[1], this.rotation,
 										tileSizes[0], tileSizes[1]);
-								if (dst.intersects(0, 0, this.width, this.height)) {
+								
+								if (dst.intersects(0, 0, 
+										adjScreenWidth,
+										adjScreenHeight)) {
 									Bitmap b = this.pagesProvider.getPageBitmap(tile);
 									if (b != null) {
 										//Log.d(TAG, "  have bitmap: " + b + ", size: " + b.getWidth() + " x " + b.getHeight());
@@ -638,8 +666,14 @@ public class PagesView extends View implements
 											dst.bottom = (int)(y + pageHeight);
 										}
 										
-										drawBitmap(canvas, b, src, dst);
+										if (mtZoomActive) {
+											dst.left = (int) ((dst.left-adjScreenWidth/2) * mtZoomValue + this.width/2); 
+											dst.right = (int) ((dst.right-adjScreenWidth/2) * mtZoomValue + this.width/2); 
+											dst.top = (int) ((dst.top-adjScreenHeight/2) * mtZoomValue + this.height/2); 
+											dst.bottom = (int) ((dst.bottom-adjScreenHeight/2) * mtZoomValue + this.height/2); 
+										}
 										
+										drawBitmap(canvas, b, src, dst);
 									}
 								}
 								if (!mtZoomActive)
