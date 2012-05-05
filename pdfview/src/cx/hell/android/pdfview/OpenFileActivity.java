@@ -72,7 +72,6 @@ import cx.hell.android.lib.pdf.PDF;
  */
 @SuppressWarnings("unused")
 public class OpenFileActivity extends Activity implements SensorEventListener {
-	
 	private final static String TAG = "cx.hell.android.pdfview";
 	
 	private final static int[] zoomAnimations = {
@@ -178,6 +177,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 		R.drawable.btn_zoom_width, R.drawable.red_btn_zoom_width, R.drawable.green_btn_zoom_width		
 	};
 	private float[] gravity = { 0f, -9.81f, 0f};
+	private long gravityAge = 0;
 
 	private int prevOrientation;
 
@@ -330,6 +330,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 			sensorManager = null;
 			SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(this).edit();
 			edit.putInt(Options.PREF_PREV_ORIENTATION, prevOrientation);
+			Log.v(TAG, "prevOrientation saved: "+prevOrientation);
 			edit.commit();
 		}		
 	}
@@ -348,9 +349,11 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 				gravity[0] = 0f;
 				gravity[1] = -9.81f;
 				gravity[2] = 0f;
+				gravityAge = 0;
 				sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
 						SensorManager.SENSOR_DELAY_NORMAL);
 				this.prevOrientation = options.getInt(Options.PREF_PREV_ORIENTATION, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+				setRequestedOrientation(this.prevOrientation);
 			}
 			else {
 				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -618,6 +621,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
     
     private void setOrientation(int orientation) {
     	if (orientation != this.prevOrientation) {
+    		Log.v(TAG, "setOrientation: "+orientation);
     		setRequestedOrientation(orientation);
     		this.prevOrientation = orientation;
     	}
@@ -1271,6 +1275,13 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 		float sq0 = gravity[0]*gravity[0];
 		float sq1 = gravity[1]*gravity[1];
 		float sq2 = gravity[2]*gravity[2];
+		
+		gravityAge++;
+		
+		if (gravityAge < 4) {
+			// ignore initial hiccups
+			return;
+		}
 		
 		if (sq1 > 3 * (sq0 + sq2)) {
 			if (gravity[1] > 4) 
