@@ -10,8 +10,11 @@ import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 public class Options extends PreferenceActivity implements OnSharedPreferenceChangeListener {
+	private final static String TAG = "cx.hell.android.pdfview";
+
 	public final static String PREF_TAG = "Options";
 	public final static String PREF_ZOOM_ANIMATION = "zoomAnimation";
 	public final static String PREF_DIRS_FIRST = "dirsFirst";
@@ -235,7 +238,9 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 			activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 			break;			
 		case 3:
-			activity.setRequestedOrientation(options.getInt(Options.PREF_PREV_ORIENTATION, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));
+			int prev = options.getInt(Options.PREF_PREV_ORIENTATION, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+			Log.v(TAG, "restoring orientation: "+prev);
+			activity.setRequestedOrientation(prev);
 			return true;
 		default:
 			break;
