@@ -2,11 +2,20 @@ LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_ARM_MODE := arm
+LOCAL_CFLAGS := -DNOCJK -O3
+
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+  LOCAL_CFLAGS += -DJDCT_FASTEST=JDCT_FLOAT -DARCH_ARM
+  LOCAL_ARM_MODE := arm
+endif
+
+ifeq ($(TARGET_ARCH_ABI),armeabi)
+  LOCAL_CFLAGS += -DARCH_ARM
+  LOCAL_ARM_MODE := arm
+endif
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../fitz $(LOCAL_PATH)/../../freetype-overtlay/include $(LOCAL_PATH)/../../freetype/include $(LOCAL_PATH)/..
 LOCAL_MODULE    := pdf
-LOCAL_CFLAGS := -DNOCJK -O3 -DARCH_ARM
 LOCAL_SRC_FILES := \
 	apv_pdf_debug.c \
 	pdf_lex.c \

@@ -2,13 +2,18 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_CFLAGS := -O3 -DARCH_ARM
+LOCAL_CFLAGS := -O3
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
-  LOCAL_CFLAGS += -DJDCT_FASTEST=JDCT_FLOAT
+  LOCAL_CFLAGS += -DJDCT_FASTEST=JDCT_FLOAT -DARCH_ARM
+  LOCAL_ARM_MODE := arm
 endif
 
-LOCAL_ARM_MODE := arm
+ifeq ($(TARGET_ARCH_ABI),armeabi)
+  LOCAL_CFLAGS += -DARCH_ARM
+  LOCAL_ARM_MODE := arm
+endif
+
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../mupdf $(LOCAL_PATH)/../../jpeg \
 	$(LOCAL_PATH)/../../freetype-overlay/include $(LOCAL_PATH)/../../freetype/include \
