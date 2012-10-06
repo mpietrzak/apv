@@ -4,19 +4,17 @@
 SCRIPTDIR=`dirname $0`
 MUPDF_FILE=mupdf-snapshot-20111207.tar.gz
 MUPDF=mupdf
-#MUPDF_FILE=mupdf-0.9-source.tar.gz
-#MUPDF=mupdf-0.9
-FREETYPE=freetype-2.4.6
-OPENJPEG=openjpeg_v1_4_sources_r697
+FREETYPE=freetype-2.4.10
+OPENJPEG=openjpeg-1.5.1
 JBIG2DEC=jbig2dec-0.11
-JPEGSRC=jpegsrc.v8a.tar.gz
-JPEGDIR=jpeg-8a
+JPEGSRC=jpegsrc.v8d.tar.gz
+JPEGDIR=jpeg-8d
 
 cd $SCRIPTDIR/../deps
 tar xvf $FREETYPE.tar.bz2
 tar xvf $JPEGSRC
 tar xvf $MUPDF_FILE
-tar xvf $OPENJPEG.tgz
+tar xvf $OPENJPEG.tar.gz
 tar xvf $JBIG2DEC.tar.gz
 cp $OPENJPEG/libopenjpeg/*.[ch] ../jni/openjpeg/
 echo '#define PACKAGE_VERSION' '"'$OPENJPEG'"' > ../jni/openjpeg/opj_config.h
