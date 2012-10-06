@@ -25,7 +25,12 @@ LOCAL_SRC_FILES := \
 	t1_generate_luts.c \
 	t2.c \
 	tcd.c \
-	tgt.c
+	tgt.c \
+	cidx_manager.c \
+	tpix_manager.c \
+	ppix_manager.c \
+	thix_manager.c \
+	phix_manager.c
 
 
 include $(BUILD_STATIC_LIBRARY)

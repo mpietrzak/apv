@@ -53,11 +53,6 @@ glob:pdfview/jni/jpeg/Makefile.am
 syntax: regexp
 ^pdfview/jni/jpeg/(?!.*\.mk$).+
 
-
-glob:pdfview/deps
-
-
-
 glob:pdfview/jni/pdfview2/.*.swp
 glob:pdfview/jni/mupdf/COPYING
 glob:pdfview/jni/mupdf/Jamfile
@@ -70,3 +65,10 @@ regexp:^pdfview/jni/mupdf/Makefile$
 regexp:^pdfview/\.settings$
 
 glob:pdfview/obj
+syntax: glob
+pdfview/deps/freetype-2.4.10
+pdfview/deps/jpeg-8d
+pdfview/deps/mupdf-1.1-source
+pdfview/deps/openjpeg-1.5.1
+pdfview/deps/jbig2dec-0.11
+pdfview/deps/mupdf
