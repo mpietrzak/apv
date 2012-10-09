@@ -70,8 +70,8 @@ import cx.hell.android.lib.pdf.PDF;
 /**
  * Document display activity.
  */
-@SuppressWarnings("unused")
 public class OpenFileActivity extends Activity implements SensorEventListener {
+
 	private final static String TAG = "cx.hell.android.pdfview";
 	
 	private final static int[] zoomAnimations = {
@@ -506,10 +506,10 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 	    if (!this.pdf.isValid()) {
 	    	Log.v(TAG, "Invalid PDF");
 	    	if (this.pdf.isInvalidPassword()) {
-	    		Toast.makeText(this, "This file needs a password", 4000).show();
+	    		Toast.makeText(this, "This file needs a password", Toast.LENGTH_SHORT).show();
 	    	}
 	    	else {
-	    		Toast.makeText(this, "Invalid PDF file", 4000).show();
+	    		Toast.makeText(this, "Invalid PDF file", Toast.LENGTH_SHORT).show();
 	    	}
 	    	return;
 	    }
@@ -1048,8 +1048,9 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 		 */
 		private List<FindResult> findOnPage(int page) {
 			if (this.text == null) throw new IllegalStateException("text cannot be null");
-			return this.parent.pdf.find(this.text, page);
+			return this.parent.pdf.find(this.text, page, this.parent.pagesView.getPageRotation());
 		}
+
 		private void createDialog() {
 			this.parent.runOnUiThread(new Runnable() {
 				public void run() {

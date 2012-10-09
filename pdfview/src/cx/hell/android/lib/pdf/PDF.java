@@ -261,17 +261,17 @@ public class PDF {
 	/**
 	 * Find text on given page, return list of find results.
 	 */
-	synchronized public native List<FindResult> find(String text, int page);
+	synchronized public native List<FindResult> find(String text, int page, int rotation);
 	
 	/**
 	 * Clear search.
 	 */
 	synchronized public native void clearFindResult();
 	
-	/**
-	 * Find text on page, return find results.
-	 */
-	synchronized public native List<FindResult> findOnPage(int page, String text);
+//	/**
+//	 * Find text on page, return find results.
+//	 */
+//	synchronized public native List<FindResult> findOnPage(int page, String text);
 
 	// #ifdef pro
 // 	/**

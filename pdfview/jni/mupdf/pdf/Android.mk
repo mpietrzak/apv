@@ -24,6 +24,7 @@ LOCAL_SRC_FILES := \
 	pdf_repair.c \
 	pdf_stream.c \
 	pdf_xref.c \
+	pdf_xref_aux.c \
 	pdf_annot.c \
 	pdf_outline.c \
 	pdf_cmap.c \
@@ -41,6 +42,7 @@ LOCAL_SRC_FILES := \
 	pdf_image.c \
 	pdf_pattern.c \
 	pdf_shade.c \
+	pdf_object.c \
 	pdf_xobject.c \
 	pdf_interpret.c \
 	pdf_page.c \

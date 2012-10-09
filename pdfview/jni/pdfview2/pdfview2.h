@@ -12,22 +12,21 @@
 
 #define MAX_BOX_NAME 8
 
+#define ABS(x) ((x) < 0 ? -(x) : (x))
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
+
 /**
  * Holds pdf info.
  */
 typedef struct {
     int last_pageno;
-    pdf_xref *xref;
-    fz_outline *outline; // for latest snapshot
-//    pdf_outline *outline;  // for 0.9
+    fz_context *ctx;
+    fz_document *doc;
     int fileno; /* used only when opening by file descriptor */
     int invalid_password;
-    pdf_page **pages; /* lazy-loaded pages */
-    fz_glyph_cache *glyph_cache;
     char box[MAX_BOX_NAME + 1];
 } pdf_t;
-
-
 
 
 /*
@@ -36,6 +35,7 @@ typedef struct {
 
 
 pdf_t* create_pdf_t();
+void free_pdf_t(pdf_t *pdf);
 pdf_t* parse_pdf_file(const char *filename, int fileno, const char* password);
 pdf_t* get_pdf_from_this(JNIEnv *env, jobject this);
 void get_size(JNIEnv *env, jobject size, int *width, int *height);
@@ -49,7 +49,7 @@ void set_find_result_page(JNIEnv *env, jobject findResult, int page);
 void add_find_result_marker(JNIEnv *env, jobject findResult, int x0, int y0, int x1, int y1);
 void add_find_result_to_list(JNIEnv *env, jobject *list, jobject find_result);
 int convert_point_pdf_to_apv(pdf_t *pdf, int page, int *x, int *y);
-int convert_box_pdf_to_apv(pdf_t *pdf, int page, fz_bbox *bbox);
+int convert_box_pdf_to_apv(pdf_t *pdf, int page, int rotation, fz_rect *bbox);
 int find_next(JNIEnv *env, jobject this, int direction);
 pdf_page* get_page(pdf_t *pdf, int pageno);
 

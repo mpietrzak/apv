@@ -64,11 +64,13 @@ glob:.DS_Store
 regexp:^pdfview/jni/mupdf/Makefile$
 regexp:^pdfview/\.settings$
 
-glob:pdfview/obj
 syntax: glob
+pdfview/obj
 pdfview/deps/freetype-2.4.10
 pdfview/deps/jpeg-8d
 pdfview/deps/mupdf-1.1-source
 pdfview/deps/openjpeg-1.5.1
 pdfview/deps/jbig2dec-0.11
 pdfview/deps/mupdf
+fontdump
+opj_config.h
