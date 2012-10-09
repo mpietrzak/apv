@@ -20,8 +20,8 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/../mupdf $(LOCAL_PATH)/../../jpeg \
 	$(LOCAL_PATH)/../../jbig2dec $(LOCAL_PATH)/../../openjpeg
 LOCAL_MODULE := fitz
 LOCAL_SRC_FILES := \
+	base_context.c \
 	base_error.c \
-	base_object.c \
 	base_hash.c \
 	base_memory.c \
 	base_string.c \
@@ -32,21 +32,17 @@ LOCAL_SRC_FILES := \
 	crypt_md5.c \
 	crypt_sha2.c \
 	\
-	obj_print.c \
-	\
 	stm_buffer.c \
 	stm_open.c \
 	stm_read.c \
 	\
 	filt_basic.c \
-	\
 	filt_dctd.c \
 	filt_faxd.c \
 	filt_flate.c \
 	filt_lzwd.c \
 	filt_predict.c \
 	filt_jbig2d.c \
-	filt_jpxd.c \
 	\
 	res_colorspace.c \
 	res_font.c \
@@ -54,11 +50,18 @@ LOCAL_SRC_FILES := \
 	res_shade.c \
 	res_text.c \
 	res_path.c \
+	res_bitmap.c \
+	res_store.c \
+	\
+	image_jpx.c \
 	\
 	dev_list.c \
 	dev_text.c \
 	dev_bbox.c \
-	dev_null.c
+	dev_null.c \
+	\
+	doc_document.c \
+	doc_link.c
 
 
 include $(BUILD_STATIC_LIBRARY)

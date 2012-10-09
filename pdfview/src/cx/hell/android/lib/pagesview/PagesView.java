@@ -143,7 +143,12 @@ public class PagesView extends View implements
 	/**
 	 * Paint used to draw find results.
 	 */
-	private Paint findResultsPaint = null;
+	private Paint findResultsPaint1 = null;
+	
+	/**
+	 * Paint used to draw find results.
+	 */
+	private Paint findResultsPaint2 = null;
 	
 	/**
 	 * Currently displayed find results.
@@ -198,11 +203,16 @@ public class PagesView extends View implements
 		this.activity = activity;
 		this.actions = null;
 		this.lastControlsUseMillis = System.currentTimeMillis();
-		this.findResultsPaint = new Paint();
-		this.findResultsPaint.setARGB(0xd0, 0xc0, 0, 0);
-		this.findResultsPaint.setStyle(Paint.Style.FILL);
-		this.findResultsPaint.setAntiAlias(true);
-		this.findResultsPaint.setStrokeWidth(3);
+		this.findResultsPaint1 = new Paint();
+		this.findResultsPaint1.setARGB(0x80, 0x80, 0x80, 0x80);
+		this.findResultsPaint1.setStyle(Paint.Style.STROKE);
+		this.findResultsPaint1.setAntiAlias(true);
+		this.findResultsPaint1.setStrokeWidth(3);
+		this.findResultsPaint2 = new Paint();
+		this.findResultsPaint2.setARGB(0xd0, 0xc5, 0, 0);
+		this.findResultsPaint2.setStyle(Paint.Style.STROKE);
+		this.findResultsPaint2.setAntiAlias(true);
+		this.findResultsPaint2.setStrokeWidth(3);
 		this.setOnTouchListener(this);
 		this.setOnKeyListener(this);
 		activity.setDefaultKeyMode(Activity.DEFAULT_KEYS_SEARCH_LOCAL);
@@ -739,19 +749,29 @@ public class PagesView extends View implements
 			float pagey = pagePosition.y;
 			float z = (this.scaling0 * (float)this.zoomLevel * 0.001f);
 			while(i.hasNext()) {
+				int marg = 5;
+				int offs = 2;
 				r = i.next();
-				canvas.drawLine(
-						r.left * z + pagex, r.top * z + pagey,
-						r.left * z + pagex, r.bottom * z + pagey,
-						this.findResultsPaint);
-				canvas.drawLine(
-						r.left * z + pagex, r.bottom * z + pagey,
-						r.right * z + pagex, r.bottom * z + pagey,
-						this.findResultsPaint);
-				canvas.drawLine(
-						r.right * z + pagex, r.bottom * z + pagey,
-						r.right * z + pagex, r.top * z + pagey,
-						this.findResultsPaint);
+				canvas.drawRect(
+						r.left * z + pagex - marg + offs, r.top * z + pagey - marg + offs,
+						r.right * z + pagex + marg + offs, r.bottom * z + pagey + marg + offs,
+						this.findResultsPaint1);
+				canvas.drawRect(
+						r.left * z + pagex - marg, r.top * z + pagey - marg,
+						r.right * z + pagex + marg, r.bottom * z + pagey + marg,
+						this.findResultsPaint2);
+//				canvas.drawLine(
+//						r.left * z + pagex, r.top * z + pagey,
+//						r.left * z + pagex, r.bottom * z + pagey,
+//						this.findResultsPaint);
+//				canvas.drawLine(
+//						r.left * z + pagex, r.bottom * z + pagey,
+//						r.right * z + pagex, r.bottom * z + pagey,
+//						this.findResultsPaint);
+//				canvas.drawLine(
+//						r.right * z + pagex, r.bottom * z + pagey,
+//						r.right * z + pagex, r.top * z + pagey,
+//						this.findResultsPaint);
 //			canvas.drawRect(
 //					r.left * z + pagex,
 //					r.top * z + pagey,
@@ -799,7 +819,6 @@ public class PagesView extends View implements
 	 */
 	public boolean onTouch(View v, MotionEvent event) {
 		this.lastControlsUseMillis = System.currentTimeMillis();
-		Log.v(TAG, ""+event.getAction());
 		if (!gestureDetector.onTouchEvent(event)) {
 			// Log.v(TAG, ""+event.getAction());
 			if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -832,7 +851,6 @@ public class PagesView extends View implements
 							this.mtZoomValue = 0.1f;
 						else if (mtZoomValue > 10f)
 							this.mtZoomValue = 10f;
-						Log.v(TAG, "MT zoom "+this.mtZoomValue);
 						invalidate();
 					}
 				}
@@ -1239,7 +1257,7 @@ public class PagesView extends View implements
 	 * 
 	 * @return the current rotation
 	 */
-	public int getRotation() {
+	public int getPageRotation() {
 		return rotation;
 	}
 	
@@ -1316,6 +1334,9 @@ public class PagesView extends View implements
 	public void zoomWidth() {
 		int page = currentPage < 0 ? 0 : currentPage;
 		int pageWidth = getCurrentPageWidth(page);
+		if (pageWidth <= 0) {
+			throw new RuntimeException("invalid page " + page + " with: " + pageWidth); 
+		}
 		this.top = (this.top - this.height / 2) * this.width / pageWidth + this.height / 2;
 		this.zoomLevel = this.zoomLevel * (this.width - 2*marginX) / pageWidth;
 		this.left = (int) (this.width/2);

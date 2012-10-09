@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
         package="cx.hell.android.pdfview"
-        android:installLocation="auto" android:versionCode="33010" android:versionName="0.3.3dev01">
+        android:installLocation="auto" android:versionCode="33020" android:versionName="0.3.3dev02"
+        android:debuggable="true">
         
     <!--
         version code:
@@ -10,20 +11,23 @@
         
         where E is eabi version:
 
-         - both is 0
+         - armeabi and armeabi-v7a is 0
          - armeabi is 1
          - armeabi-v7a is 2
+         - intel is 3
          
-        this way armeabi-v7a will be choosen for devices supporting both architectures
-        
+        this way armeabi-v7a will be choosen for devices supporting
+        armeabi and armeabi-v7a architectures
+
         version code scheme will probably be revised to better fit what's described here:
         <http://developer.android.com/guide/market/publishing/multiple-apks.html#VersionCodes>
         
     -->
-    
+
 
     <!-- 3 is 1.5 or later, that's more than 99% of devices -->
-	<uses-sdk android:minSdkVersion="3" android:targetSdkVersion="10"/>
+    <!-- TODO: temp changed minSdkVersion to 5, should be 3 -->
+	<uses-sdk android:minSdkVersion="5" android:targetSdkVersion="10" android:maxSdkVersion="16"/>
 
 	<supports-screens
             android:smallScreens="true"
