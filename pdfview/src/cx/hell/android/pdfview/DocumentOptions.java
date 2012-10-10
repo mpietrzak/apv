@@ -2,10 +2,8 @@ package cx.hell.android.pdfview;
 
 // #ifdef pro
 // 
-// import java.text.SimpleDateFormat;
 // import java.util.ArrayList;
 // import java.util.Collections;
-// import java.util.Date;
 // import java.util.HashMap;
 // import java.util.Iterator;
 // import java.util.List;
@@ -27,17 +25,15 @@ package cx.hell.android.pdfview;
 // 	
 // 	private final static String TAG = "cx.hell.android.pdfview";
 // 	
-// 	private final static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//	/**
+//	 * Database holds at most this many documents.
+//	 */
+//	private final static int MAX_ENTRIES = 1024;
 // 	
-// 	/**
-// 	 * Database holds at most this many documents.
-// 	 */
-// 	private final static int MAX_ENTRIES = 1024;
-// 	
-// 	/**
-// 	 * Database deletes entries older than MAX_AGE_SEC seconds.
-// 	 */
-// 	private final static long MAX_AGE_SEC = 3600 * 24 * 30 * 6; // 6 months
+//	/**
+//	 * Database deletes entries older than MAX_AGE_SEC seconds.
+//	 */
+//	private final static long MAX_AGE_SEC = 3600 * 24 * 30 * 6; // 6 months
 // 	
 // 	/**
 // 	 * Map of sql statements used to create database objects.
@@ -77,13 +73,6 @@ package cx.hell.android.pdfview;
 // 		this.sqliteDatabase = context.openOrCreateDatabase("document_options", Context.MODE_PRIVATE, null);
 // 		this.setupDatabase();
 // 		this.upsertValueStatement = this.sqliteDatabase.compileStatement(UPSERT_VALUE_SQL);
-// 	}
-// 	
-// 	/**
-// 	 * Format date as String.
-// 	 */
-// 	private String formatDate(Date date) {
-// 		return DocumentOptions.dateFormat.format(date);
 // 	}
 // 	
 // 	/**
