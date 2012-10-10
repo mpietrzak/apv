@@ -241,7 +241,7 @@ Java_cx_hell_android_lib_pdf_PDF_getPageSize(
 //         return NULL;
 //     }
 // 
-//     outline = pdf_load_outline(pdf->xref);
+//     outline = fz_load_outline(pdf->doc);
 //     if (outline == NULL) return NULL;
 // 
 //     /* recursively copy fz_outline to PDF.Outline */
@@ -904,71 +904,6 @@ pdf_t* parse_pdf_file(const char *filename, int fileno, const char* password) {
 }*/
 
 
-// /**
-//  * Lazy get-or-load page.
-//  * Only PDFVIEW_MAX_PAGES_LOADED pages can be loaded at the time.
-//  * @param pdf pdf struct
-//  * @param pageno 0-based page number
-//  * @return pdf_page
-//  */
-// pdf_page* get_page(pdf_t *pdf, int pageno) {
-//     fz_error error = 0;
-//     int loaded_pages = 0;
-//     int pagecount;
-// 
-//     pagecount = pdf_count_pages(pdf->xref);
-// 
-//     if (!pdf->pages) {
-//         int i;
-//         pdf->pages = (pdf_page**)malloc(pagecount * sizeof(pdf_page*));
-//         for(i = 0; i < pagecount; ++i) pdf->pages[i] = NULL;
-//     }
-// 
-//     if (!pdf->pages[pageno]) {
-//         pdf_page *page = NULL;
-//         int loaded_pages = 0;
-//         int i = 0;
-// 
-//         for(i = 0; i < pagecount; ++i) {
-//             if (pdf->pages[i]) loaded_pages++;
-//         }
-// 
-//         #if 0
-//         if (loaded_pages >= PDFVIEW_MAX_PAGES_LOADED) {
-//             int page_to_drop = 0; /* not the page number */
-//             int j = 0;
-//             __android_log_print(ANDROID_LOG_INFO, PDFVIEW_LOG_TAG, "already loaded %d pages, going to drop random one", loaded_pages);
-//             page_to_drop = rand() % loaded_pages;
-//             __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "will drop %d-th loaded page", page_to_drop);
-//             /* search for page_to_drop-th loaded page and then drop it */
-//             for(i = 0; i < pagecount; ++i) {
-//                 if (pdf->pages[i]) {
-//                     /* one of loaded pages, the j-th one */
-//                     if (j == page_to_drop) {
-//                         __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "found %d-th loaded page, it's %d-th in document, dropping now", page_to_drop, i);
-//                         pdf_droppage(pdf->pages[i]);
-//                         pdf->pages[i] = NULL;
-//                         break;
-//                     } else {
-//                         j++;
-//                     }
-//                 }
-//             }
-//         }
-//         #endif
-// 
-//         error = pdf_load_page(&page, pdf->xref, pageno);
-//         if (error) {
-//             __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "pdf_loadpage -> %d", (int)error);
-//             /* __android_log_print(ANDROID_LOG_ERROR, "cx.hell.android.pdfview", "fitz error is:\n%s", fz_errorbuf); */
-//             return NULL;
-//         }
-//         pdf->pages[pageno] = page;
-//     }
-//     return pdf->pages[pageno];
-// }
-
-
 /**
  * Get part of page as bitmap.
  * Parameters left, top, width and height are interprted after scalling, so if
@@ -1333,7 +1268,12 @@ int convert_box_pdf_to_apv(pdf_t *pdf, int page, int rotation, fz_rect *bbox) {
 //     } else {
 //         // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "title is null, won't create not set");
 //     }
-//     (*env)->SetIntField(env, joutline, page_field_id, outline->page);
+//     if (outline->dest.kind == FZ_LINK_GOTO) {
+//         (*env)->SetIntField(env, joutline, page_field_id, outline->dest.ld.gotor.page);
+//     } else {
+//         __android_log_print(ANDROID_LOG_WARN, PDFVIEW_LOG_TAG, "outline contains non-GOTO link");
+//         (*env)->SetIntField(env, joutline, page_field_id, -1);
+//     }
 //     // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "page set");
 //     if (outline->next) {
 //         jobject next_outline = NULL;
@@ -1361,24 +1301,37 @@ int convert_box_pdf_to_apv(pdf_t *pdf, int page, int rotation, fz_rect *bbox) {
 
 
 void append_chars(char **buf, size_t *buf_size, const char *new_chars, size_t new_chars_len) {
+    __android_log_print(ANDROID_LOG_DEBUG,
+            PDFVIEW_LOG_TAG,
+            "appending chars %d chars, current buf len: %d, current buf size: %d",
+            (int)new_chars_len,
+            *buf != NULL ? (int)strlen(*buf) : -1,
+            (int)*buf_size);
     if (*buf == NULL) {
         *buf = (char*)malloc(256);
+        (*buf)[0] = 0;
         *buf_size = 256;
     }
 
     size_t new_len = strlen(*buf) + new_chars_len; /* new_len is number of chars, new_len+1 is min buf size */
     if (*buf_size < (new_len + 1)) {
-        size_t new_size = (new_len + 1) * 1.5;
-        char *new_buf = (char*)realloc(*buf, new_size);
+        size_t new_size = 0; 
+        char *new_buf = NULL; 
+        __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
+                "need to resize buf");
+        new_size = (new_len + 3) * 1.5;
+        new_buf = (char*)realloc(*buf, new_size);
         *buf_size = new_size;
+        *buf = new_buf;
     }
     strlcat(*buf, new_chars, new_len+1);
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "new string after append chars: \"%s\"", *buf);
 }
 
 
 /**
  * Extract text from given pdf page.
- * Returns dynamically allocated string to be freed by caller.
+ * Returns dynamically allocated string to be freed by caller or NULL.
  */
 char* extract_text(pdf_t *pdf, int pageno) {
     fz_device *dev = NULL;
@@ -1401,12 +1354,14 @@ char* extract_text(pdf_t *pdf, int pageno) {
         return NULL;
     }
 
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "rendering page text");
     page = fz_load_page(pdf->doc, pageno);
     text_sheet = fz_new_text_sheet(pdf->ctx);
     pagebox = get_page_box(pdf, pageno);
     text_page = fz_new_text_page(pdf->ctx, pagebox);
     dev = fz_new_text_device(pdf->ctx, text_sheet, text_page);
     fz_run_page(pdf->doc, page, dev, fz_identity, NULL);
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "done rendering page text");
 
     /* for now lets just flatten */
     for(block_no = 0; block_no < text_page->len; ++block_no) {
@@ -1425,10 +1380,12 @@ char* extract_text(pdf_t *pdf, int pageno) {
         }
     }
 
-    fz_free_text_page(pdf->ctx, text_page);
-    fz_free_text_sheet(pdf->ctx, text_sheet);
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "done extracting text");
+
+    // fz_free_text_page(pdf->ctx, text_page);
+    // fz_free_text_sheet(pdf->ctx, text_sheet);
     // fz_free_page(pdf->doc, page);
-    fz_free_device(dev);
+    // fz_free_device(dev);
 
     // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "extracted text, len: %d, chars: %s", text_len, text);
     return text;
