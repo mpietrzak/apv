@@ -321,7 +321,7 @@ public class PDFPagesProvider extends PagesProvider {
 		/**
 		 * Called by outside world to provide more work for worker.
 		 * This also starts rendering thread if one is needed.
-		 * @param tiles a collection of tile objects, they carry information about what should be rendered next
+		 * @param tiles a collection of tile objects that carry information about what should be rendered next
 		 */
 		synchronized void setTiles(Collection<Tile> tiles, BitmapCache bitmapCache) {
 			this.tiles = tiles;
