@@ -159,12 +159,6 @@ public class PagesView extends View implements
 	 * hold the currently displayed page 
 	 */
 	private int currentPage = 0;
-	
-	/**
-	 * avoid too much allocations in rectsintersect()
-	 */
-	private Rect r1 = new Rect();
-	
 
 	/**
 	 * Bookmarked page to go to.
@@ -977,8 +971,19 @@ public class PagesView extends View implements
 	private boolean rectsintersect(
 			int r1x0, int r1y0, int r1x1, int r1y1,
 			int r2x0, int r2y0, int r2x1, int r2y1) {
-		r1.set(r1x0, r1y0, r1x1, r1y1);
-		return r1.intersects(r2x0, r2y0, r2x1, r2y1);
+		// r1.set(r1x0, r1y0, r1x1, r1y1);
+		// return r1.intersects(r2x0, r2y0, r2x1, r2y1);
+		// temporary "asserts"
+//		if (r1x0 > r1x1) throw new RuntimeException("invalid rect");
+//		if (r2x0 > r2x1) throw new RuntimeException("invalid rect");
+//		if (r1y0 > r1y1) throw new RuntimeException("invalid rect");
+//		if (r2y0 > r2y1) throw new RuntimeException("invalid rect");
+		return !(
+					r1x1 < r2x0 ||		// r1 left of r2
+					r1x0 > r2x1 ||		// r1 right of r2
+					r1y1 < r2y0 ||		// r1 above r2
+					r1y0 > r2y1			// r1 below r2
+				);
 	}
 	
 	/**
