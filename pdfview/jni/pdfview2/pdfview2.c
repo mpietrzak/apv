@@ -9,11 +9,7 @@
 #include "mupdf-internal.h"
 
 #define PDFVIEW_LOG_TAG "cx.hell.android.pdfview"
-#define PDFVIEW_MAX_PAGES_LOADED 16
 
-#define BITMAP_STORE_MAX_AGE  1
-#define FIND_STORE_MAX_AGE    4
-#define TEXT_STORE_MAX_AGE    4
 
 static jintArray get_page_image_bitmap(JNIEnv *env,
       pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
@@ -937,11 +933,10 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     page = fz_load_page(pdf->doc, pageno);
     if (!page) return NULL; /* TODO: handle/propagate errors */
 
-    ctm = fz_identity;
-
     fz_rect pagebox = get_page_box(pdf, pageno);
+
     /* translate coords to apv coords so we can easily cut out our tile */
-    // ctm = fz_concat(ctm, fz_translate(-trimbox.x0, -trimbox.y1));
+    ctm = fz_identity;
     ctm = fz_concat(ctm, fz_scale(zoom, zoom));
     if (rotation != 0) ctm = fz_concat(ctm, fz_rotate(-rotation * 90));
     bbox = fz_round_rect(fz_transform_rect(ctm, pagebox));
@@ -962,7 +957,6 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     */
 
     fz_run_page(pdf->doc, page, dev, ctm, NULL);
-
     fz_free_device(dev);
 
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "got image %d x %d, asked for %d x %d",
@@ -989,7 +983,7 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     *width = fz_pixmap_width(pdf->ctx, image);
     *height = fz_pixmap_height(pdf->ctx, image);
     fz_drop_pixmap(pdf->ctx, image);
-
+	fz_free_page(pdf->doc, page);
     runs += 1;
     return jints;
 }
@@ -1059,6 +1053,7 @@ fz_rect get_page_box(pdf_t *pdf, int pageno) {
         return;
     }
     box = fz_bound_page(pdf->doc, page);
+    fz_free_page(pdf->doc, page);
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
             "got page %d box: %.2f %.2f %.2f %.2f",
             pageno, box.x0, box.y0, box.x1, box.y1);
