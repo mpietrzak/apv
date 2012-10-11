@@ -26,6 +26,7 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Scroller;
 import cx.hell.android.pdfview.Actions;
+import cx.hell.android.pdfview.AndroidReflections;
 import cx.hell.android.pdfview.Bookmark;
 import cx.hell.android.pdfview.BookmarkEntry;
 import cx.hell.android.pdfview.OpenFileActivity;
@@ -801,8 +802,10 @@ public class PagesView extends View implements
 	 * @return distance in multitouch event
 	 */
 	private float distance(MotionEvent event) {
-		double dx = event.getX(0)-event.getX(1);
-		double dy = event.getY(0)-event.getY(1);
+//		double dx = event.getX(0)-event.getX(1);
+//		double dy = event.getY(0)-event.getY(1);
+		float dx = AndroidReflections.getMotionEventX(event, 0) - AndroidReflections.getMotionEventX(event, 1);
+		float dy = AndroidReflections.getMotionEventY(event, 0) - AndroidReflections.getMotionEventY(event, 1);
 		return (float)Math.sqrt(dx*dx+dy*dy);
 	}
 
@@ -825,7 +828,7 @@ public class PagesView extends View implements
 				scroller = null;
 			}
 	        else if (event.getAction() == MotionEvent.ACTION_POINTER_2_DOWN
-	        		&& event.getPointerCount() >= 2) {
+	        		&& AndroidReflections.getMotionEventPointerCount(event) >= 2) {
 	        	float d = distance(event);
 	        	if (d > 20f) {
 		        	this.mtZoomActive = true;
@@ -835,7 +838,7 @@ public class PagesView extends View implements
 	        	}
 	        }
 			else if (event.getAction() == MotionEvent.ACTION_MOVE){
-				if (this.mtZoomActive && event.getPointerCount() >= 2) {
+				if (this.mtZoomActive && AndroidReflections.getMotionEventPointerCount(event) >= 2) {
 					float d = distance(event);
 					if (d > 20f) {
 						d = .6f * this.mtLastDistance + .4f * d;
