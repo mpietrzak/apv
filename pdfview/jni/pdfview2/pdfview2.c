@@ -951,10 +951,8 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     fz_clear_pixmap_with_value(pdf->ctx, image, gray ? 0 : 0xff);
     dev = fz_new_draw_device(pdf->ctx, image);
 
-    /*
     if (skipImages)
         dev->hints |= FZ_IGNORE_IMAGE;
-    */
 
     fz_run_page(pdf->doc, page, dev, ctm, NULL);
     fz_free_device(dev);
