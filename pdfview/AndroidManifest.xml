@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
         package="cx.hell.android.pdfview"
-        android:installLocation="auto" android:versionCode="33020" android:versionName="0.3.3dev02"
+        android:installLocation="auto" android:versionCode="33030" android:versionName="0.3.3dev03"
         android:debuggable="true">
         
     <!--
@@ -26,8 +26,7 @@
 
 
     <!-- 3 is 1.5 or later, that's more than 99% of devices -->
-    <!-- TODO: temp changed minSdkVersion to 5, should be 3 -->
-	<uses-sdk android:minSdkVersion="5" android:targetSdkVersion="10" android:maxSdkVersion="16"/>
+	<uses-sdk android:minSdkVersion="3" android:targetSdkVersion="10" android:maxSdkVersion="16"/>
 
 	<supports-screens
             android:smallScreens="true"
