@@ -147,7 +147,7 @@ Java_cx_hell_android_lib_pdf_PDF_getPageCount(
 	pdf_t *pdf = NULL;
     pdf = get_pdf_from_this(env, this);
 	if (pdf == NULL) {
-        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "pdf is null");
+        // __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "pdf is null");
         return -1;
     }
 	return fz_count_pages(pdf->doc);
@@ -173,10 +173,12 @@ Java_cx_hell_android_lib_pdf_PDF_renderPage(
 
     get_size(env, size, &width, &height);
 
+    /*
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "jni renderPage(pageno: %d, zoom: %d, left: %d, top: %d, width: %d, height: %d) start",
             (int)pageno, (int)zoom,
             (int)left, (int)top,
             (int)width, (int)height);
+    */
 
     pdf = get_pdf_from_this(env, this);
 
@@ -241,7 +243,7 @@ Java_cx_hell_android_lib_pdf_PDF_getPageSize(
 //     /* recursively copy fz_outline to PDF.Outline */
 //     /* TODO: rewrite pdf_load_outline to create Java's PDF.Outline objects directly */
 //     joutline = create_outline_recursive(env, NULL, outline);
-//     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "joutline converted");
+//     // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "joutline converted");
 //     return joutline;
 // }
 // #endif
@@ -423,25 +425,21 @@ Java_cx_hell_android_lib_pdf_PDF_find(
     text_page = fz_new_text_page(pdf->ctx, pagebox);
     dev = fz_new_text_device(pdf->ctx, sheet, text_page);
 
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
-            "about to run page on tex device");
     fz_run_page(pdf->doc, page, dev, fz_identity, NULL);
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
-            "run done");
 
     /* search text_page by extracting wchar_t text for each line */
     for(block_no = 0; block_no < text_page->len; ++block_no) {  /* for each block */
-        __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "checking block %d of %d", block_no, text_page->len);
+        // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "checking block %d of %d", block_no, text_page->len);
         text_block = &(text_page->blocks[block_no]);
         for(line_no = 0; line_no < text_block->len; ++line_no) {  /* for each line */
-            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "checking line %d of %d", line_no, text_block->len);
+            // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "checking line %d of %d", line_no, text_block->len);
             text_line = &(text_block->lines[line_no]);
             /* cound chars in line */
             textlinechars_len = 0;
             for(span_no = 0; span_no < text_line->len; ++span_no) {
                 textlinechars_len += text_line->spans[span_no].len;
             }
-            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "text line chars len: %d", textlinechars_len);
+            // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "text line chars len: %d", textlinechars_len);
             textlinechars = (wchar_t*)malloc((textlinechars_len + 1) * sizeof(wchar_t));
             textlineboxes = (fz_rect*)malloc(textlinechars_len * sizeof(fz_rect));
             /* copy chars and boxes */
@@ -457,9 +455,9 @@ Java_cx_hell_android_lib_pdf_PDF_find(
             }
             textlinechars[textlinechars_len] = 0;
 
-            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "copied textlinechars");
+            // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "copied textlinechars");
             found = widestrstr(textlinechars, textlinechars_len, ctext, needle_len);
-            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "widestrstr result: %d", (int)found);
+            // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "widestrstr result: %d", (int)found);
             if (found) {
                 int i = 0; /* used for char in textlinechars */
                 int i0 = 0, i1 = 0; /* indexes of match in textlinechars */
@@ -468,7 +466,7 @@ Java_cx_hell_android_lib_pdf_PDF_find(
                 fz_rect charbox;
                 i0 = found - textlinechars;
                 i1 = i0 + needle_len;
-                __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "copying chars from %d to %d", i0, i1);
+                // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "copying chars from %d to %d", i0, i1);
                 for(i = i0; i < i1; ++i) {
                     charbox = textlineboxes[i];
                     convert_box_pdf_to_apv(pdf, pageno, rotation, &charbox);
@@ -476,12 +474,12 @@ Java_cx_hell_android_lib_pdf_PDF_find(
                             charbox.x0, charbox.y0,
                             charbox.x1, charbox.y1);
                 }
-                __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "adding find result to list");
+                // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "adding find result to list");
                 add_find_result_to_list(env, &results, find_result);
-                __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "added find result to list");
+                // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "added find result to list");
             }
 
-            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "freeing textlinechars and textlineboxes");
+            // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "freeing textlinechars and textlineboxes");
             free(textlinechars);
             textlinechars = NULL;
             free(textlineboxes);
@@ -489,14 +487,14 @@ Java_cx_hell_android_lib_pdf_PDF_find(
         }
     }
 
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "freeing text_page, sheet, dev");
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "freeing text_page, sheet, dev");
     // fz_free_text_page(pdf->ctx, text_page);
     // fz_free_device(dev);
 
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "freeing ctext");
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "freeing ctext");
     free(ctext);
     (*env)->ReleaseStringChars(env, text, jtext);
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "returning results");
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "returning results");
     return results;
 }
 
@@ -577,7 +575,7 @@ void add_find_result_to_list(JNIEnv *env, jobject *list, jobject find_result) {
     }
     if (*list == NULL) {
         jmethodID list_constructor_id;
-        __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "creating ArrayList");
+        // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "creating ArrayList");
         list_class = (*env)->FindClass(env, "java/util/ArrayList");
         if (list_class == NULL) {
             __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "couldn't find class java/util/ArrayList");
@@ -585,12 +583,12 @@ void add_find_result_to_list(JNIEnv *env, jobject *list, jobject find_result) {
         }
         list_constructor_id = (*env)->GetMethodID(env, list_class, "<init>", "()V");
         if (!list_constructor_id) {
-            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "couldn't find ArrayList constructor");
+            __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "couldn't find ArrayList constructor");
             return;
         }
         *list = (*env)->NewObject(env, list_class, list_constructor_id);
         if (*list == NULL) {
-            __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "failed to create ArrayList: NewObject returned NULL");
+            __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "failed to create ArrayList: NewObject returned NULL");
             return;
         }
     }
@@ -611,9 +609,9 @@ void add_find_result_to_list(JNIEnv *env, jobject *list, jobject find_result) {
         jni_ids_cached = 1;
     } 
 
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "calling ArrayList.add");
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "calling ArrayList.add");
     (*env)->CallBooleanMethod(env, *list, list_add_method_id, find_result);
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "add_find_result_to_list done");
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "add_find_result_to_list done");
 }
 
 
@@ -626,14 +624,14 @@ void add_find_result_to_list(JNIEnv *env, jobject *list, jobject find_result) {
 void set_find_result_page(JNIEnv *env, jobject findResult, int page) {
     static char jni_ids_cached = 0;
     static jfieldID page_field_id = 0;
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "trying to set find results page number");
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "trying to set find results page number");
     if (jni_ids_cached == 0) {
         jclass findResultClass = (*env)->GetObjectClass(env, findResult);
         page_field_id = (*env)->GetFieldID(env, findResultClass, "page", "I");
         jni_ids_cached = 1;
     }
     (*env)->SetIntField(env, findResult, page_field_id, page);
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "find result page number set");
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "find result page number set");
 }
 
 
@@ -671,7 +669,7 @@ pdf_t* get_pdf_from_this(JNIEnv *env, jobject this) {
     static jfieldID field_id = 0;
     static unsigned char field_is_cached = 0;
     pdf_t *pdf = NULL;
-    if (! field_is_cached) {
+    if (!field_is_cached) {
         jclass this_class = (*env)->GetObjectClass(env, this);
         field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
         field_is_cached = 1;
@@ -698,7 +696,7 @@ int get_descriptor_from_file_descriptor(JNIEnv *env, jobject this) {
         is_cached = 1;
         __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "cached descriptor field id %d", (int)field_id);
     }
-    __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "will get descriptor field...");
+    // __android_log_print(ANDROID_LOG_DEBUG, "cx.hell.android.pdfview", "will get descriptor field...");
     return (*env)->GetIntField(env, this, field_id);
 }
 
@@ -840,7 +838,7 @@ pdf_t* parse_pdf_file(const char *filename, int fileno, const char* password) {
     pdf_t *pdf;
     fz_stream *stream = NULL;
 
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "parse_pdf_file(%s, %d)", filename, fileno);
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "parse_pdf_file(%s, %d)", filename, fileno);
 
     pdf = create_pdf_t();
 
@@ -920,7 +918,7 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     jintArray jints; /* return value */
     int *jbuf; /* pointer to internal jint */
 
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "get_page_image_bitmap(pageno: %d) start", (int)pageno);
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "get_page_image_bitmap(pageno: %d) start", (int)pageno);
 
     zoom = (double)zoom_pmil / 1000.0;
 
@@ -955,9 +953,11 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     fz_run_page(pdf->doc, page, dev, ctm, NULL);
     fz_free_device(dev);
 
+    /*
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "got image %d x %d, asked for %d x %d",
             fz_pixmap_width(pdf->ctx, image), fz_pixmap_height(pdf->ctx, image),
             *width, *height);
+    */
 
     /* TODO: learn jni and avoid copying bytes ;) */
     num_pixels = fz_pixmap_width(pdf->ctx, image) * fz_pixmap_height(pdf->ctx, image);
@@ -986,7 +986,7 @@ int get_page_size(pdf_t *pdf, int pageno, int *width, int *height) {
     fz_rect rect = get_page_box(pdf, pageno);
     *width = rect.x1 - rect.x0;
     *height = rect.y1 - rect.y0;
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "get_page_size(%d) -> %d %d", pageno, *width, *height);
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "get_page_size(%d) -> %d %d", pageno, *width, *height);
     return 0;
 }
 
@@ -999,7 +999,7 @@ fz_rect get_page_box(pdf_t *pdf, int pageno) {
     fz_page *page = NULL;
     if (pdf->box && pdf->box[0] && strcmp(pdf->box, "MediaBox") != 0) {
         /* only get box this way if pdf->box and pdf->box != "MediaBox" */
-        __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "getting page box using pdf_dict_gets (pdf->box: %s)", pdf->box);
+        // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "getting page box using pdf_dict_gets (pdf->box: %s)", pdf->box);
         pdf_obj *pageobj = NULL;
         pdf_obj *obj = NULL;
         pdf_document *xref = NULL;
@@ -1020,7 +1020,7 @@ fz_rect get_page_box(pdf_t *pdf, int pageno) {
         }
     }
     /* if above didn't return... */
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "getting page box using fz_bound_page (pdf->box: %s)", pdf->box);
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "getting page box using fz_bound_page (pdf->box: %s)", pdf->box);
     page = fz_load_page(pdf->doc, pageno);
     if (!page) {
         __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG,
@@ -1029,9 +1029,11 @@ fz_rect get_page_box(pdf_t *pdf, int pageno) {
     }
     box = fz_bound_page(pdf->doc, page);
     fz_free_page(pdf->doc, page);
+    /*
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
             "got page %d box: %.2f %.2f %.2f %.2f",
             pageno, box.x0, box.y0, box.x1, box.y1);
+    */
     return box;
 }
 
@@ -1107,22 +1109,16 @@ int convert_box_pdf_to_apv(pdf_t *pdf, int page, int rotation, fz_rect *bbox) {
     float height = 0;
     float width = 0;
 
+    /*
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
             "convert_box_pdf_to_apv(page: %d, bbox: %.2f %.2f %.2f %.2f)",
             page, bbox->x0, bbox->y0, bbox->x1, bbox->y1);
+    */
 
     param_bbox = *bbox;
 
     page_bbox = get_page_box(pdf, page);
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "page bbox is %.1f, %.1f, %.1f, %.1f", page_bbox.x0, page_bbox.y0, page_bbox.x1, page_bbox.y1);
-    /*
-    rotateobj = fz_dict_gets(pageobj, "Rotate");
-    if (fz_is_int(rotateobj)) {
-        rotate = fz_to_int(rotateobj);
-    } else {
-        rotate = 0;
-    }
-    */
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "page bbox is %.1f, %.1f, %.1f, %.1f", page_bbox.x0, page_bbox.y0, page_bbox.x1, page_bbox.y1);
 
     if (rotation != 0) {
         fz_matrix m;
@@ -1151,9 +1147,11 @@ int convert_box_pdf_to_apv(pdf_t *pdf, int page, int rotation, fz_rect *bbox) {
     bbox->y0 = height - (MAX(param_bbox.y0, param_bbox.y1) - MIN(page_bbox.y0, page_bbox.y1));
     */
 
+    /*
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
             "result after transformations: %.2f, %.2f, %.2f, %.2f",
             bbox->x0, bbox->y0, bbox->x1, bbox->y1);
+    */
 
     return 0;
 }
@@ -1271,12 +1269,14 @@ int convert_box_pdf_to_apv(pdf_t *pdf, int page, int rotation, fz_rect *bbox) {
 
 
 void append_chars(char **buf, size_t *buf_size, const char *new_chars, size_t new_chars_len) {
+    /*
     __android_log_print(ANDROID_LOG_DEBUG,
             PDFVIEW_LOG_TAG,
             "appending chars %d chars, current buf len: %d, current buf size: %d",
             (int)new_chars_len,
             *buf != NULL ? (int)strlen(*buf) : -1,
             (int)*buf_size);
+    */
     if (*buf == NULL) {
         *buf = (char*)malloc(256);
         (*buf)[0] = 0;
@@ -1287,15 +1287,17 @@ void append_chars(char **buf, size_t *buf_size, const char *new_chars, size_t ne
     if (*buf_size < (new_len + 1)) {
         size_t new_size = 0; 
         char *new_buf = NULL; 
+        /*
         __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
                 "need to resize buf");
+        */
         new_size = (new_len + 3) * 1.5;
         new_buf = (char*)realloc(*buf, new_size);
         *buf_size = new_size;
         *buf = new_buf;
     }
     strlcat(*buf, new_chars, new_len+1);
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "new string after append chars: \"%s\"", *buf);
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "new string after append chars: \"%s\"", *buf);
 }
 
 
@@ -1324,14 +1326,14 @@ char* extract_text(pdf_t *pdf, int pageno) {
         return NULL;
     }
 
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "rendering page text");
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "rendering page text");
     page = fz_load_page(pdf->doc, pageno);
     text_sheet = fz_new_text_sheet(pdf->ctx);
     pagebox = get_page_box(pdf, pageno);
     text_page = fz_new_text_page(pdf->ctx, pagebox);
     dev = fz_new_text_device(pdf->ctx, text_sheet, text_page);
     fz_run_page(pdf->doc, page, dev, fz_identity, NULL);
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "done rendering page text");
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "done rendering page text");
 
     /* for now lets just flatten */
     for(block_no = 0; block_no < text_page->len; ++block_no) {
@@ -1350,7 +1352,7 @@ char* extract_text(pdf_t *pdf, int pageno) {
         }
     }
 
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "done extracting text");
+    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "done extracting text");
 
     // fz_free_text_page(pdf->ctx, text_page);
     // fz_free_text_sheet(pdf->ctx, text_sheet);
