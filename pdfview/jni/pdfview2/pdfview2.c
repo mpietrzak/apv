@@ -13,7 +13,7 @@
 
 static jintArray get_page_image_bitmap(JNIEnv *env,
       pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
-      int gray, int skipImages,
+      int skipImages,
       int *width, int *height);
 static void copy_alpha(unsigned char* out, unsigned char *in, unsigned int w, unsigned int h);
 fz_rect get_page_box(pdf_t *pdf, int pageno);
@@ -163,7 +163,6 @@ Java_cx_hell_android_lib_pdf_PDF_renderPage(
         jint left,
         jint top,
         jint rotation,
-        jboolean gray,
         jboolean skipImages,
         jobject size) {
 
@@ -181,8 +180,7 @@ Java_cx_hell_android_lib_pdf_PDF_renderPage(
 
     pdf = get_pdf_from_this(env, this);
 
-    jints = get_page_image_bitmap(env, pdf, pageno, zoom, left, top, rotation, gray,
-          skipImages, &width, &height);
+    jints = get_page_image_bitmap(env, pdf, pageno, zoom, left, top, rotation, skipImages, &width, &height);
 
     if (jints != NULL)
         save_size(env, size, width, height);
@@ -908,7 +906,7 @@ pdf_t* parse_pdf_file(const char *filename, int fileno, const char* password) {
  */
 static jintArray get_page_image_bitmap(JNIEnv *env,
       pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
-      int gray, int skipImages,
+      int skipImages,
       int *width, int *height) {
     unsigned char *bytes = NULL;
     fz_matrix ctm;
@@ -947,8 +945,8 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     bbox.x1 = bbox.x0 + *width;
     bbox.y1 = bbox.y0 + *height;
 
-    image = fz_new_pixmap_with_bbox(pdf->ctx, gray ? fz_device_gray : fz_device_bgr, bbox);
-    fz_clear_pixmap_with_value(pdf->ctx, image, gray ? 0 : 0xff);
+    image = fz_new_pixmap_with_bbox(pdf->ctx, fz_device_bgr, bbox);
+    fz_clear_pixmap_with_value(pdf->ctx, image, 0xff);
     dev = fz_new_draw_device(pdf->ctx, image);
 
     if (skipImages)
@@ -963,19 +961,9 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
 
     /* TODO: learn jni and avoid copying bytes ;) */
     num_pixels = fz_pixmap_width(pdf->ctx, image) * fz_pixmap_height(pdf->ctx, image);
-
     jints = (*env)->NewIntArray(env, num_pixels);
 	jbuf = (*env)->GetIntArrayElements(env, jints, NULL);
-    if (gray) {
-        copy_alpha(
-                (unsigned char*)jbuf,
-                fz_pixmap_samples(pdf->ctx, image),
-                fz_pixmap_width(pdf->ctx, image),
-                fz_pixmap_height(pdf->ctx, image));
-    }
-    else {
-        memcpy(jbuf, fz_pixmap_samples(pdf->ctx, image), num_pixels * 4);
-    }
+    memcpy(jbuf, fz_pixmap_samples(pdf->ctx, image), num_pixels * 4);
     (*env)->ReleaseIntArrayElements(env, jints, jbuf, 0);
 
     *width = fz_pixmap_width(pdf->ctx, image);
@@ -985,17 +973,6 @@ static jintArray get_page_image_bitmap(JNIEnv *env,
     runs += 1;
     return jints;
 }
-
-
-void copy_alpha(unsigned char* out, unsigned char *in, unsigned int w, unsigned int h) {
-        unsigned int count = w*h;
-        while(count--) {
-            out+= 3;
-            *out++ = 255-((255-in[0]) * in[1])/255;
-            in += 2;
-        }
-}
-
 
 /**
  * Get page size in APV's convention.

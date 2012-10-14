@@ -31,23 +31,10 @@ public class PDFPagesProvider extends PagesProvider {
 	/* render a little more than twice the screen height, so the next page will be ready */
 	private float renderAhead = 2.1f;
 	private boolean doRenderAhead = true;
-	private boolean gray;
 	private int extraCache = 0;
 	private boolean omitImages;
 	Activity activity = null;
 	private static final int MB = 1024*1024;
-
-	public void setGray(boolean gray) {
-		if (this.gray == gray)
-			return;
-		this.gray = gray;
-		
-		if (this.bitmapCache != null) {
-			this.bitmapCache.clearCache();
-		}
-		
-		setMaxCacheSize();
-	}
 	
 	public void setExtraCache(int extraCache) {
 		this.extraCache = extraCache; 
@@ -78,9 +65,6 @@ public class PDFPagesProvider extends PagesProvider {
 		
 		if (displaySize <= 320*240)
 			displaySize = 320*240;
-		
-		if (!this.gray) 
-			displaySize *= 2;
 		
 		int m = (int)(displaySize * 1.25f * 1.0001f);
 		
@@ -390,9 +374,8 @@ public class PDFPagesProvider extends PagesProvider {
 		return this.renderAhead;
 	}
 	
-	public PDFPagesProvider(Activity activity, PDF pdf, boolean gray, boolean skipImages,
+	public PDFPagesProvider(Activity activity, PDF pdf, boolean skipImages,
 			boolean doRenderAhead) {
-		this.gray = gray;
 		this.pdf = pdf;
 		this.omitImages = skipImages;
 		this.bitmapCache = new BitmapCache();
@@ -429,7 +412,8 @@ public class PDFPagesProvider extends PagesProvider {
 	}
 	
 	/**
-	 * Really render bitmap. Takes time, should be done in background thread. Calls native code (through PDF object).
+	 * Really render bitmap. Takes time, should be done in background thread.
+	 * Calls native code (through PDF object).
 	 */
 	private Bitmap renderBitmap(Tile tile) throws RenderingException {
 		synchronized(tile) {
@@ -439,29 +423,17 @@ public class PDFPagesProvider extends PagesProvider {
 			
 			PDF.Size size = new PDF.Size(tile.getPrefXSize(), tile.getPrefYSize());
 			int[] pagebytes = null;
-			
-			long t1 =SystemClock.currentThreadTimeMillis();
+
 			pagebytes = pdf.renderPage(tile.getPage(), tile.getZoom(), tile.getX(), tile.getY(), 
-					tile.getRotation(), gray, omitImages, size); /* native */
-			Log.v(TAG, "Time:"+(SystemClock.currentThreadTimeMillis()-t1));
+					tile.getRotation(), omitImages, size); /* native */
+
 			if (pagebytes == null) throw new RenderingException("Couldn't render page " + tile.getPage());
 			
 			/* create a bitmap from the 32-bit color array */			
-	
-			if (gray) {
-				Bitmap b = Bitmap.createBitmap(pagebytes, size.width, size.height, 
-						Bitmap.Config.ARGB_8888);
-				Bitmap b2 = b.copy(Bitmap.Config.ALPHA_8, false);
-				b.recycle();
-				this.bitmapCache.put(tile, b2);
-				return b2;
-			}
-			else {
-				Bitmap b = Bitmap.createBitmap(pagebytes, size.width, size.height, 
-						Bitmap.Config.RGB_565);
-				this.bitmapCache.put(tile, b);
-				return b;
-			}
+			Bitmap b = Bitmap.createBitmap(pagebytes, size.width, size.height, 
+					Bitmap.Config.RGB_565);
+			this.bitmapCache.put(tile, b);
+			return b;
 		}
 	}
 	
