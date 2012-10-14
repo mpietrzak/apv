@@ -85,35 +85,35 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 	private static final float[][] colorMatrices = {
 		null, /* COLOR_MODE_NORMAL */
 		
-		{-1.0f, 0.0f, 0.0f, 0.0f, 255.0f, /* COLOR_MODE_INVERT */
-		0.0f, -1.0f, 0.0f, 0.0f, 255.0f,
-		0.0f, 0.0f, -1.0f, 0.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, 0.0f, 255.0f}, 
+		{-1.0f,  0.0f,   0.0f,   0.0f, 255.0f, /* COLOR_MODE_INVERT */
+		  0.0f, -1.0f,   0.0f,   0.0f, 255.0f,
+		  0.0f,  0.0f,  -1.0f,   0.0f, 255.0f,
+		  0.0f,  0.0f,   0.0f,   0.0f, 255.0f}, 
 		
-		{0.0f, 0.0f, 0.0f, 0.0f, 255.0f, /* COLOR_MODE_GRAY */
-		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, 1.0f, 0.0f},
+		{0.3f, 0.59f, 0.11f, 0.0f,   0.0f, /* COLOR_MODE_GRAY */
+		 0.3f, 0.59f, 0.11f, 0.0f,   0.0f,
+		 0.3f, 0.59f, 0.11f, 0.0f,   0.0f,
+		 0.0f, 0.0f,  0.0f,  0.0f, 255.0f},
 		
-		{0.0f, 0.0f, 0.0f, 0.0f, 255.0f, /* COLOR_MODE_INVERT_GRAY */
-		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, -1.0f, 255.0f}, 
+		{-0.3f, -0.59f, -0.11f, 0.0f, 255.0f, /* COLOR_MODE_INVERT_GRAY */
+		 -0.3f, -0.59f, -0.11f, 0.0f, 255.0f,
+		 -0.3f, -0.59f, -0.11f, 0.0f, 255.0f,
+		  0.0f,  0.0f,   0.0f,  0.0f, 255.0f}, 
 
-		{0.0f, 0.0f, 0.0f, 0.0f, 239.0f, /* COLOR_MODE_BLACK_ON_YELLOWISH */
-		0.0f, 0.0f, 0.0f, 0.0f, 219.0f,
-		0.0f, 0.0f, 0.0f, 0.0f, 189.0f,
-		0.0f, 0.0f, 0.0f, 1.0f, 0.0f},
+		{0.94f, 0.02f, 0.02f, 0.0f, 0.0f, /* COLOR_MODE_BLACK_ON_YELLOWISH */
+		 0.02f, 0.86f, 0.02f, 0.0f, 0.0f,
+		 0.02f, 0.02f, 0.74f, 0.0f, 0.0f,
+		 0.0f,  0.0f,  0.0f,  1.0f, 0.0f},
 		
-		{0.0f, 0.0f, 0.0f, 0.0f, 0f, /* COLOR_MODE_GREEN_ON_BLACK */
-		0.0f, 0.0f, 0.0f, 0.0f, 255.0f,
-		0.0f, 0.0f, 0.0f, 0.0f, 0f,
-		0.0f, 0.0f, 0.0f, -1.0f, 255.0f}, 
+		{ 0.0f,  0.0f,   0.0f,  0.0f,   0.0f, /* COLOR_MODE_GREEN_ON_BLACK */
+		 -0.3f, -0.59f, -0.11f, 0.0f, 255.0f,
+		  0.0f,  0.0f,   0.0f,  0.0f,   0.0f,
+		  0.0f,  0.0f,   0.0f,  1.0f,   0.0f}, 
 
-		{0.0f, 0.0f, 0.0f, 0.0f, 255.0f, /* COLOR_MODE_RED_ON_BLACK */
-		0.0f, 0.0f, 0.0f, 0.0f, 0f,
-		0.0f, 0.0f, 0.0f, 0.0f, 0f,
-		0.0f, 0.0f, 0.0f, -1.0f, 255.0f} 
+		{-0.3f, -0.59f, -0.11f, 0.0f, 255.0f, /* COLOR_MODE_RED_ON_BLACK */
+		 0.0f,   0.0f,   0.0f,  0.0f,   0.0f,
+		 0.0f,   0.0f,   0.0f,  0.0f,   0.0f,
+		 0.0f,   0.0f,   0.0f,  1.0f, 255.0f} 
 	};
 	
 	private Resources resources;
@@ -184,10 +184,6 @@ public class Options extends PreferenceActivity implements OnSharedPreferenceCha
 
 	public static float[] getColorModeMatrix(int colorMode) {
 		return colorMatrices[colorMode];
-	}
-	
-	public static boolean isGray(int colorMode) {
-		return COLOR_MODE_GRAY <= colorMode;
 	}
 	
 	public static int getForeColor(int colorMode) {

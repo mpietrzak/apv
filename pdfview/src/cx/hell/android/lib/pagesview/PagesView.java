@@ -694,28 +694,17 @@ public class PagesView extends View implements
 			this.pagesProvider.setVisibleTiles(visibleTiles);
 		}
 	}
-		
+	
+	/**
+	 * Draw bitmap on canvas using color mode.
+	 */
 	private void drawBitmap(Canvas canvas, Bitmap b, Rect src, Rect dst) {
 		if (colorMode != Options.COLOR_MODE_NORMAL) {
 			Paint paint = new Paint();
-			Bitmap out;
-			
-			if (b.getConfig() == Bitmap.Config.ALPHA_8) {
-				out = b.copy(Bitmap.Config.ARGB_8888, false);
-			}
-			else {
-				out = b;
-			}
-			
 			paint.setColorFilter(new 
 					ColorMatrixColorFilter(new ColorMatrix(
 							Options.getColorModeMatrix(this.colorMode))));
-
-			canvas.drawBitmap(out, src, dst, paint);
-			
-			if (b.getConfig() == Bitmap.Config.ALPHA_8) {
-				out.recycle();
-			}
+			canvas.drawBitmap(b, src, dst, paint);
 		}
 		else {
 			canvas.drawBitmap(b, src, dst, null);

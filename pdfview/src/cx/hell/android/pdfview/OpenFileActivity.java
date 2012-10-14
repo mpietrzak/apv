@@ -395,7 +395,6 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
         this.eink = options.getBoolean(Options.PREF_EINK, false);
         this.pageNumberTextView.setBackgroundColor(Options.getBackColor(colorMode));
         this.pageNumberTextView.setTextColor(Options.getForeColor(colorMode));
-        this.pdfPagesProvider.setGray(Options.isGray(this.colorMode));
         this.pdfPagesProvider.setExtraCache(1024*1024*Options.getIntFromString(options, Options.PREF_EXTRA_CACHE, 0));
         this.pdfPagesProvider.setOmitImages(options.getBoolean(Options.PREF_OMIT_IMAGES, false));
 		this.pagesView.setColorMode(this.colorMode);		
@@ -509,8 +508,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 	    	return;
 	    }
 	    this.colorMode = Options.getColorMode(options);
-	    this.pdfPagesProvider = new PDFPagesProvider(this, pdf,        		
-	    		Options.isGray(this.colorMode), 
+	    this.pdfPagesProvider = new PDFPagesProvider(this, pdf, 
 	    		options.getBoolean(Options.PREF_OMIT_IMAGES, false),
 	    		options.getBoolean(Options.PREF_RENDER_AHEAD, true));
 	    pagesView.setPagesProvider(pdfPagesProvider);

@@ -194,9 +194,7 @@ public class Bookmark {
 	/**
 	 * Hash the file name to be sure that no strange characters will be in the
 	 * DB, and include file length.
-	 * 
-	 * @param file
-	 *            path
+	 * @param file path
 	 * @return md5
 	 */
 	private String nameToMD5(String file) {
