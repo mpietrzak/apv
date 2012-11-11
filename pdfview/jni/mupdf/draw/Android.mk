@@ -19,7 +19,6 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/../mupdf $(LOCAL_PATH)/../fitz
 LOCAL_MODULE    := fitzdraw
 LOCAL_SRC_FILES := \
 	draw_device.c \
-	arch_port.c \
         draw_blend.c \
         draw_glyph.c \
         draw_affine.c \

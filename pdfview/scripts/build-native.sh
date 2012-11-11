@@ -23,6 +23,7 @@ cp $JBIG2DEC/* ../jni/jbig2dec/
 for x in draw fitz pdf ; do
     cp -r $MUPDF/$x/*.[ch] ../jni/mupdf/$x/
 done
+cp ../jni/mupdf/fitz/apv_fitz.h ../jni/mupdf/fitz/fitz.h
 cp -r $MUPDF/fonts ../jni/mupdf/
 cp -r $FREETYPE/{src,include} ../jni/freetype/
 gcc -o ../scripts/fontdump $MUPDF/scripts/fontdump.c

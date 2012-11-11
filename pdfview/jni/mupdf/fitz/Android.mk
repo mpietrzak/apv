@@ -60,7 +60,7 @@ LOCAL_SRC_FILES := \
 	dev_bbox.c \
 	dev_null.c \
 	\
-	doc_document.c \
+	apv_doc_document.c \
 	doc_link.c
 
 
