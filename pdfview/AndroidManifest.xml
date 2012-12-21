@@ -16,7 +16,7 @@
          - armeabi-v7a is 2
          - intel is 3
          
-        this way armeabi-v7a will be choosen for devices supporting
+        this way armeabi-v7a will be chosen for devices supporting
         armeabi and armeabi-v7a architectures
 
         version code scheme will probably be revised to better fit what's described here:
