@@ -325,9 +325,21 @@ public class PDF {
 	// #endif
 	
 	/**
+	 * Get current native heap size netto as reported by custom allocator.
+	 * @return native heap size netto in bytes
+	 */
+	public native int getHeapSize();
+	
+	/**
+	 * Set max heap size for native allocator.
+	 */
+	public native void setMaxHeapSize(int size);
+	
+	
+	/**
 	 * Free memory allocated in native code.
 	 */
-	synchronized private native void freeMemory();
+	synchronized public native void freeMemory();
 
 	public void finalize() {
 		try {
