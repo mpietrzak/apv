@@ -1,33 +1,29 @@
+
 #include <string.h>
 #include <wctype.h>
 #include <jni.h>
 
 #include "android/log.h"
 
-#include "pdfview2.h"
+#include "apvcore.h"
+#include "apvandroid.h"
 
 #include "mupdf-internal.h"
+
 
 #define PDFVIEW_LOG_TAG "cx.hell.android.pdfview"
 
 
-static jintArray get_page_image_bitmap(JNIEnv *env,
-      pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
-      int skipImages,
-      int *width, int *height);
-static void copy_alpha(unsigned char* out, unsigned char *in, unsigned int w, unsigned int h);
-fz_rect get_page_box(pdf_t *pdf, int pageno);
+void apv_log_print(const char *file, int line, int level, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buf[1024] = "";
+    snprintf(buf, sizeof buf, "%s:%d: %s", file, line, fmt); /* FIXME: fails if file contains '%' */
+    __android_log_vprint(level, PDFVIEW_LOG_TAG, buf, args);
+    va_end(args);
+}
 
 
-#define NUM_BOXES 5
-
-const char boxes[NUM_BOXES][MAX_BOX_NAME+1] = {
-    "ArtBox",
-    "BleedBox",
-    "CropBox",
-    "MediaBox",
-    "TrimBox"
-};
 
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *jvm, void *reserved) {
@@ -165,11 +161,13 @@ Java_cx_hell_android_lib_pdf_PDF_renderPage(
         jint rotation,
         jboolean skipImages,
         jobject size) {
-
-    jint *buf; /* rendered page, freed before return, as bitmap */
     jintArray jints; /* return value */
-    pdf_t *pdf; /* parsed pdf data, extracted from java's "this" object */
-    int width, height;
+    int *jbuf = NULL; /* points to jints internal array */
+    pdf_t *pdf = NULL; /* parsed pdf data, extracted from java's "this" object */
+    int width = 0;
+    int height = 0;
+    int num_pixels = 0;
+    fz_pixmap *image = NULL;
 
     get_size(env, size, &width, &height);
 
@@ -182,10 +180,23 @@ Java_cx_hell_android_lib_pdf_PDF_renderPage(
 
     pdf = get_pdf_from_this(env, this);
 
-    jints = get_page_image_bitmap(env, pdf, pageno, zoom, left, top, rotation, skipImages, &width, &height);
+    APV_LOG_PRINT(APV_LOG_DEBUG, "rendering page %d", pageno);
+    image = get_page_image_bitmap(pdf, pageno, zoom, left, top, rotation, skipImages, width, height);
+    num_pixels = fz_pixmap_width(pdf->ctx, image) * fz_pixmap_height(pdf->ctx, image);
+    jints = (*env)->NewIntArray(env, num_pixels);
+	jbuf = (*env)->GetIntArrayElements(env, jints, NULL);
+    memcpy(jbuf, fz_pixmap_samples(pdf->ctx, image), num_pixels * 4);
+    (*env)->ReleaseIntArrayElements(env, jints, jbuf, 0);
+    width = fz_pixmap_width(pdf->ctx, image);
+    height = fz_pixmap_height(pdf->ctx, image);
+    fz_drop_pixmap(pdf->ctx, image);
 
     if (jints != NULL)
         save_size(env, size, width, height);
+
+    APV_LOG_PRINT(APV_LOG_DEBUG, "rendered page, width: %d, height: %d", width, height);
+
+    maybe_free_cache(pdf);
 
     return jints;
 }
@@ -212,7 +223,12 @@ Java_cx_hell_android_lib_pdf_PDF_getPageSize(
         return 2;
     }
 
+    APV_LOG_PRINT(APV_LOG_DEBUG, "page size %d: %d %d", pageno, width, height);
+
     save_size(env, size, width, height);
+
+    maybe_free_cache(pdf);
+
     return 0;
 }
 
@@ -250,6 +266,34 @@ Java_cx_hell_android_lib_pdf_PDF_getPageSize(
 
 
 /**
+ * Get current netto heap size.
+ */
+JNIEXPORT jint JNICALL
+Java_cx_hell_android_lib_pdf_PDF_getHeapSize(
+        JNIEnv *env,
+        jobject this) {
+    pdf_t *pdf = NULL;
+    jclass this_class = (*env)->GetObjectClass(env, this);
+    jfieldID pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
+    pdf = (pdf_t*) (*env)->GetIntField(env, this, pdf_field_id);
+    return pdf->alloc_state->current_size;
+}
+
+/**
+ *
+ */
+JNIEXPORT void JNICALL
+Java_cx_hell_android_lib_pdf_PDF_setMaxHeapSize(
+        JNIEnv *env,
+        jobject this,
+        jint size) {
+    pdf_t *pdf = get_pdf_from_this(env, this);
+    pdf->alloc_state->max_size = size;
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "setMaxHeapSize: max heap size is now %d", pdf->alloc_state->max_size);
+}
+
+
+/**
  * Free resources allocated in native code.
  */
 JNIEXPORT void JNICALL
@@ -263,7 +307,9 @@ Java_cx_hell_android_lib_pdf_PDF_freeMemory(
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "jni freeMemory()");
 	pdf = (pdf_t*) (*env)->GetIntField(env, this, pdf_field_id);
 	(*env)->SetIntField(env, this, pdf_field_id, 0);
-    free_pdf_t(pdf);
+    if (pdf) {
+        free_pdf_t(pdf);
+    }
 }
 
 
@@ -335,37 +381,6 @@ Java_cx_hell_android_pdfview_PDF_export(
 }
 #endif
 
-
-/* wcsstr() seems broken--it matches too much */
-wchar_t* widestrstr(wchar_t* haystack, int haystack_length, wchar_t* needle, int needle_length) {
-    char* found;
-    int byte_haystack_length;
-    int byte_needle_length;
-
-    if (needle_length == 0)
-         return haystack;
-         
-    byte_haystack_length = haystack_length * sizeof(wchar_t);
-    byte_needle_length = needle_length * sizeof(wchar_t);
-
-    while(haystack_length >= needle_length &&
-        NULL != (found = memmem(haystack, byte_haystack_length, needle, byte_needle_length))) {
-          int delta = found - (char*)haystack;
-          int new_offset;
-
-          /* Check if the find is wchar_t-aligned */
-          if (delta % sizeof(wchar_t) == 0)
-              return (wchar_t*)found;
-
-          new_offset = (delta + sizeof(wchar_t) - 1) / sizeof(wchar_t);
-
-          haystack += new_offset;
-          haystack_length -= new_offset;
-          byte_haystack_length = haystack_length * sizeof(wchar_t);
-    }
-
-    return NULL;
-}
 
 /* TODO: Specialcase searches for 7-bit text to make them faster */
 JNIEXPORT jobject JNICALL
@@ -740,42 +755,6 @@ void save_size(JNIEnv *env, jobject size, int width, int height) {
 }
 
 
-/**
- * pdf_t "constructor": create empty pdf_t with default values.
- * @return newly allocated pdf_t struct with fields set to default values
- */
-pdf_t* create_pdf_t() {
-    pdf_t *pdf = NULL;
-    pdf = (pdf_t*)malloc(sizeof(pdf_t));
-
-    pdf->ctx = NULL;
-    pdf->doc = NULL;
-    pdf->fileno = -1;
-    pdf->invalid_password = 0;
-
-    pdf->box[0] = 0;
-    
-    return pdf;
-}
-
-
-/**
- * free pdf_t
- */
-void free_pdf_t(pdf_t *pdf) {
-    if (pdf->doc) {
-        fz_close_document(pdf->doc);
-        pdf->doc = NULL;
-    }
-    if (pdf->ctx) {
-        fz_free_context(pdf->ctx);
-        pdf->ctx = NULL;
-    }
-    free(pdf);
-}
-
-
-
 #if 0
 /**
  * Parse bytes into PDF struct.
@@ -831,48 +810,6 @@ pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len, jstring box_name) {
 
 
 /**
- * Parse file into PDF struct.
- * Use filename if it's not null, otherwise use fileno.
- */
-pdf_t* parse_pdf_file(const char *filename, int fileno, const char* password) {
-    pdf_t *pdf;
-    fz_stream *stream = NULL;
-
-    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "parse_pdf_file(%s, %d)", filename, fileno);
-
-    pdf = create_pdf_t();
-
-    if (pdf->ctx == NULL) {
-        pdf->ctx = fz_new_context(NULL, NULL, 1024 * 1024);
-    }
-
-    if (filename) {
-        stream = fz_open_file(pdf->ctx, (char*)filename);
-    } else {
-        stream = fz_open_fd(pdf->ctx, fileno);
-    }
-    pdf->doc = (fz_document*) pdf_open_document_with_stream(stream);
-    fz_close(stream); /* pdf->doc holds ref */
-
-    pdf->invalid_password = 0;
-
-    if (fz_needs_password(pdf->doc)) {
-        int authenticated = 0;
-        authenticated = fz_authenticate_password(pdf->doc, (char*)password);
-        if (!authenticated) {
-            /* TODO: ask for password */
-            __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "failed to authenticate");
-            pdf->invalid_password = 1;
-            return pdf;
-        }
-    }
-    
-    pdf->last_pageno = -1;
-    return pdf;
-}
-
-
-/**
  * Calculate zoom to best match given dimensions.
  * There's no guarantee that page zoomed by resulting zoom will fit rectangle max_width x max_height exactly.
  * @param max_width expected max width
@@ -894,267 +831,6 @@ pdf_t* parse_pdf_file(const char *filename, int fileno, const char* password) {
 
     return zoom;
 }*/
-
-
-/**
- * Get part of page as bitmap.
- * Parameters left, top, width and height are interprted after scalling, so if
- * we have 100x200 page scalled by 25% and request 0x0 x 25x50 tile, we should
- * get 25x50 bitmap of whole page content. pageno is 0-based.
- */
-static jintArray get_page_image_bitmap(JNIEnv *env,
-      pdf_t *pdf, int pageno, int zoom_pmil, int left, int top, int rotation,
-      int skipImages,
-      int *width, int *height) {
-    unsigned char *bytes = NULL;
-    fz_matrix ctm;
-    double zoom;
-    fz_bbox bbox;
-    fz_page *page = NULL;
-    fz_pixmap *image = NULL;
-    static int runs = 0;
-    fz_device *dev = NULL;
-    int num_pixels;
-    jintArray jints; /* return value */
-    int *jbuf; /* pointer to internal jint */
-
-    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "get_page_image_bitmap(pageno: %d) start", (int)pageno);
-
-    zoom = (double)zoom_pmil / 1000.0;
-
-    if (pdf->last_pageno != pageno) {
-        pdf->last_pageno = pageno;
-    }
-
-    page = fz_load_page(pdf->doc, pageno);
-    if (!page) return NULL; /* TODO: handle/propagate errors */
-
-    fz_rect pagebox = get_page_box(pdf, pageno);
-
-    /* translate coords to apv coords so we can easily cut out our tile */
-    ctm = fz_identity;
-    ctm = fz_concat(ctm, fz_scale(zoom, zoom));
-    if (rotation != 0) ctm = fz_concat(ctm, fz_rotate(-rotation * 90));
-    bbox = fz_round_rect(fz_transform_rect(ctm, pagebox));
-
-    /* now bbox holds page after transform, but we only need tile at (left,right) from top-left corner */
-    bbox.x0 = bbox.x0 + left;
-    bbox.y0 = bbox.y0 + top;
-    bbox.x1 = bbox.x0 + *width;
-    bbox.y1 = bbox.y0 + *height;
-
-    image = fz_new_pixmap_with_bbox(pdf->ctx, fz_device_bgr, bbox);
-    fz_clear_pixmap_with_value(pdf->ctx, image, 0xff);
-    dev = fz_new_draw_device(pdf->ctx, image);
-
-    if (skipImages)
-        dev->hints |= FZ_IGNORE_IMAGE;
-
-    fz_run_page(pdf->doc, page, dev, ctm, NULL);
-    fz_free_device(dev);
-
-    /*
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "got image %d x %d, asked for %d x %d",
-            fz_pixmap_width(pdf->ctx, image), fz_pixmap_height(pdf->ctx, image),
-            *width, *height);
-    */
-
-    /* TODO: learn jni and avoid copying bytes ;) */
-    num_pixels = fz_pixmap_width(pdf->ctx, image) * fz_pixmap_height(pdf->ctx, image);
-    jints = (*env)->NewIntArray(env, num_pixels);
-	jbuf = (*env)->GetIntArrayElements(env, jints, NULL);
-    memcpy(jbuf, fz_pixmap_samples(pdf->ctx, image), num_pixels * 4);
-    (*env)->ReleaseIntArrayElements(env, jints, jbuf, 0);
-
-    *width = fz_pixmap_width(pdf->ctx, image);
-    *height = fz_pixmap_height(pdf->ctx, image);
-    fz_drop_pixmap(pdf->ctx, image);
-	fz_free_page(pdf->doc, page);
-    runs += 1;
-    return jints;
-}
-
-/**
- * Get page size in APV's convention.
- * @param page 0-based page number
- * @param pdf pdf struct
- * @param width target for width value
- * @param height target for height value
- * @return error code - 0 means ok
- */
-int get_page_size(pdf_t *pdf, int pageno, int *width, int *height) {
-    fz_rect rect = get_page_box(pdf, pageno);
-    *width = rect.x1 - rect.x0;
-    *height = rect.y1 - rect.y0;
-    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "get_page_size(%d) -> %d %d", pageno, *width, *height);
-    return 0;
-}
-
-
-/**
- * Get page box.
- */
-fz_rect get_page_box(pdf_t *pdf, int pageno) {
-    fz_rect box;
-    fz_page *page = NULL;
-    if (pdf->box && pdf->box[0] && strcmp(pdf->box, "MediaBox") != 0) {
-        /* only get box this way if pdf->box and pdf->box != "MediaBox" */
-        // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "getting page box using pdf_dict_gets (pdf->box: %s)", pdf->box);
-        pdf_obj *pageobj = NULL;
-        pdf_obj *obj = NULL;
-        pdf_document *xref = NULL;
-        xref = (pdf_document*)pdf->doc;
-        pageobj = xref->page_objs[pageno];
-        obj = pdf_dict_gets(pageobj, pdf->box);
-        if (obj && pdf_is_array(obj)) {
-            box = pdf_to_rect(pdf->ctx, obj);
-            obj = pdf_dict_gets(pageobj, "UserUnit");
-            if (pdf_is_real(obj)) {
-                float unit = pdf_to_real(obj);
-                box.x0 *= unit;
-                box.y0 *= unit;
-                box.x1 *= unit;
-                box.y1 *= unit;
-            }
-            return box;
-        }
-    }
-    /* if above didn't return... */
-    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "getting page box using fz_bound_page (pdf->box: %s)", pdf->box);
-    page = fz_load_page(pdf->doc, pageno);
-    if (!page) {
-        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG,
-                "fz_load_page(..., %d) -> NULL", pageno);
-        return;
-    }
-    box = fz_bound_page(pdf->doc, page);
-    fz_free_page(pdf->doc, page);
-    /*
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
-            "got page %d box: %.2f %.2f %.2f %.2f",
-            pageno, box.x0, box.y0, box.x1, box.y1);
-    */
-    return box;
-}
-
-
-#if 0
-/**
- * Convert coordinates from pdf to APVs.
- * TODO: faster? lazy?
- * @return error code, 0 means ok
- */
-int convert_point_pdf_to_apv(pdf_t *pdf, int page, int *x, int *y) {
-    fz_error error = 0;
-    fz_obj *pageobj = NULL;
-    fz_obj *rotateobj = NULL;
-    fz_obj *sizeobj = NULL;
-    fz_rect bbox;
-    int rotate = 0;
-    fz_point p;
-
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "convert_point_pdf_to_apv()");
-
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "trying to convert %d x %d to APV coords", *x, *y);
-
-    pageobj = pdf_getpageobject(pdf->xref, page+1);
-    if (!pageobj) return -1;
-    sizeobj = fz_dictgets(pageobj, pdf->box);
-    if (sizeobj == NULL)
-        sizeobj = fz_dictgets(pageobj, "MediaBox");
-    if (!sizeobj) return -1;
-    bbox = pdf_torect(sizeobj);
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "page bbox is %.1f, %.1f, %.1f, %.1f", bbox.x0, bbox.y0, bbox.x1, bbox.y1);
-    rotateobj = fz_dictgets(pageobj, "Rotate");
-    if (fz_isint(rotateobj)) {
-        rotate = fz_toint(rotateobj);
-    } else {
-        rotate = 0;
-    }
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "rotate is %d", (int)rotate);
-
-    p.x = *x;
-    p.y = *y;
-
-    if (rotate != 0) {
-        fz_matrix m;
-        m = fz_rotate(-rotate);
-        bbox = fz_transformrect(m, bbox);
-        p = fz_transformpoint(m, p);
-    }
-
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "after rotate bbox is: %.1f, %.1f, %.1f, %.1f", bbox.x0, bbox.y0, bbox.x1, bbox.y1);
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "after rotate point is: %.1f, %.1f", p.x, p.y);
-
-    *x = p.x - MIN(bbox.x0,bbox.x1);
-    *y = MAX(bbox.y1, bbox.y0) - p.y;
-
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "result is: %d, %d", *x, *y);
-
-    return 0;
-}
-#endif
-
-
-/**
- * Convert coordinates from pdf to APV.
- * Result is stored in location pointed to by bbox param.
- * This function has to get page box relative to which bbox is located.
- * This function should not allocate any memory.
- * @return error code, 0 means ok
- */
-int convert_box_pdf_to_apv(pdf_t *pdf, int page, int rotation, fz_rect *bbox) {
-    fz_rect page_bbox;
-    fz_rect param_bbox;
-    float height = 0;
-    float width = 0;
-
-    /*
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
-            "convert_box_pdf_to_apv(page: %d, bbox: %.2f %.2f %.2f %.2f)",
-            page, bbox->x0, bbox->y0, bbox->x1, bbox->y1);
-    */
-
-    param_bbox = *bbox;
-
-    page_bbox = get_page_box(pdf, page);
-    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "page bbox is %.1f, %.1f, %.1f, %.1f", page_bbox.x0, page_bbox.y0, page_bbox.x1, page_bbox.y1);
-
-    if (rotation != 0) {
-        fz_matrix m;
-        m = fz_rotate(-rotation * 90);
-        param_bbox = fz_transform_rect(m, param_bbox);
-        page_bbox = fz_transform_rect(m, page_bbox);
-    }
-
-    //__android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "after rotate page bbox is: %.1f, %.1f, %.1f, %.1f", page_bbox.x0, page_bbox.y0, page_bbox.x1, page_bbox.y1);
-    //__android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "after rotate param bbox is: %.1f, %.1f, %.1f, %.1f", param_bbox.x0, param_bbox.y0, param_bbox.x1, param_bbox.y1);
-
-    /* set result: param bounding box relative to left-top corner of page bounding box */
-
-    bbox->x0 = MIN(param_bbox.x0, param_bbox.x1) - MIN(page_bbox.x0, page_bbox.x1);
-    bbox->y0 = MIN(param_bbox.y0, param_bbox.y1) - MIN(page_bbox.y0, page_bbox.y1);
-    bbox->x1 = MAX(param_bbox.x0, param_bbox.x1) - MIN(page_bbox.x0, page_bbox.x1);
-    bbox->y1 = MAX(param_bbox.y0, param_bbox.y1) - MIN(page_bbox.y0, page_bbox.y1);
-
-    /*
-    width = ABS(page_bbox.x0 - page_bbox.x1);
-    height = ABS(page_bbox.y0 - page_bbox.y1);
-
-    bbox->x0 = (MIN(param_bbox.x0, param_bbox.x1) - MIN(page_bbox.x0, page_bbox.x1));
-    bbox->y1 = height - (MIN(param_bbox.y0, param_bbox.y1) - MIN(page_bbox.y0, page_bbox.y1));
-    bbox->x1 = (MAX(param_bbox.x0, param_bbox.x1) - MIN(page_bbox.x0, page_bbox.x1));
-    bbox->y0 = height - (MAX(param_bbox.y0, param_bbox.y1) - MIN(page_bbox.y0, page_bbox.y1));
-    */
-
-    /*
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
-            "result after transformations: %.2f, %.2f, %.2f, %.2f",
-            bbox->x0, bbox->y0, bbox->x1, bbox->y1);
-    */
-
-    return 0;
-}
 
 
 // #ifdef pro
@@ -1266,104 +942,6 @@ int convert_box_pdf_to_apv(pdf_t *pdf, int page, int rotation, fz_rect *bbox) {
 //     return joutline;
 // }
 // #endif
-
-
-void append_chars(char **buf, size_t *buf_size, const char *new_chars, size_t new_chars_len) {
-    /*
-    __android_log_print(ANDROID_LOG_DEBUG,
-            PDFVIEW_LOG_TAG,
-            "appending chars %d chars, current buf len: %d, current buf size: %d",
-            (int)new_chars_len,
-            *buf != NULL ? (int)strlen(*buf) : -1,
-            (int)*buf_size);
-    */
-    if (*buf == NULL) {
-        *buf = (char*)malloc(256);
-        (*buf)[0] = 0;
-        *buf_size = 256;
-    }
-
-    size_t new_len = strlen(*buf) + new_chars_len; /* new_len is number of chars, new_len+1 is min buf size */
-    if (*buf_size < (new_len + 1)) {
-        size_t new_size = 0; 
-        char *new_buf = NULL; 
-        /*
-        __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
-                "need to resize buf");
-        */
-        new_size = (new_len + 3) * 1.5;
-        new_buf = (char*)realloc(*buf, new_size);
-        *buf_size = new_size;
-        *buf = new_buf;
-    }
-    strlcat(*buf, new_chars, new_len+1);
-    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "new string after append chars: \"%s\"", *buf);
-}
-
-
-/**
- * Extract text from given pdf page.
- * Returns dynamically allocated string to be freed by caller or NULL.
- */
-char* extract_text(pdf_t *pdf, int pageno) {
-    fz_device *dev = NULL;
-    fz_page *page = NULL;
-    fz_text_sheet *text_sheet = NULL;
-    fz_text_page *text_page = NULL;
-    fz_rect pagebox;
-    int block_no = 0;
-    int line_no = 0;
-    int span_no = 0;
-    int char_no = 0;
-    char runechars[128] = "";
-    int runelen = 0;
-
-    size_t text_buf_size = 0;
-    char *text = NULL; /* utf-8 text */
-
-    if (pdf == NULL) {
-        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "extract_text: pdf is NULL");
-        return NULL;
-    }
-
-    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "rendering page text");
-    page = fz_load_page(pdf->doc, pageno);
-    text_sheet = fz_new_text_sheet(pdf->ctx);
-    pagebox = get_page_box(pdf, pageno);
-    text_page = fz_new_text_page(pdf->ctx, pagebox);
-    dev = fz_new_text_device(pdf->ctx, text_sheet, text_page);
-    fz_run_page(pdf->doc, page, dev, fz_identity, NULL);
-    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "done rendering page text");
-
-    /* for now lets just flatten */
-    for(block_no = 0; block_no < text_page->len; ++block_no) {
-        fz_text_block *text_block = &(text_page->blocks[block_no]);
-        for(line_no = 0; line_no < text_block->len; ++line_no) {
-            fz_text_line *line = &(text_block->lines[line_no]);
-            for(span_no = 0; span_no < line->len; ++span_no) {
-                fz_text_span *span = &(line->spans[span_no]);
-                for(char_no = 0; char_no < span->len; ++char_no) {
-                    fz_text_char *text_char = &(span->text[char_no]);
-                    runelen = fz_runetochar(runechars, text_char->c);
-                    append_chars(&text, &text_buf_size, runechars, runelen);
-                }
-            }
-            append_chars(&text, &text_buf_size, "\n", 1);
-        }
-    }
-
-    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "done extracting text");
-
-    // fz_free_text_page(pdf->ctx, text_page);
-    // fz_free_text_sheet(pdf->ctx, text_sheet);
-    // fz_free_page(pdf->doc, page);
-    // fz_free_device(dev);
-
-    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "extracted text, len: %d, chars: %s", text_len, text);
-    return text;
-}
-
-
 
 
 /* vim: set sts=4 ts=4 sw=4 et: */
