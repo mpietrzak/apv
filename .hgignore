@@ -74,3 +74,4 @@ pdfview/deps/jbig2dec-0.11
 pdfview/deps/mupdf
 fontdump
 opj_config.h
+pdfview/tests/bin
