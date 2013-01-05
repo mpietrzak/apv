@@ -36,7 +36,8 @@
 	
 	
 
-	<application android:icon="@drawable/pdfviewer"
+	<application android:name="cx.hell.android.pdfview.APVApplication"
+            android:icon="@drawable/pdfviewer"
             android:label="@string/app_name"
             android:allowBackup="true">
 

@@ -10,11 +10,8 @@
 
 // static void copy_alpha(unsigned char* out, unsigned char *in, unsigned int w, unsigned int h);
 
-static void *apv_malloc(void *user, unsigned int size);
-static void *aptn_realloc(void *user, void *old, unsigned int size);
-static void apv_free(void *user, void *ptr);
 
-static void *apv_malloc(void *user, unsigned int size) {
+void *apv_malloc(void *user, unsigned int size) {
     apv_alloc_state_t *state = user;
     // fprintf(stderr, "aptn_malloc: current size %u, max size %u, asked for %u\n", conf->current_size, conf->max_size, size);
     if (state->max_size > 0 && state->current_size + size > state->max_size) {
@@ -34,9 +31,11 @@ static void *apv_malloc(void *user, unsigned int size) {
         state->current_size += size;
         if (state->current_size > state->peak_size) {
             state->peak_size = state->current_size;
+#ifndef NDEBUG
             if (rand() % 10000 < 10) {
                 APV_LOG_PRINT(APV_LOG_DEBUG, "apv_malloc: peak size is now %d", state->peak_size);
             }
+#endif
         }
         // fprintf(stderr, "info addr: %p, buf addr: %p\n", info, info + sizeof(alloc_info_t));
         return buf + sizeof(apv_alloc_header_t);
@@ -44,7 +43,7 @@ static void *apv_malloc(void *user, unsigned int size) {
 }
 
 
-static void *apv_realloc(void *user, void *old, unsigned int size) {
+void *apv_realloc(void *user, void *old, unsigned int size) {
     if (old == NULL && size > 0) {
         return apv_malloc(user, size);
     } else if (old != NULL && size == 0) {
@@ -87,7 +86,7 @@ static void *apv_realloc(void *user, void *old, unsigned int size) {
 }
 
 
-static void apv_free(void *user, void *ptr) {
+void apv_free(void *user, void *ptr) {
     if (ptr) {
         apv_alloc_state_t *state = user;
         apv_alloc_header_t *header = NULL;
@@ -152,30 +151,27 @@ wchar_t* widestrstr(wchar_t* haystack, int haystack_length, wchar_t* needle, int
  * pdf_t "constructor": create empty pdf_t with default values.
  * @return newly allocated pdf_t struct with fields set to default values
  */
-pdf_t* create_pdf_t() {
+pdf_t* create_pdf_t(fz_context *context, fz_alloc_context *alloc_context, apv_alloc_state_t *alloc_state) {
     pdf_t *pdf = NULL;
+    
+    /* simple assert based on apv_alloc_state->magic */
+    if (alloc_context && alloc_state) {
+        if (((apv_alloc_state_t*)alloc_context->user)->magic != alloc_state->magic) {
+            APV_LOG_PRINT(APV_LOG_ERROR, "magic does not match");
+            return NULL;
+        }
+    }
+
     pdf = malloc(sizeof(pdf_t));
 
-    pdf->ctx = NULL;
+    pdf->ctx = context;
+    pdf->alloc_context = alloc_context;
+    pdf->alloc_state = alloc_state;
     pdf->doc = NULL;
     pdf->fileno = -1;
     pdf->invalid_password = 0;
 
     pdf->box[0] = 0;
-
-    pdf->alloc_state = malloc(sizeof(apv_alloc_state_t));
-    pdf->alloc_state->current_size = 0;
-    pdf->alloc_state->peak_size = 0;
-    pdf->alloc_state->max_size = 0;
-    pdf->alloc_state->magic = rand();
-
-    pdf->alloc_context = malloc(sizeof(fz_alloc_context));
-    pdf->alloc_context->user = pdf->alloc_state;
-    pdf->alloc_context->malloc = apv_malloc;
-    pdf->alloc_context->realloc = apv_realloc;
-    pdf->alloc_context->free = apv_free;
-
-    APV_LOG_PRINT(APV_LOG_DEBUG, "created pdf_t with alloc_state magic %d", pdf->alloc_state->magic);
     
     return pdf;
 }
@@ -189,31 +185,30 @@ void free_pdf_t(pdf_t *pdf) {
         fz_close_document(pdf->doc);
         pdf->doc = NULL;
     }
-    if (pdf->ctx) {
-        fz_free_context(pdf->ctx);
-        pdf->ctx = NULL;
-    }
-    if (pdf->alloc_state) {
-        free(pdf->alloc_state);
-        pdf->alloc_state = NULL;
-    }
-    if (pdf->alloc_context) {
-        free(pdf->alloc_context);
-        pdf->alloc_context = NULL;
-    }
+    /* pdf->ctx is a "reference" pointer */
+    pdf->ctx = NULL;
+    /* pdf->alloc_state is a "reference" pointer */
+    pdf->alloc_state = NULL;
     free(pdf);
 }
 
 
 /**
  * Free some of the xref cache table.
+ * All pdf_t instances share alloc_state, so chances are that we'll not succeed
+ * to free enough bytes, because other pdf_t instances could hold too much
+ * memory. But we still try, it's better than nothing.
  */
 void maybe_free_cache(pdf_t *pdf) {
+    if (pdf->alloc_state == NULL) {
+        APV_LOG_PRINT(APV_LOG_WARN, "pdf->alloc_state is NULL, can't free memory");
+        return;
+    }
     if (!pdf->alloc_state->max_size > 0) {
         APV_LOG_PRINT(APV_LOG_DEBUG, "max_size is not set, will not free");
         return;
     }
-    if (pdf->alloc_state->current_size > pdf->alloc_state->max_size * 3 / 4) {
+    if (pdf->alloc_state->current_size > pdf->alloc_state->max_size / 2) {
         int i = 0;
         int old_size = 0;
         pdf_document *xref = NULL;
@@ -227,14 +222,19 @@ void maybe_free_cache(pdf_t *pdf) {
                 pdf_drop_obj(xref->table[i].obj);
                 xref->table[i].obj = NULL;
             }
-            if (pdf->alloc_state->current_size < pdf->alloc_state->max_size / 2) {
+            if (pdf->alloc_state->current_size < pdf->alloc_state->max_size / 8) {
                 break; /* enough freed */
             }
         }
-
-        APV_LOG_PRINT(APV_LOG_DEBUG, "reduced alloc size from %d to %d", old_size, pdf->alloc_state->current_size);
+#ifndef NDEBUG
+        APV_LOG_PRINT(APV_LOG_DEBUG, "reduced alloc size from %d to %d (max_size: %d)",
+            old_size, pdf->alloc_state->current_size, pdf->alloc_state->max_size);
+#endif
     } else {
-        // APV_LOG_PRINT(APV_LOG_DEBUG, "current_size is less than 3/4 of max_size");
+#ifndef NDEBUG
+        APV_LOG_PRINT(APV_LOG_DEBUG, "current_size (%d) is less than 1/2 of max_size (%d), no need to free",
+            pdf->alloc_state->current_size, pdf->alloc_state->max_size);
+#endif
     }
 }
 
@@ -297,18 +297,16 @@ pdf_t* parse_pdf_bytes(unsigned char *bytes, size_t len, jstring box_name) {
 /**
  * Parse file into PDF struct.
  * Use filename if it's not null, otherwise use fileno.
+ * Params:
+ * - alloc_context - shared alloc context initialized on app start.
  */
-pdf_t* parse_pdf_file(const char *filename, int fileno, const char* password) {
+pdf_t* parse_pdf_file(const char *filename, int fileno, const char* password, fz_context *context, fz_alloc_context *alloc_context, apv_alloc_state_t *alloc_state) {
     pdf_t *pdf;
     fz_stream *stream = NULL;
 
     // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "parse_pdf_file(%s, %d)", filename, fileno);
 
-    pdf = create_pdf_t();
-
-    if (pdf->ctx == NULL) {
-        pdf->ctx = fz_new_context(pdf->alloc_context, NULL, 1 * 1024 * 1024);
-    }
+    pdf = create_pdf_t(context, alloc_context, alloc_state);
 
     if (filename) {
         stream = fz_open_file(pdf->ctx, (char*)filename);
@@ -440,7 +438,7 @@ int get_page_size(pdf_t *pdf, int pageno, int *width, int *height) {
     fz_rect rect = get_page_box(pdf, pageno);
     *width = rect.x1 - rect.x0;
     *height = rect.y1 - rect.y0;
-    APV_LOG_PRINT(APV_LOG_DEBUG, "get_page_size(%d) -> %d %d", pageno, *width, *height);
+    // APV_LOG_PRINT(APV_LOG_DEBUG, "get_page_size(%d) -> %d %d", pageno, *width, *height);
     return 0;
 }
 

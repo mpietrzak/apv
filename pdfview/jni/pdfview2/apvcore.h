@@ -51,8 +51,8 @@ typedef struct {
     int fileno; /* used only when opening by file descriptor */
     int invalid_password;
     char box[MAX_BOX_NAME + 1];
-    apv_alloc_state_t *alloc_state;
     fz_alloc_context *alloc_context;
+    apv_alloc_state_t *alloc_state;
 } pdf_t;
 
 
@@ -68,11 +68,14 @@ typedef struct {
 #define APV_LOG_ERROR 6
 void apv_log_print(const char *file, int line, int level, const char *fmt, ...);
 
+void *apv_malloc(void *user, unsigned int size);
+void *apv_realloc(void *user, void *old, unsigned int size);
+void apv_free(void *user, void *ptr);
 
-pdf_t* create_pdf_t();
+pdf_t* create_pdf_t(fz_context *ctx, fz_alloc_context *alloc_context, apv_alloc_state_t *alloc_state);
 void free_pdf_t(pdf_t *pdf);
 void maybe_free_cache(pdf_t *pdf);
-pdf_t* parse_pdf_file(const char *filename, int fileno, const char* password);
+pdf_t* parse_pdf_file(const char *filename, int fileno, const char* password, fz_context *context, fz_alloc_context *alloc_context, apv_alloc_state_t *alloc_state);
 void fix_samples(unsigned char *bytes, unsigned int w, unsigned int h);
 void rgb_to_alpha(unsigned char *bytes, unsigned int w, unsigned int h);
 int get_page_size(pdf_t *pdf, int pageno, int *width, int *height);
