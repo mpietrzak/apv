@@ -13,22 +13,79 @@
 
 #define PDFVIEW_LOG_TAG "cx.hell.android.pdfview"
 
+static JavaVM *cached_jvm = NULL;
+
+apv_alloc_state_t *apv_alloc_state = NULL;
+fz_alloc_context *fitz_alloc_context = NULL;
+fz_context *fitz_context = NULL;
+
 
 void apv_log_print(const char *file, int line, int level, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     char buf[1024] = "";
-    snprintf(buf, sizeof buf, "%s:%d: %s", file, line, fmt); /* FIXME: fails if file contains '%' */
+    snprintf(buf, sizeof buf, "%s:%d: %s", file, line, fmt); /* TODO: fails if file contains '%' (which should be never, but) */
     __android_log_vprint(level, PDFVIEW_LOG_TAG, buf, args);
     va_end(args);
 }
 
 
+JavaVM *apv_get_cached_jvm() {
+    return cached_jvm;
+}
+
 
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *jvm, void *reserved) {
     __android_log_print(ANDROID_LOG_INFO, PDFVIEW_LOG_TAG, "JNI_OnLoad");
-    return JNI_VERSION_1_2;
+    cached_jvm = jvm;
+    return JNI_VERSION_1_4;
+}
+
+
+JNIEXPORT void JNICALL
+Java_cx_hell_android_lib_pdf_PDF_init(
+        JNIEnv *env,
+        jobject this,
+        jint max_store) {
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "jni init");
+    if (apv_alloc_state != NULL) {
+        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "apv_alloc_state is not NULL");
+    } else {
+        apv_alloc_state = malloc(sizeof(apv_alloc_state_t));
+        apv_alloc_state->current_size = 0;
+        apv_alloc_state->max_size = max_store;
+        apv_alloc_state->peak_size = 0;
+        apv_alloc_state->magic = rand();
+    }
+    if (fitz_alloc_context != NULL) {
+        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "fitz_alloc_context is not NULL");
+    } else {
+        fitz_alloc_context = malloc(sizeof(fz_alloc_context));
+        fitz_alloc_context->user = apv_alloc_state;
+        fitz_alloc_context->malloc = apv_malloc;
+        fitz_alloc_context->realloc = apv_realloc;
+        fitz_alloc_context->free = apv_free;
+    }
+    if (fitz_context != NULL) {
+        __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "fitz_context is not NULL");
+    } else {
+        // fz_context *fz_new_context(fz_alloc_context *alloc, fz_locks_context *locks, unsigned int max_store);
+        __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "creating fitz_context with max_store: %d", (int)max_store);
+        fitz_context = fz_new_context(fitz_alloc_context, NULL, max_store);
+        if (fitz_context == NULL) {
+            __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "failed to create fitz_context"); // TODO: display error to user
+        }
+    }
+}
+
+
+JNIEXPORT void JNICALL
+Java_cx_hell_android_lib_pdf_PDF_deinit(
+        JNIEnv *env,
+        jobject this) {
+    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "jni deinit");
+    /* TODO: free context, alloc_state and alloc_context */
 }
 
 
@@ -58,7 +115,7 @@ Java_cx_hell_android_lib_pdf_PDF_parseFile(
     this_class = (*env)->GetObjectClass(env, jthis);
     pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
     invalid_password_field_id = (*env)->GetFieldID(env, this_class, "invalid_password", "I");
-    pdf = parse_pdf_file(c_file_name, 0, c_password);
+    pdf = parse_pdf_file(c_file_name, 0, c_password, fitz_context, fitz_alloc_context, apv_alloc_state);
 
     if (pdf != NULL && pdf->invalid_password) {
         (*env)->SetIntField(env, jthis, invalid_password_field_id, 1);
@@ -79,6 +136,8 @@ Java_cx_hell_android_lib_pdf_PDF_parseFile(
     (*env)->ReleaseStringUTFChars(env, file_name, c_file_name);
     (*env)->ReleaseStringUTFChars(env, password, c_password);
     (*env)->SetIntField(env, jthis, pdf_field_id, (int)pdf);
+
+    maybe_free_cache(pdf);
 }
 
 
@@ -107,7 +166,7 @@ Java_cx_hell_android_lib_pdf_PDF_parseFileDescriptor(
     invalid_password_field_id = (*env)->GetFieldID(env, this_class, "invalid_password", "I");
 
     fileno = get_descriptor_from_file_descriptor(env, fileDescriptor);
-	pdf = parse_pdf_file(NULL, fileno, c_password);
+	pdf = parse_pdf_file(NULL, fileno, c_password, fitz_context, fitz_alloc_context, apv_alloc_state);
 
     if (pdf != NULL && pdf->invalid_password) {
        (*env)->SetIntField(env, jthis, invalid_password_field_id, 1);
@@ -223,7 +282,7 @@ Java_cx_hell_android_lib_pdf_PDF_getPageSize(
         return 2;
     }
 
-    APV_LOG_PRINT(APV_LOG_DEBUG, "page size %d: %d %d", pageno, width, height);
+    // APV_LOG_PRINT(APV_LOG_DEBUG, "page size %d: %d %d", pageno, width, height);
 
     save_size(env, size, width, height);
 
@@ -279,22 +338,10 @@ Java_cx_hell_android_lib_pdf_PDF_getHeapSize(
     return pdf->alloc_state->current_size;
 }
 
-/**
- *
- */
-JNIEXPORT void JNICALL
-Java_cx_hell_android_lib_pdf_PDF_setMaxHeapSize(
-        JNIEnv *env,
-        jobject this,
-        jint size) {
-    pdf_t *pdf = get_pdf_from_this(env, this);
-    pdf->alloc_state->max_size = size;
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "setMaxHeapSize: max heap size is now %d", pdf->alloc_state->max_size);
-}
-
 
 /**
  * Free resources allocated in native code.
+ * Frees memory directly associated with this pdf_t instance. Does not destroy fitz_context.
  */
 JNIEXPORT void JNICALL
 Java_cx_hell_android_lib_pdf_PDF_freeMemory(
@@ -304,12 +351,14 @@ Java_cx_hell_android_lib_pdf_PDF_freeMemory(
 	jclass this_class = (*env)->GetObjectClass(env, this);
 	jfieldID pdf_field_id = (*env)->GetFieldID(env, this_class, "pdf_ptr", "I");
 
-    __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "jni freeMemory()");
 	pdf = (pdf_t*) (*env)->GetIntField(env, this, pdf_field_id);
 	(*env)->SetIntField(env, this, pdf_field_id, 0);
     if (pdf) {
         free_pdf_t(pdf);
+        pdf = NULL;
     }
+
+    APV_LOG_PRINT(APV_LOG_DEBUG, "jni freeMemory: current size: %d, peak size: %d", apv_alloc_state->current_size, apv_alloc_state->peak_size);
 }
 
 

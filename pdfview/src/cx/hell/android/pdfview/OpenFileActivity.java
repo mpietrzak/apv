@@ -510,15 +510,6 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 
     private void startPDF(SharedPreferences options) {
 	    this.pdf = this.getPDF();
-	    long maxHeapSize = Runtime.getRuntime().maxMemory();
-	    /* don't bother setting native max heap size if we have 256 MiB, 256 MiB should be enough for everybody */
-	    if (maxHeapSize < 256 * 1024 * 1024) {
-	        int nativeMaxHeapSize = (int)(maxHeapSize / 2);
-	        Log.d(TAG, "android jvm max heap size: " + maxHeapSize + ", about to set native heap size to: " + nativeMaxHeapSize);
-	        this.pdf.setMaxHeapSize(nativeMaxHeapSize);
-	    } else {
-	        Log.d(TAG, "android jvm max heap size is big enough, will not set maximum native heap size");
-	    }
 	    if (!this.pdf.isValid()) {
 	    	Log.v(TAG, "Invalid PDF");
 	    	if (this.pdf.isInvalidPassword()) {

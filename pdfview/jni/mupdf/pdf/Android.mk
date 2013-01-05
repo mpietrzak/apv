@@ -2,7 +2,7 @@ LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_CFLAGS := -DNOCJK -O3
+LOCAL_CFLAGS := -DNOCJK -DAPV_ASSET_FONTS -DHAVE_PTHREADS	
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
   LOCAL_CFLAGS += -DJDCT_FASTEST=JDCT_FLOAT -DARCH_ARM
@@ -14,7 +14,10 @@ ifeq ($(TARGET_ARCH_ABI),armeabi)
   LOCAL_ARM_MODE := arm
 endif
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../fitz $(LOCAL_PATH)/../../freetype-overtlay/include $(LOCAL_PATH)/../../freetype/include $(LOCAL_PATH)/..
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../fitz \
+	$(LOCAL_PATH)/../../freetype-overtlay/include \
+	$(LOCAL_PATH)/../../freetype/include \
+	$(LOCAL_PATH)/..
 LOCAL_MODULE    := pdf
 LOCAL_SRC_FILES := \
 	apv_pdf_debug.c \
@@ -36,7 +39,7 @@ LOCAL_SRC_FILES := \
 	pdf_font.c \
 	pdf_type3.c \
 	pdf_metrics.c \
-	pdf_fontfile.c \
+	apv_pdf_fontfile.c \
 	pdf_function.c \
 	pdf_colorspace.c \
 	pdf_image.c \
@@ -47,7 +50,9 @@ LOCAL_SRC_FILES := \
 	pdf_interpret.c \
 	pdf_page.c \
 	pdf_store.c \
-	pdf_crypt.c
+	pdf_crypt.c \
+	hashmap.c
+
 
 #	cmap_tounicode.c \
 # 	font_cjk.c \

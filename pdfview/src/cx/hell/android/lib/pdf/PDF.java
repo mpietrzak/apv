@@ -1,8 +1,17 @@
 package cx.hell.android.lib.pdf;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileDescriptor;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
+
+import android.content.Context;
+import android.content.res.AssetManager;
+import android.util.Log;
 
 import cx.hell.android.lib.pagesview.FindResult;
 
@@ -21,9 +30,92 @@ public class PDF {
 	
 	private final static String TAG = "cx.hell.android.pdfview";
 	
-	static {
-        System.loadLibrary("pdfview2");
-	}
+	private static Map<String,String> fontNameToFile = null;
+	
+    static {
+        HashMap<String,String> m = new HashMap<String,String>();
+        m.put("Courier-Bold", "NimbusMonL-Bold");
+        m.put("Courier-Oblique", "NimbusMonL-ReguObli");
+        m.put("Courier-BoldOblique", "NimbusMonL-BoldObli");
+        m.put("Helvetica", "NimbusSanL-Regu");
+        m.put("Helvetica-Bold", "NimbusSanL-Bold");
+        m.put("Helvetica-Oblique", "NimbusSanL-ReguItal");
+        m.put("Helvetica-BoldOblique", "NimbusSanL-BoldItal");
+        m.put("Times-Roman", "NimbusRomNo9L-Regu");
+        m.put("Times-Bold", "NimbusRomNo9L-Medi");
+        m.put("Times-Italic", "NimbusRomNo9L-ReguItal");
+        m.put("Times-BoldItalic", "NimbusRomNo9L-MediItal");
+        m.put("Symbol", "StandardSymL");
+        m.put("ZapfDingbats", "Dingbats");
+        PDF.fontNameToFile = m;
+    }
+	
+	/**
+	 * Application context is needed by cmap and font loading code since it
+	 * accesses assets.
+	 */
+	private static Context applicationContext = null;
+	
+    static {
+        System.loadLibrary("apv");
+
+        /* use at most 1/2 of available runtime memory in native code,
+           unless we have more than 256MiB */
+        long maxMemory = Runtime.getRuntime().maxMemory();
+        int pdfMaxStore = 0;
+        if (maxMemory < 256 * 1024 * 1024) {
+            pdfMaxStore = (int)(maxMemory / 2); 
+        }
+        PDF.init(pdfMaxStore);
+    }
+
+    public static native void init(int maxStore);
+    
+    public static void setApplicationContext(Context context) {
+        PDF.applicationContext = context;
+    }
+	
+    public static byte[] getFontData(String name) {
+        String assetFontName = null;
+        if (PDF.fontNameToFile.containsKey(name)) {
+            assetFontName = PDF.fontNameToFile.get(name);
+        } else {
+            assetFontName = name;
+        }
+        Log.i(TAG, "trying to load font data " + name + " from " + assetFontName);
+        return PDF.getAssetBytes("font/" + assetFontName + ".cff");
+    }
+    
+    public static byte[] getCmapData(String name) {
+
+        String cmapPath = "cmap/" + name;
+        return PDF.getAssetBytes(cmapPath);
+    }
+
+    public static byte[] getAssetBytes(String path) {
+        if (PDF.applicationContext == null) {
+            throw new RuntimeException("PDF needs application context to load font and cmap files");
+        }
+        AssetManager assets = PDF.applicationContext.getAssets();
+        try {
+            InputStream i = assets.open(path, AssetManager.ACCESS_BUFFER);
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream(Math.max(i.available(), 1024));
+            byte tmp[] = new byte[256 * 1024];
+            int read = 0;
+            while(true) {
+                read = i.read(tmp);
+                if (read == -1) {
+                    break;
+                } else {
+                    bytes.write(tmp, 0, read);
+                }
+            }
+            return bytes.toByteArray();
+        } catch (IOException e) {
+            Log.e(TAG, "failed to read asset \"" + path + "\": " + e);
+            return null;
+        }
+    }
 	
 	/**
 	 * Simple size class used in JNI to simplify parameter passing.
@@ -329,12 +421,6 @@ public class PDF {
 	 * @return native heap size netto in bytes
 	 */
 	public native int getHeapSize();
-	
-	/**
-	 * Set max heap size for native allocator.
-	 */
-	public native void setMaxHeapSize(int size);
-	
 	
 	/**
 	 * Free memory allocated in native code.
