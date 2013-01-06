@@ -43,7 +43,7 @@ public class PDFPagesProvider extends PagesProvider {
 	
 	/* also calculates renderAhead */
 	private void setMaxCacheSize() {
-		long availLong = (long)(Runtime.getRuntime().maxMemory() - 4 * MB);
+		long availLong = (long)(Runtime.getRuntime().maxMemory() / 2 - 4 * MB);
 		
 		int avail;
 		if (availLong > 256*MB)
