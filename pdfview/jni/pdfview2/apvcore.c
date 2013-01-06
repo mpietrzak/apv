@@ -8,7 +8,60 @@
 #include "mupdf-internal.h"
 
 
-// static void copy_alpha(unsigned char* out, unsigned char *in, unsigned int w, unsigned int h);
+/* We're manipulating internal xref structures which is bad, but I didn't find any better way yet */
+/* Because of that, we need definitions of those internal structures. */
+/* Those definitions must match exactly those defined in mupdf .c files. */
+
+
+typedef enum pdf_objkind_e
+{
+   PDF_NULL,
+   PDF_BOOL,
+   PDF_INT,
+   PDF_REAL,
+   PDF_STRING,
+   PDF_NAME,
+   PDF_ARRAY,
+   PDF_DICT,
+   PDF_INDIRECT
+} pdf_objkind;
+
+
+struct pdf_obj_s
+{
+   int refs;
+   pdf_objkind kind;
+   fz_context *ctx;
+   union
+   {
+       int b;
+       int i;
+       float f;
+       struct {
+           unsigned short len;
+           char buf[1];
+       } s;
+       char n[1];
+       struct {
+           int len;
+           int cap;
+           pdf_obj **items;
+       } a;
+       struct {
+           char sorted;
+           char marked;
+           int len;
+           int cap;
+           struct keyval *items;
+       } d;
+       struct {
+           int num;
+           int gen;
+           struct pdf_xref_s *xref;
+       } r;
+   } u;
+};
+
 
 
 void *apv_malloc(void *user, unsigned int size) {
