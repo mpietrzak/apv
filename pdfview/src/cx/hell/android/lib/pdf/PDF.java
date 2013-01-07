@@ -34,19 +34,21 @@ public class PDF {
 	
     static {
         HashMap<String,String> m = new HashMap<String,String>();
-        m.put("Courier-Bold", "NimbusMonL-Bold");
-        m.put("Courier-Oblique", "NimbusMonL-ReguObli");
-        m.put("Courier-BoldOblique", "NimbusMonL-BoldObli");
-        m.put("Helvetica", "NimbusSanL-Regu");
-        m.put("Helvetica-Bold", "NimbusSanL-Bold");
-        m.put("Helvetica-Oblique", "NimbusSanL-ReguItal");
-        m.put("Helvetica-BoldOblique", "NimbusSanL-BoldItal");
-        m.put("Times-Roman", "NimbusRomNo9L-Regu");
-        m.put("Times-Bold", "NimbusRomNo9L-Medi");
-        m.put("Times-Italic", "NimbusRomNo9L-ReguItal");
-        m.put("Times-BoldItalic", "NimbusRomNo9L-MediItal");
-        m.put("Symbol", "StandardSymL");
-        m.put("ZapfDingbats", "Dingbats");
+        m.put("Courier-Bold", "NimbusMonL-Bold.cff");
+        m.put("Courier-Oblique", "NimbusMonL-ReguObli.cff");
+        m.put("Courier-BoldOblique", "NimbusMonL-BoldObli.cff");
+        m.put("Helvetica", "NimbusSanL-Regu.cff");
+        m.put("Helvetica-Bold", "NimbusSanL-Bold.cff");
+        m.put("Helvetica-Oblique", "NimbusSanL-ReguItal.cff");
+        m.put("Helvetica-BoldOblique", "NimbusSanL-BoldItal.cff");
+        m.put("Times-Roman", "NimbusRomNo9L-Regu.cff");
+        m.put("Times-Bold", "NimbusRomNo9L-Medi.cff");
+        m.put("Times-Italic", "NimbusRomNo9L-ReguItal.cff");
+        m.put("Times-BoldItalic", "NimbusRomNo9L-MediItal.cff");
+        m.put("Symbol", "StandardSymL.cff");
+        m.put("ZapfDingbats", "Dingbats.cff");
+        m.put("DroidSans", "droid/DroidSans.ttf");
+        m.put("DroidSansMono", "droid/DroidSansMono.ttf");
         PDF.fontNameToFile = m;
     }
 	
@@ -80,10 +82,11 @@ public class PDF {
         if (PDF.fontNameToFile.containsKey(name)) {
             assetFontName = PDF.fontNameToFile.get(name);
         } else {
+            Log.w(TAG, "font name \"" + name + "\" not found in file name mapping");
             assetFontName = name;
         }
         Log.i(TAG, "trying to load font data " + name + " from " + assetFontName);
-        return PDF.getAssetBytes("font/" + assetFontName + ".cff");
+        return PDF.getAssetBytes("font/" + assetFontName);
     }
     
     public static byte[] getCmapData(String name) {
