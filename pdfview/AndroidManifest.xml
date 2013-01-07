@@ -1,11 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
         package="cx.hell.android.pdfview"
-        android:installLocation="auto" android:versionCode="33410" android:versionName="0.3.5dev01"
+        android:installLocation="auto" android:versionCode="34030" android:versionName="0.3.4.3"
         >
         
     <!--
-        version code:
+
+    	version code:
+    	
+    	x.y.z.d for EABI E : XYZDDE
+    	0.3.5.2 for all becomes   35020
+    	0.3.5.2 for intel becomes 35023
+    	
+    	old development versions translate to sub (4-th place) versions (0.3.7dev05 is the same as 0.3.6.5),
+    	versions with 0 at 4-th place are considered stabel.
+    	
+        old version code:
         xyz00E for x.y.z           : 5.4.3      becomes 54300E
         xyzDDE for x.y.(z+1)devDD  : 5.4.4dev05 becomes 54305E
         
