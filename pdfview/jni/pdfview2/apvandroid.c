@@ -754,6 +754,10 @@ pdf_t* get_pdf_from_this(JNIEnv *env, jobject this) {
 int get_descriptor_from_file_descriptor(JNIEnv *env, jobject this) {
     static jfieldID field_id = 0;
     static unsigned char is_cached = 0;
+    if (!this) {
+        APV_LOG_PRINT(APV_LOG_WARN, "can't get file descriptor from null");
+        return -1;
+    }
     if (!is_cached) {
         jclass this_class = (*env)->GetObjectClass(env, this);
         field_id = (*env)->GetFieldID(env, this_class, "descriptor", "I");

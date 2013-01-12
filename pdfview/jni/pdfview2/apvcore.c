@@ -366,7 +366,7 @@ pdf_t* parse_pdf_file(const char *filename, int fileno, const char* password, fz
     } else {
         stream = fz_open_fd(pdf->ctx, fileno);
     }
-    pdf->doc = (fz_document*) pdf_open_document_with_stream(stream);
+    pdf->doc = (fz_document*) pdf_open_document_with_stream(context, stream);
     fz_close(stream); /* pdf->doc holds ref */
 
     pdf->invalid_password = 0;
