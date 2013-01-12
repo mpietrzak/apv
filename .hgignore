@@ -1,22 +1,5 @@
 
 syntax: regexp
-^pdfview/jni/mupdf/\.git.*$
-syntax: regexp
-^pdfview/jni/mupdf/fonts/droid$
-syntax: regexp
-^pdfview/jni/mupdf/fonts$
-glob:pdfview/jni/mupdf/cmaps
-syntax: regexp
-^pdfview/jni/mupdf/pdf(?!.*(apv|\.mk)$).+
-syntax: regexp
-^pdfview/jni/mupdf/fitz(?!.*(apv|\.mk)$).+
-syntax: regexp
-^pdfview/jni/mupdf/draw(?!.*(apv|\.mk)$).+
-syntax: regexp
-^pdfview/jni/mupdf/debian(?!.*(apv|\.mk)$).+
-syntax: regexp
-^pdfview/jni/mupdf/win32(?!.*(apv|\.mk)$).+
-syntax: regexp
 ^pdfview/jni/openjpeg(?!.*(apv|\.mk|config.h)$).+
 syntax: regexp
 ^pdfview/jni/jbig2dec(?!.*(apv|\.mk)$).+
@@ -31,17 +14,10 @@ syntax: regexp
 ^pdfview/jni/jpeg/(?!.*\.mk$).+
 
 glob:pdfview/jni/pdfview2/.*.swp
-glob:pdfview/jni/mupdf/COPYING
-glob:pdfview/jni/mupdf/Jamfile
-glob:pdfview/jni/mupdf/README
-glob:pdfview/jni/mupdf/Jamrules
-glob:pdfview/res/drawable/Thumbs.db
-glob:.DS_Store
-
-regexp:^pdfview/jni/mupdf/Makefile$
-regexp:^pdfview/\.settings$
 
 syntax: glob
+pdfview/res/drawable/Thumbs.db
+.DS_Store
 pdfview/bin
 pdfview/gen
 pdfview/obj
@@ -56,3 +32,4 @@ fontdump
 opj_config.h
 pdfview/tests/bin
 pdfview/deps/mupdf-9ed0aa9c0b4dce36530f41f950e94bfe4d9133bc
+pdfview/deps/mupdf-a242b4cf1123910c4dba18c75a77f28c5f6d8f33
