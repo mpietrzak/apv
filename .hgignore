@@ -1,28 +1,5 @@
 
 syntax: regexp
-^pdfview/bin$
-syntax: regexp
-^pdfview/gen$
-syntax: regexp
-^pdfview/jni/pdfview2/lib$
-syntax: regexp
-^pdfview/jni/pdfview2/include$
-glob:pdfview/jni/mupdf/_darcs
-glob:pdfview/libs
-
-syntax: regexp
-^pdfview/jni/mupdf/apps$
-syntax: regexp
-^pdfview/jni/mupdf/android$
-syntax: regexp
-^pdfview/jni/mupdf/xps$
-syntax: regexp
-^pdfview/jni/mupdf/scripts$
-syntax: regexp
-^pdfview/jni/mupdf/build$
-syntax: regexp
-^pdfview/jni/mupdf/generated$
-syntax: regexp
 ^pdfview/jni/mupdf/\.git.*$
 syntax: regexp
 ^pdfview/jni/mupdf/fonts/droid$
@@ -65,7 +42,10 @@ regexp:^pdfview/jni/mupdf/Makefile$
 regexp:^pdfview/\.settings$
 
 syntax: glob
+pdfview/bin
+pdfview/gen
 pdfview/obj
+pdfview/jni/mupdf
 pdfview/deps/freetype-2.4.10
 pdfview/deps/jpeg-8d
 pdfview/deps/mupdf-1.1-source
@@ -75,3 +55,4 @@ pdfview/deps/mupdf
 fontdump
 opj_config.h
 pdfview/tests/bin
+pdfview/deps/mupdf-9ed0aa9c0b4dce36530f41f950e94bfe4d9133bc
