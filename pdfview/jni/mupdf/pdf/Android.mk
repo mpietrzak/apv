@@ -2,7 +2,7 @@ LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_CFLAGS := -DNOCJK -DAPV_ASSET_FONTS -DHAVE_PTHREADS	
+LOCAL_CFLAGS := -DHAVE_PTHREADS	
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
   LOCAL_CFLAGS += -DJDCT_FASTEST=JDCT_FLOAT -DARCH_ARM
@@ -20,7 +20,9 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/../fitz \
 	$(LOCAL_PATH)/..
 LOCAL_MODULE    := pdf
 LOCAL_SRC_FILES := \
-	apv_pdf_debug.c \
+	../../mupdf-apv/pdf/apv_pdf_cmap_table.c \
+	../../mupdf-apv/pdf/apv_pdf_debug.c \
+	../../mupdf-apv/pdf/apv_pdf_fontfile.c \
 	pdf_lex.c \
 	pdf_nametree.c \
 	pdf_parse.c \
@@ -33,13 +35,11 @@ LOCAL_SRC_FILES := \
 	pdf_cmap.c \
 	pdf_cmap_parse.c \
 	pdf_cmap_load.c \
-	pdf_cmap_table.c \
 	pdf_encoding.c \
 	pdf_unicode.c \
 	pdf_font.c \
 	pdf_type3.c \
 	pdf_metrics.c \
-	apv_pdf_fontfile.c \
 	pdf_function.c \
 	pdf_colorspace.c \
 	pdf_image.c \
@@ -51,13 +51,11 @@ LOCAL_SRC_FILES := \
 	pdf_page.c \
 	pdf_store.c \
 	pdf_crypt.c \
+	pdf_js_none.c \
+	pdf_write.c \
+	pdf_form.c \
+	pdf_event.c \
 	hashmap.c
-
-
-#	cmap_tounicode.c \
-# 	font_cjk.c \
-# 	cmap_cns.c \
-# 	cmap_gb.c cmap_japan.c cmap_korea.c
 
 
 

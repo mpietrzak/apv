@@ -5,12 +5,14 @@ import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.FileInputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.content.res.AssetFileDescriptor;
 import android.util.Log;
 
 import cx.hell.android.lib.pagesview.FindResult;
@@ -33,18 +35,24 @@ public class PDF {
 	private static Map<String,String> fontNameToFile = null;
 	
     static {
+        /* there's also DroidSansFallback, but it's too big and we're handling it specially */
         HashMap<String,String> m = new HashMap<String,String>();
+
+        m.put("Courier", "NimbusMonL-Regu.cff");
         m.put("Courier-Bold", "NimbusMonL-Bold.cff");
         m.put("Courier-Oblique", "NimbusMonL-ReguObli.cff");
         m.put("Courier-BoldOblique", "NimbusMonL-BoldObli.cff");
+
         m.put("Helvetica", "NimbusSanL-Regu.cff");
         m.put("Helvetica-Bold", "NimbusSanL-Bold.cff");
         m.put("Helvetica-Oblique", "NimbusSanL-ReguItal.cff");
         m.put("Helvetica-BoldOblique", "NimbusSanL-BoldItal.cff");
+
         m.put("Times-Roman", "NimbusRomNo9L-Regu.cff");
         m.put("Times-Bold", "NimbusRomNo9L-Medi.cff");
         m.put("Times-Italic", "NimbusRomNo9L-ReguItal.cff");
         m.put("Times-BoldItalic", "NimbusRomNo9L-MediItal.cff");
+
         m.put("Symbol", "StandardSymL.cff");
         m.put("ZapfDingbats", "Dingbats.cff");
         m.put("DroidSans", "droid/DroidSans.ttf");
@@ -78,6 +86,9 @@ public class PDF {
     }
 	
     public static byte[] getFontData(String name) {
+        if (name == null) throw new IllegalArgumentException("name can't be null");
+        if (name.equals("")) throw new IllegalArgumentException("name can't be empty");
+        if (name.equals("DroidSansFallback")) return PDF.getDroidSansFallbackData();
         String assetFontName = null;
         if (PDF.fontNameToFile.containsKey(name)) {
             assetFontName = PDF.fontNameToFile.get(name);
@@ -89,10 +100,58 @@ public class PDF {
         return PDF.getAssetBytes("font/" + assetFontName);
     }
     
+    /**
+     * TODO: mmap, because theoretically it might be almost free.
+     */
+    public static byte[] getDroidSansFallbackData() {
+        try {
+            InputStream i = new FileInputStream("/system/fonts/DroidSansFallback.ttf");
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream(Math.max(i.available(), 1024));
+            byte tmp[] = new byte[256 * 1024];
+            int read = 0;
+            while(true) {
+                read = i.read(tmp);
+                if (read == -1) {
+                    break;
+                } else {
+                    bytes.write(tmp, 0, read);
+                }
+            }
+            byte d[] = bytes.toByteArray();
+            Log.i(TAG, "loaded " + d.length + " bytes for DroidSansFallback.ttf");
+            return d;
+        } catch (IOException e) {
+            Log.e(TAG, "got exception while trying to load DroidSansFallback.ttf: " + e);
+            return null;
+        }
+    }
+    
+    /**
+     * Get cmap as bytes.
+     */
     public static byte[] getCmapData(String name) {
-
         String cmapPath = "cmap/" + name;
-        return PDF.getAssetBytes(cmapPath);
+        
+        /*
+        AssetManager assets = PDF.applicationContext.getAssets();
+        try {
+            AssetFileDescriptor afd = assets.openFd(cmapPath);
+            if (afd == null) {
+                Log.e(TAG, "failed to open cmap file \"" + name + "\"");
+                return null;
+            }
+            FileDescriptor fd = afd.getFileDescriptor();
+            Log.i(TAG, "opened cmap file \"" + name + "\": " + fd);
+            return fd;
+        } catch (IOException e) {
+            Log.e(TAG, "failed to open cmap file \"" + name + "\": " + e);
+            return null;
+        }
+        */
+
+        byte[] d =  getAssetBytes(cmapPath);
+        Log.d(TAG, "loaded cmap " + name + " (size: " + d.length + ")");
+        return d;
     }
 
     public static byte[] getAssetBytes(String path) {

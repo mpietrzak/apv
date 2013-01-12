@@ -35,6 +35,7 @@ LOCAL_SRC_FILES := \
 	stm_buffer.c \
 	stm_open.c \
 	stm_read.c \
+	stm_comp_buf.c \
 	\
 	filt_basic.c \
 	filt_dctd.c \
@@ -60,7 +61,7 @@ LOCAL_SRC_FILES := \
 	dev_bbox.c \
 	dev_null.c \
 	\
-	apv_doc_document.c \
+	../../mupdf-apv/fitz/apv_doc_document.c \
 	doc_link.c
 
 
