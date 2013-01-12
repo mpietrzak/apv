@@ -1,19 +1,12 @@
 
 syntax: regexp
 ^pdfview/jni/openjpeg(?!.*(apv|\.mk|config.h)$).+
-syntax: regexp
 ^pdfview/jni/jbig2dec(?!.*(apv|\.mk)$).+
-syntax: regexp
 ^pdfview/jni/freetype(?!.*\.mk$).+
 
 
-syntax: regexp
 ^pdfview/jni/jpeg/cderror\.h$
-glob:pdfview/jni/jpeg/Makefile.am
-syntax: regexp
 ^pdfview/jni/jpeg/(?!.*\.mk$).+
-
-glob:pdfview/jni/pdfview2/.*.swp
 
 syntax: glob
 pdfview/res/drawable/Thumbs.db
@@ -28,8 +21,8 @@ pdfview/deps/mupdf-1.1-source
 pdfview/deps/openjpeg-1.5.1
 pdfview/deps/jbig2dec-0.11
 pdfview/deps/mupdf
-fontdump
+pdfview/jni/jpeg/Makefile.am
 opj_config.h
 pdfview/tests/bin
-pdfview/deps/mupdf-9ed0aa9c0b4dce36530f41f950e94bfe4d9133bc
 pdfview/deps/mupdf-a242b4cf1123910c4dba18c75a77f28c5f6d8f33
+pdfview/libs
