@@ -80,16 +80,16 @@ void *apv_malloc(void *user, unsigned int size) {
         }
         header = buf;
         header->size = size;
-        header->magic = state->magic;
         state->current_size += size;
+#ifndef NDEBUG
+        header->magic = state->magic;
         if (state->current_size > state->peak_size) {
             state->peak_size = state->current_size;
-#ifndef NDEBUG
             if (rand() % 10000 < 10) {
                 APV_LOG_PRINT(APV_LOG_DEBUG, "apv_malloc: peak size is now %d", state->peak_size);
             }
-#endif
         }
+#endif
         // fprintf(stderr, "info addr: %p, buf addr: %p\n", info, info + sizeof(alloc_info_t));
         return buf + sizeof(apv_alloc_header_t);
     }
@@ -109,10 +109,12 @@ void *apv_realloc(void *user, void *old, unsigned int size) {
         void *buf = NULL;
         buf = old - sizeof(apv_alloc_header_t);
         header = buf;
+#ifndef NDEBUG
         if (header->magic != state->magic) {
             APV_LOG_PRINT(APV_LOG_ERROR, "apv_realloc: magic does not match");
             abort();
         }
+#endif
         // fprintf(stderr, "aptn_realloc: old size: %u, asked for: %u, current size: %u\n", info->size, size, conf->current_size);
         change = size - header->size;
         if (state->max_size > 0) {
@@ -131,9 +133,11 @@ void *apv_realloc(void *user, void *old, unsigned int size) {
         header = buf; /* possibly moved by realloc */
         header->size = size;
         state->current_size += change;
+#ifndef NDEBUG
         if (state->current_size > state->peak_size) {
             state->peak_size = state->current_size;
         }
+#endif
         return buf + sizeof(apv_alloc_header_t);
     }
 }
@@ -145,10 +149,12 @@ void apv_free(void *user, void *ptr) {
         apv_alloc_header_t *header = NULL;
         void *buf = ptr - sizeof(apv_alloc_header_t);
         header = buf;
+#ifndef NDEBUG
         if (header->magic != state->magic) {
             APV_LOG_PRINT(APV_LOG_ERROR, "apv_free: magic does not match");
             abort();
         }
+#endif
         if (state->current_size < header->size) {
             abort();
         }
@@ -207,6 +213,7 @@ wchar_t* widestrstr(wchar_t* haystack, int haystack_length, wchar_t* needle, int
 pdf_t* create_pdf_t(fz_context *context, fz_alloc_context *alloc_context, apv_alloc_state_t *alloc_state) {
     pdf_t *pdf = NULL;
     
+#ifndef NDEBUG
     /* simple assert based on apv_alloc_state->magic */
     if (alloc_context && alloc_state) {
         if (((apv_alloc_state_t*)alloc_context->user)->magic != alloc_state->magic) {
@@ -214,6 +221,7 @@ pdf_t* create_pdf_t(fz_context *context, fz_alloc_context *alloc_context, apv_al
             return NULL;
         }
     }
+#endif
 
     pdf = malloc(sizeof(pdf_t));
 
