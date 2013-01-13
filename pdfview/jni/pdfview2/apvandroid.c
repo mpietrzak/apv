@@ -55,8 +55,10 @@ Java_cx_hell_android_lib_pdf_PDF_init(
         apv_alloc_state = malloc(sizeof(apv_alloc_state_t));
         apv_alloc_state->current_size = 0;
         apv_alloc_state->max_size = max_store;
+#ifndef NDEBUG
         apv_alloc_state->peak_size = 0;
         apv_alloc_state->magic = rand();
+#endif
     }
     if (fitz_alloc_context != NULL) {
         __android_log_print(ANDROID_LOG_ERROR, PDFVIEW_LOG_TAG, "fitz_alloc_context is not NULL");
@@ -358,7 +360,9 @@ Java_cx_hell_android_lib_pdf_PDF_freeMemory(
         pdf = NULL;
     }
 
+#ifndef NDEBUG
     APV_LOG_PRINT(APV_LOG_DEBUG, "jni freeMemory: current size: %d, peak size: %d", apv_alloc_state->current_size, apv_alloc_state->peak_size);
+#endif
 }
 
 

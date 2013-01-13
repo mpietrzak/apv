@@ -25,10 +25,12 @@ extern const char boxes[NUM_BOXES][MAX_BOX_NAME+1];
  * Custom allocator state.
  */
 typedef struct {
+#ifndef NDEBUG
     int magic;
+    int peak_size;
+#endif
     int max_size;
     int current_size;
-    int peak_size;
 } apv_alloc_state_t;
 
 
@@ -36,7 +38,9 @@ typedef struct {
  * Custom allocator block header.
  */
 typedef struct {
+#ifndef NDEBUG
     int magic;
+#endif
     int size;
 } apv_alloc_header_t;
 
