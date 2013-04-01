@@ -97,11 +97,3 @@ fz_pixmap *get_page_image_bitmap(
       int width,
       int height);
 
-
-// #ifdef pro
-// jobject create_outline_recursive(JNIEnv *env, jclass outline_class, const fz_outline *outline);
-// char* extract_text(pdf_t *pdf, int pageno);
-// #endif
-
-
-
