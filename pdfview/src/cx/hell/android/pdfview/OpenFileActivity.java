@@ -27,6 +27,7 @@ import android.preference.PreferenceManager;
 import android.text.InputType;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -34,10 +35,13 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.ViewConfiguration;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+
+import android.view.ContextMenu;
 
 import android.widget.Button;
 import android.widget.EditText;
@@ -202,6 +206,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 
 		this.box = Integer.parseInt(options.getString(Options.PREF_BOX, "2"));
 		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
         
         // Get display metrics
         DisplayMetrics metrics = new DisplayMetrics();
@@ -288,7 +293,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
         lp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
         lp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
         activityLayout.addView(this.pageNumberTextView, lp);
-        
+
 		// display this
         this.setContentView(activityLayout);
         
@@ -594,7 +599,6 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 			Intent intent = new Intent();
 			intent.setClass(this, AboutPDFViewActivity.class);
 			this.startActivity(intent);
-    		return true;
     	} else if (menuItem == this.gotoPageMenuItem) {
     		this.showGotoPageDialog();
     	} else if (menuItem == this.rotateLeftMenuItem) {
@@ -622,7 +626,7 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 // 
 		// #endif
 		}
-    	return false;
+    	return true;
     }
     
     private void setOrientation(int orientation) {
@@ -846,6 +850,8 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
     public boolean onCreateOptionsMenu(Menu menu) {
     	super.onCreateOptionsMenu(menu);
     	
+    	Log.d(TAG, "onCreateOptionsMenu(" + menu + ")");
+    	
     	this.gotoPageMenuItem = menu.add(R.string.goto_page);
     	this.rotateRightMenuItem = menu.add(R.string.rotate_page_left);
     	this.rotateLeftMenuItem = menu.add(R.string.rotate_page_right);
@@ -949,6 +955,20 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 		zoomUpButton.setImageDrawable(getResources().getDrawable(zoomUpId[mode]));
 		zoomUpButton.setBackgroundColor(Color.TRANSPARENT);
 		zoomLayout.addView(zoomUpButton, (int)(80 * metrics.density), (int)(50 * metrics.density));
+
+        if (!AndroidReflections.hasPermanentMenuKey(ViewConfiguration.get(this))) {
+            ImageButton showMenuButton = new ImageButton(this);
+            showMenuButton.setImageResource(R.drawable.ic_menu_agenda);
+            showMenuButton.setBackgroundColor(Color.TRANSPARENT);
+            OpenFileActivity.this.registerForContextMenu(showMenuButton);
+            showMenuButton.setOnClickListener(new OnClickListener() {
+                public void onClick(View v) {
+                    v.showContextMenu();
+                }
+            });
+            zoomLayout.addView(showMenuButton, (int)(50 * metrics.density), (int)(50 * metrics.density));
+        }
+		
 		RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
         		RelativeLayout.LayoutParams.WRAP_CONTENT, 
         		RelativeLayout.LayoutParams.WRAP_CONTENT);
@@ -958,10 +978,68 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 		activityLayout.addView(zoomLayout,lp);
     }
     
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        /* I'm sorry... */
+        this.gotoPageMenuItem = menu.add(R.string.goto_page);
+        this.rotateRightMenuItem = menu.add(R.string.rotate_page_left);
+        this.rotateLeftMenuItem = menu.add(R.string.rotate_page_right);
+        if (this.pagesView.getFindMode()) {
+            this.clearFindTextMenuItem = menu.add(R.string.clear_find_text);
+        }
+        this.chooseFileMenuItem = menu.add(R.string.choose_file);
+        this.optionsMenuItem = menu.add(R.string.options);
+        
+// #ifdef pro
+//      this.tableOfContentsMenuItem = menu.add(R.string.table_of_contents);
+//      this.textReflowMenuItem = menu.add(R.string.text_reflow);
+// #endif
+        this.findTextMenuItem = menu.add(R.string.find_text);
+        this.aboutMenuItem = menu.add(R.string.about);
+    }
+    
     private void findText(String text) {
     	Log.d(TAG, "findText(" + text + ")");
     	this.findText = text;
     	this.find(true);
+    }
+    
+    @Override
+    public boolean onContextItemSelected(MenuItem menuItem) {
+        // kill me
+        if (menuItem == this.aboutMenuItem) {
+            Intent intent = new Intent();
+            intent.setClass(this, AboutPDFViewActivity.class);
+            this.startActivity(intent);
+        } else if (menuItem == this.gotoPageMenuItem) {
+            this.showGotoPageDialog();
+        } else if (menuItem == this.rotateLeftMenuItem) {
+            this.pagesView.rotate(-1);
+        } else if (menuItem == this.rotateRightMenuItem) {
+            this.pagesView.rotate(1);
+        } else if (menuItem == this.findTextMenuItem) {
+            this.showFindDialog();
+        } else if (menuItem == this.clearFindTextMenuItem) {
+            this.clearFind();
+        } else if (menuItem == this.chooseFileMenuItem) {
+            startActivity(new Intent(this, ChooseFileActivity.class));
+        } else if (menuItem == this.optionsMenuItem) {
+            startActivity(new Intent(this, Options.class));
+// #ifdef pro
+//      } else if (menuItem == this.tableOfContentsMenuItem) {
+//          Outline outline = this.pdf.getOutline();
+//          if (outline != null) {
+//              this.showTableOfContentsDialog(outline);
+//          } else {
+//              Toast.makeText(this, "Table of Contents not found", Toast.LENGTH_SHORT).show();
+//          }
+//      } else if (menuItem == this.textReflowMenuItem) {
+//          this.setTextReflowMode(! this.textReflowMode);
+// 
+// #endif
+        }
+        return true;
     }
     
     /**
