@@ -2,11 +2,11 @@ package cx.hell.android.pdfview;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import android.content.Context;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 
 // #ifdef pro
-// 
-// 
 // import android.util.Log;
 // import android.view.View;
 // #endif
@@ -101,5 +101,23 @@ final public class AndroidReflections {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
+	public static boolean hasPermanentMenuKey(ViewConfiguration viewConfiguration) {
+	    Class<android.view.ViewConfiguration> viewConfigurationClass = android.view.ViewConfiguration.class;
+	    Method hasPermanentMenuKeyMethod = null;
+	    try {
+	        hasPermanentMenuKeyMethod = viewConfigurationClass.getMethod("hasPermanentMenuKey");
+	    } catch (NoSuchMethodException e) {
+	        return false;
+	    }
+	    
+	    try {
+	        Boolean b = (Boolean)hasPermanentMenuKeyMethod.invoke(viewConfiguration);
+	        return b;
+	    } catch (InvocationTargetException e) {
+	        throw new RuntimeException(e);
+	    } catch (IllegalAccessException e) {
+	        throw new RuntimeException(e);
+	    }
+	}
 }

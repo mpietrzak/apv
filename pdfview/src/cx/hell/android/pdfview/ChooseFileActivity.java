@@ -28,10 +28,13 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.view.MenuItemCompat;
+
 /**
  * Minimalistic file browser.
  */
-public class ChooseFileActivity extends Activity implements OnItemClickListener {
+public class ChooseFileActivity extends FragmentActivity implements OnItemClickListener {
 	
 	/**
 	 * Logging tag.
@@ -276,8 +279,11 @@ public class ChooseFileActivity extends Activity implements OnItemClickListener 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
     	this.setAsHomeMenuItem = menu.add(R.string.set_as_home);
+    	MenuItemCompat.setShowAsAction(this.setAsHomeMenuItem, MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
     	this.optionsMenuItem = menu.add(R.string.options);
+    	MenuItemCompat.setShowAsAction(this.optionsMenuItem, MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
     	this.aboutMenuItem = menu.add("About");
+    	MenuItemCompat.setShowAsAction(this.aboutMenuItem, MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
     	return true;
     }
     
