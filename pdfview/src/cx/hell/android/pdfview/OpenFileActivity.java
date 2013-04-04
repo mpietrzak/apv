@@ -23,6 +23,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
 import android.text.InputType;
 import android.util.DisplayMetrics;
@@ -555,9 +556,9 @@ public class OpenFileActivity extends Activity implements SensorEventListener {
 			return new PDF(new File(filePath), this.box);
     	} else if (uri.getScheme().equals("content")) {
     		ContentResolver cr = this.getContentResolver();
-    		FileDescriptor fileDescriptor;
+    		ParcelFileDescriptor fileDescriptor = null;
 			try {
-				fileDescriptor = cr.openFileDescriptor(uri, "r").getFileDescriptor();
+			    fileDescriptor = cr.openFileDescriptor(uri, "r");
 			} catch (FileNotFoundException e) {
 				throw new RuntimeException(e); // TODO: handle errors
 			}
