@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
         package="cx.hell.android.pdfview"
-        android:installLocation="auto" android:versionCode="34050" android:versionName="0.3.4.5"
+        android:installLocation="auto" android:versionCode="40000" android:versionName="0.4.0"
         >
         
     <!--
@@ -13,7 +13,7 @@
     	0.3.5.2 for intel becomes 35023
     	
     	old development versions translate to sub (4-th place) versions (0.3.7dev05 is the same as 0.3.6.5),
-    	versions with 0 at 4-th place are considered stabel.
+    	versions with 0 at 4-th place are considered stable.
     	
         old version code:
         xyz00E for x.y.z           : 5.4.3      becomes 54300E
@@ -21,10 +21,10 @@
         
         where E is eabi version:
 
-         - armeabi and armeabi-v7a is 0
+         - armeabi and armeabi-v7a and x86 is 0
          - armeabi is 1
          - armeabi-v7a is 2
-         - intel is 3
+         - x86 is 3
          
         this way armeabi-v7a will be chosen for devices supporting
         armeabi and armeabi-v7a architectures
