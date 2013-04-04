@@ -12,8 +12,8 @@ import java.util.List;
 
 import android.content.Context;
 import android.content.res.AssetManager;
-import android.content.res.AssetFileDescriptor;
 import android.util.Log;
+import android.os.ParcelFileDescriptor;
 
 import cx.hell.android.lib.pagesview.FindResult;
 
@@ -70,10 +70,10 @@ public class PDF {
         System.loadLibrary("apv");
 
         /* use at most 1/2 of available runtime memory in native code,
-           unless we have more than 256MiB */
+           unless we have more than 1024 MiB */
         long maxMemory = Runtime.getRuntime().maxMemory();
         int pdfMaxStore = 0;
-        if (maxMemory < 256 * 1024 * 1024) {
+        if (maxMemory < 1024 * 1024 * 1024) {
             pdfMaxStore = (int)(maxMemory / 2); 
         }
         PDF.init(pdfMaxStore);
@@ -332,6 +332,8 @@ public class PDF {
 	private int pdf_ptr = -1;
 	private int invalid_password = 0;
 	
+	private ParcelFileDescriptor fileDescriptor = null;
+	
 	public boolean isValid() {
 		return pdf_ptr != 0;
 	}
@@ -378,8 +380,9 @@ public class PDF {
 	 * Construct PDF structures from opened file descriptor.
 	 * @param file opened file descriptor
 	 */
-	public PDF(FileDescriptor file, int box) {
-		this.parseFileDescriptor(file, box, "");
+	public PDF(ParcelFileDescriptor file, int box) {
+	    this.fileDescriptor = file;  // hold
+		this.parseFileDescriptor(file.getFileDescriptor(), box, "");
 	}
 	
 	/**
