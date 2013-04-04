@@ -2,7 +2,6 @@ package cx.hell.android.pdfview;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import android.content.Context;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 
@@ -108,7 +107,7 @@ final public class AndroidReflections {
 	    try {
 	        hasPermanentMenuKeyMethod = viewConfigurationClass.getMethod("hasPermanentMenuKey");
 	    } catch (NoSuchMethodException e) {
-	        return false;
+	        return true; // no such method means old device means must have menu key
 	    }
 	    
 	    try {
