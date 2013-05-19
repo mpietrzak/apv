@@ -9,6 +9,9 @@ syntax: regexp
 ^pdfview/jni/jpeg/(?!.*\.mk$).+
 
 syntax: glob
+.idea
+out
+pdfview.iml
 pdfview/res/drawable/Thumbs.db
 .DS_Store
 pdfview/bin
