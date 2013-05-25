@@ -1,4 +1,3 @@
-
 syntax: regexp
 ^pdfview/jni/openjpeg(?!.*(apv|\.mk|config.h)$).+
 ^pdfview/jni/jbig2dec(?!.*(apv|\.mk)$).+
@@ -7,7 +6,6 @@ syntax: regexp
 ^pdfview/jni/jpeg/(?!.*\.mk$).+
 
 syntax: glob
-
 .DS_Store
 .idea
 Makethird
@@ -26,6 +24,9 @@ pdfview/deps/openjpeg-1.5.1
 pdfview/gen
 pdfview/jni/jpeg/Makefile.am
 pdfview/jni/mupdf
+pdfview/jni/mupdf-apv/fitz/apv_doc_document.c
+pdfview/jni/mupdf-apv/pdf/apv_pdf_cmap_table.c
+pdfview/jni/mupdf-apv/pdf/apv_pdf_fontfile.c
 pdfview/libs
 pdfview/obj
 pdfview/res/drawable/Thumbs.db
