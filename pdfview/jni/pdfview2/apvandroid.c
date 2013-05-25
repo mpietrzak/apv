@@ -20,6 +20,9 @@ fz_alloc_context *fitz_alloc_context = NULL;
 fz_context *fitz_context = NULL;
 
 
+int get_descriptor_from_file_descriptor(JNIEnv *env, jobject this);
+
+
 void apv_log_print(const char *file, int line, int level, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -461,13 +464,13 @@ Java_cx_hell_android_lib_pdf_PDF_find(
     wchar_t *found = NULL;
     jobject find_result = NULL;
     fz_text_block *text_block = NULL;
+    fz_page_block *page_block = NULL;
     fz_text_line *text_line = NULL;
     fz_text_span *text_span = NULL;
     fz_text_char *text_char = NULL;
     int block_no = 0;
     int line_no = 0;
     int char_no = 0;
-    int span_no = 0;
 
     jtext = (*env)->GetStringChars(env, text, &is_copy);
 
@@ -490,34 +493,36 @@ Java_cx_hell_android_lib_pdf_PDF_find(
     page = fz_load_page(pdf->doc, pageno);
     sheet = fz_new_text_sheet(pdf->ctx);
     pagebox = get_page_box(pdf, pageno);
-    text_page = fz_new_text_page(pdf->ctx, pagebox);
+    text_page = fz_new_text_page(pdf->ctx, &pagebox);
     dev = fz_new_text_device(pdf->ctx, sheet, text_page);
 
-    fz_run_page(pdf->doc, page, dev, fz_identity, NULL);
+    fz_run_page(pdf->doc, page, dev, &fz_identity, NULL);
 
     /* search text_page by extracting wchar_t text for each line */
     for(block_no = 0; block_no < text_page->len; ++block_no) {  /* for each block */
         // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "checking block %d of %d", block_no, text_page->len);
-        text_block = &(text_page->blocks[block_no]);
+        page_block = &(text_page->blocks[block_no]);
+        /* XXX */
         for(line_no = 0; line_no < text_block->len; ++line_no) {  /* for each line */
             // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "checking line %d of %d", line_no, text_block->len);
             text_line = &(text_block->lines[line_no]);
             /* cound chars in line */
             textlinechars_len = 0;
-            for(span_no = 0; span_no < text_line->len; ++span_no) {
-                textlinechars_len += text_line->spans[span_no].len;
+            for (text_span = text_line->first_span; text_span; text_span = text_span->next) {
+                textlinechars_len += text_span->len;
             }
             // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "text line chars len: %d", textlinechars_len);
             textlinechars = (wchar_t*)malloc((textlinechars_len + 1) * sizeof(wchar_t));
             textlineboxes = (fz_rect*)malloc(textlinechars_len * sizeof(fz_rect));
             /* copy chars and boxes */
             char_no = 0;
-            for(span_no = 0; span_no < text_line->len; ++span_no) {
+            for (text_span = text_line->first_span; text_span; text_span = text_span->next) {
                 int span_char_no = 0;
-                text_span = &(text_line->spans[span_no]);
                 for(span_char_no = 0; span_char_no < text_span->len; ++span_char_no) {
+                    fz_rect bbox;
                     textlinechars[char_no] = towlower(text_span->text[span_char_no].c);
-                    textlineboxes[char_no] = text_span->text[span_char_no].bbox;
+                    fz_text_char_bbox(&bbox, text_span, span_char_no);
+                    textlineboxes[char_no] = bbox;
                     char_no += 1;
                 }
             }

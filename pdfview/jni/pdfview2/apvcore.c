@@ -434,7 +434,7 @@ fz_pixmap *get_page_image_bitmap(
         int width, int height) {
     fz_matrix ctm;
     double zoom;
-    fz_bbox bbox;
+    fz_irect bbox;
     fz_page *page = NULL;
     fz_pixmap *image = NULL;
     fz_device *dev = NULL;
@@ -455,9 +455,15 @@ fz_pixmap *get_page_image_bitmap(
 
     /* translate coords to apv coords so we can easily cut out our tile */
     ctm = fz_identity;
-    ctm = fz_concat(ctm, fz_scale(zoom, zoom));
-    if (rotation != 0) ctm = fz_concat(ctm, fz_rotate(-rotation * 90));
-    bbox = fz_round_rect(fz_transform_rect(ctm, pagebox));
+    /* ctm = fz_concat(ctm, fz_scale(zoom, zoom)); */
+    fz_scale(&ctm, zoom, zoom);
+    if (rotation != 0) {
+        // ctm = fz_concat(ctm, fz_rotate(-rotation * 90));
+        fz_rotate(&ctm, -rotation * 90);
+    }
+    // bbox = fz_round_rect(fz_transform_rect(ctm, pagebox));
+    fz_transform_rect(&pagebox, &ctm);
+    fz_round_rect(&bbox, &pagebox);
 
     /* now bbox holds page after transform, but we only need tile at (left,right) from top-left corner */
     bbox.x0 = bbox.x0 + left;
@@ -465,14 +471,14 @@ fz_pixmap *get_page_image_bitmap(
     bbox.x1 = bbox.x0 + width;
     bbox.y1 = bbox.y0 + height;
 
-    image = fz_new_pixmap_with_bbox(pdf->ctx, fz_device_bgr, bbox);
+    image = fz_new_pixmap_with_bbox(pdf->ctx, fz_device_bgr(pdf->ctx), &bbox);
     fz_clear_pixmap_with_value(pdf->ctx, image, 0xff);
     dev = fz_new_draw_device(pdf->ctx, image);
 
     if (skipImages)
         dev->hints |= FZ_IGNORE_IMAGE;
 
-    fz_run_page(pdf->doc, page, dev, ctm, NULL);
+    fz_run_page(pdf->doc, page, dev, &ctm, NULL);
 
 	fz_free_page(pdf->doc, page);
     fz_free_device(dev);
@@ -520,7 +526,7 @@ fz_rect get_page_box(pdf_t *pdf, int pageno) {
         pageobj = xref->page_objs[pageno];
         obj = pdf_dict_gets(pageobj, pdf->box);
         if (obj && pdf_is_array(obj)) {
-            box = pdf_to_rect(pdf->ctx, obj);
+            pdf_to_rect(pdf->ctx, obj, &box);
             obj = pdf_dict_gets(pageobj, "UserUnit");
             if (pdf_is_real(obj)) {
                 float unit = pdf_to_real(obj);
@@ -542,7 +548,7 @@ fz_rect get_page_box(pdf_t *pdf, int pageno) {
         APV_LOG_PRINT(APV_LOG_ERROR, "fz_load_page(..., %d) -> NULL", pageno);
         return box;
     }
-    box = fz_bound_page(pdf->doc, page);
+    fz_bound_page(pdf->doc, page, &box);
     fz_free_page(pdf->doc, page);
     /*
     __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG,
@@ -638,9 +644,9 @@ int convert_box_pdf_to_apv(pdf_t *pdf, int page, int rotation, fz_rect *bbox) {
 
     if (rotation != 0) {
         fz_matrix m;
-        m = fz_rotate(-rotation * 90);
-        param_bbox = fz_transform_rect(m, param_bbox);
-        page_bbox = fz_transform_rect(m, page_bbox);
+        fz_rotate(&m, -rotation * 90);
+        fz_transform_rect(&param_bbox, &m);
+        fz_transform_rect(&page_bbox, &m);
     }
 
     //__android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "after rotate page bbox is: %.1f, %.1f, %.1f, %.1f", page_bbox.x0, page_bbox.y0, page_bbox.x1, page_bbox.y1);

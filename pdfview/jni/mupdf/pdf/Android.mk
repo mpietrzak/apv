@@ -21,41 +21,42 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/../fitz \
 LOCAL_MODULE    := pdf
 LOCAL_SRC_FILES := \
 	../../mupdf-apv/pdf/apv_pdf_cmap_table.c \
-	../../mupdf-apv/pdf/apv_pdf_debug.c \
 	../../mupdf-apv/pdf/apv_pdf_fontfile.c \
-	pdf_lex.c \
-	pdf_nametree.c \
-	pdf_parse.c \
-	pdf_repair.c \
-	pdf_stream.c \
-	pdf_xref.c \
-	pdf_xref_aux.c \
+	hashmap.c \
 	pdf_annot.c \
-	pdf_outline.c \
 	pdf_cmap.c \
-	pdf_cmap_parse.c \
 	pdf_cmap_load.c \
-	pdf_encoding.c \
-	pdf_unicode.c \
-	pdf_font.c \
-	pdf_type3.c \
-	pdf_metrics.c \
-	pdf_function.c \
+	pdf_cmap_parse.c \
 	pdf_colorspace.c \
-	pdf_image.c \
-	pdf_pattern.c \
-	pdf_shade.c \
-	pdf_object.c \
-	pdf_xobject.c \
-	pdf_interpret.c \
-	pdf_page.c \
-	pdf_store.c \
 	pdf_crypt.c \
-	pdf_js_none.c \
-	pdf_write.c \
-	pdf_form.c \
+	pdf_device.c \
+	pdf_encoding.c \
 	pdf_event.c \
-	hashmap.c
+	pdf_field.c \
+	pdf_font.c \
+	pdf_form.c \
+	pdf_function.c \
+	pdf_image.c \
+	pdf_interpret.c \
+	pdf_js_none.c \
+	pdf_lex.c \
+	pdf_metrics.c \
+	pdf_nametree.c \
+	pdf_object.c \
+	pdf_outline.c \
+	pdf_page.c \
+	pdf_parse.c \
+	pdf_pattern.c \
+	pdf_repair.c \
+	pdf_shade.c \
+	pdf_store.c \
+	pdf_stream.c \
+	pdf_type3.c \
+	pdf_unicode.c \
+	pdf_write.c \
+	pdf_xobject.c \
+	pdf_xref.c \
+	pdf_xref_aux.c
 
 
 
