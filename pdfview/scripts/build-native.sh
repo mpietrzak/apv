@@ -1,5 +1,9 @@
 #!/bin/sh
-# make sure ndk-build is in path
+
+if ! which ndk-build >/dev/null 2>&1; then
+	echo "ndk-build not found in PATH"
+	exit 1
+fi
 
 SCRIPTDIR=`dirname $0`
 MUPDF=mupdf-a3d00b2c51c1df23258f774f58268be794384c27
