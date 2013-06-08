@@ -6,6 +6,8 @@ syntax: regexp
 ^pdfview/jni/jpeg/(?!.*\.mk$).+
 
 syntax: glob
+*.sublime-project
+*.sublime-workspace
 .DS_Store
 .idea
 Makethird
@@ -20,7 +22,9 @@ pdfview/deps/mupdf
 pdfview/deps/mupdf-1.1-source
 pdfview/deps/mupdf-a242b4cf1123910c4dba18c75a77f28c5f6d8f33
 pdfview/deps/mupdf-a3d00b2c51c1df23258f774f58268be794384c27
+pdfview/deps/mupdf-cff6f809da556624fb1de34725935278093182e1
 pdfview/deps/openjpeg-1.5.1
+pdfview/deps/openjpeg-2.0.0
 pdfview/gen
 pdfview/jni/jpeg/Makefile.am
 pdfview/jni/mupdf
