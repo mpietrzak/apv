@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>MuPDF</title>
+		<script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+		<style>
+			body {
+				margin: 2em 4em;
+				font-family: sans-serif;
+			}
+
+			code.prettyprint > a {
+				text-decoration: none;
+			}
+
+			p.notes {
+				font-size: 90%;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>MuPDF</h1>
+
+		<h2>Extracting Text</h2>
+
+
+		<h3>fz_output</h3>
+
+		<p>Generic output streams - generalise between outputting to a file, a buffer, etc.</p>
+
+		<pre><code class="prettyprint">typedef struct fz_output_s fz_output;
+
+struct fz_output_s
+{
+	fz_context *ctx;
+	void *opaque;
+	int (*printf)(fz_output *, const char *, va_list ap);
+	int (*write)(fz_output *, const void *, int n);
+	void (*close)(fz_output *);
+};</code></pre>
+
+
+		<h4>fz_new_output_with_buffer</h4>
+
+		<p>Open an output stream onto a buffer. The stream does NOT take ownership of the buffer.</p>
+
+		<pre><code class="prettyprint lang-c">fz_output *fz_new_output_with_buffer(fz_context *, fz_buffer *);</code></pre>
+
+		<p class="notes">Writing to buffer grows buffer:</p>
+
+		<pre><code class="prettyprint">void fz_write_buffer(fz_context *ctx, fz_buffer *buf, const void *data, int len)
+{
+	if (buf->len + len > buf->cap)
+		fz_ensure_buffer(ctx, buf, buf->len + len);
+	memcpy(buf->data + buf->len, data, len);
+	buf->len += len;
+	buf->unused_bits = 0;
+}</code></pre>
+
+
+		<h3>fz_text_page</h3>
+
+		<p>A text page is a list of page blocks, together with an overall bounding box.</p>
+
+		<pre><code class="prettyprint">struct fz_text_page_s
+{
+	fz_rect mediabox;
+	int len, cap;
+	fz_page_block *blocks;
+};</code></pre>
+
+
+		<h3>fz_new_text_device</h3>
+
+		<p>Create a device to extract the text on a page.</p>
+
+		<p>
+			Gather and sort the text on a page into spans of uniform style,
+			arranged into lines and blocks by reading order. The reading order
+			is determined by various heuristics, so may not be accurate.
+		</p>
+
+		<p>
+			<em>sheet</em>: The text sheet to which styles should be added. This can
+			either be a newly created (empty) text sheet, or one containing
+			styles from a previous text device. The same sheet cannot be used
+			in multiple threads simultaneously.
+		</p>
+
+		<p>
+			<em>page</em>: The text page to which content should be added. This will
+			usually be a newly created (empty) text page, but it can be one
+			containing data already (for example when merging multiple pages, or
+			watermarking).
+		</p>
+
+		<pre><code class="prettyprint lang-c">fz_device *fz_new_text_device(fz_context *ctx, fz_text_sheet *sheet, <a href="#fz_text_page">fz_text_page *page);</a></code></pre>
+
+
+		<h3>fz_page_block</h3>
+
+		<p>A page block is a typed block pointer.</p>
+
+		<pre><code class="prettyprint">struct fz_page_block_s
+{
+	int type;
+	union
+	{
+		<a href="#fz_text_block">fz_text_block *text</a>;
+		fz_image_block *image;
+	} u;
+};
+
+enum
+{
+	FZ_PAGE_BLOCK_TEXT = 0,
+	FZ_PAGE_BLOCK_IMAGE = 1
+};</code></pre>
+
+
+		<a name="fz_text_block"/>
+		<h3>fz_text_block</h3>
+
+		<p>
+			A text block is a list of lines of text. In typical
+			cases this may correspond to a paragraph or a column of text. A
+			collection of blocks makes up a page.
+		</p>
+
+		<pre><code class="prettyprint">struct fz_text_block_s
+{
+	fz_rect bbox;
+	int len, cap;
+	fz_text_line *lines;
+};</code></pre>
+
+
+		<h3>fz_print_text_page_html</h3>
+
+		<p>Output a page to a file in HTML format.</p>
+
+		<pre><code class="prettyprint">void fz_print_text_page_html(fz_context *ctx, fz_output *out, fz_text_page *page);</code></pre>
+
+
+		<h3>fz_print_text_page</h3>
+
+		<p>Output a page to a file in UTF-8 format.</p>
+
+		<pre><code class="prettyprint">void fz_print_text_page(fz_context *ctx, fz_output *out, <a href="#fz_text_page">fz_text_page *page</a>);</code></pre>
+
+
+	</body>
+</html>

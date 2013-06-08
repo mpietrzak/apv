@@ -6,9 +6,9 @@ if ! which ndk-build >/dev/null 2>&1; then
 fi
 
 SCRIPTDIR=`dirname $0`
-MUPDF=mupdf-a3d00b2c51c1df23258f774f58268be794384c27
+MUPDF=mupdf-cff6f809da556624fb1de34725935278093182e1
 FREETYPE=freetype-2.4.10
-OPENJPEG=openjpeg-1.5.1
+OPENJPEG=openjpeg-2.0.0
 JBIG2DEC=jbig2dec-0.11
 JPEGSRC=jpegsrc.v8d.tar.gz
 JPEGDIR=jpeg-8d
@@ -16,16 +16,15 @@ JPEGDIR=jpeg-8d
 cd "$SCRIPTDIR/../deps"
 
 echo "extracting deps"
-tar xvf $FREETYPE.tar.bz2
-tar xvf $JPEGSRC
-tar xvf $MUPDF.tar.bz2
-tar xvf $OPENJPEG.tar.gz
-tar xvf $JBIG2DEC.tar.gz
+tar xf $FREETYPE.tar.bz2 && echo "freetype extracted" &
+tar xf $JPEGSRC && echo "jpeg extracted" &
+(unxz < $MUPDF.tar.xz | tar -xf -) && echo "mupdf extracted" &
+tar xf $OPENJPEG.tar.gz && echo "openjpeg extracted" &
+tar xf $JBIG2DEC.tar.gz && echo "jbig2dec extracted" &
+wait
 
 echo "copying openjpeg"
-cp $OPENJPEG/libopenjpeg/*.[ch] ../jni/openjpeg/
-echo "configuring openjpeg"
-echo '#define PACKAGE_VERSION' '"'$OPENJPEG'"' > ../jni/openjpeg/opj_config.h
+cp $OPENJPEG/src/lib/openjp2/*.[ch] ../jni/openjpeg/
 
 echo "copying jpeg"
 cp $JPEGDIR/*.[ch] ../jni/jpeg/
@@ -44,12 +43,12 @@ patch jni/mupdf/fitz/fitz.h jni/mupdf-apv/fitz/apv_fitz.h.patch
 patch -o jni/mupdf-apv/fitz/apv_doc_document.c jni/mupdf/fitz/doc_document.c jni/mupdf-apv/fitz/apv_doc_document.c.patch
 patch -o jni/mupdf-apv/pdf/apv_pdf_cmap_table.c jni/mupdf/pdf/pdf_cmap_table.c jni/mupdf-apv/pdf/apv_pdf_cmap_table.c.patch
 patch -o jni/mupdf-apv/pdf/apv_pdf_fontfile.c jni/mupdf/pdf/pdf_fontfile.c jni/mupdf-apv/pdf/apv_pdf_fontfile.c.patch
-cd -
+cd deps
 
 
 echo "copying freetype"
-cp -r $FREETYPE/{src,include} ../jni/freetype/
-
+cp -r $FREETYPE/src ../jni/freetype/
+cp -r $FREETYPE/include ../jni/freetype/
 cd ..
 
 echo "running ndk-build"

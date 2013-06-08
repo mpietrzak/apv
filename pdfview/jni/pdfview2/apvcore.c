@@ -718,13 +718,16 @@ void append_chars(char **buf, size_t *buf_size, const char *new_chars, size_t ne
 //     fz_page *page = NULL;
 //     fz_text_sheet *text_sheet = NULL;
 //     fz_text_page *text_page = NULL;
-//     fz_rect pagebox;
 //     int block_no = 0;
 //     int line_no = 0;
 //     int span_no = 0;
 //     int char_no = 0;
 //     char runechars[128] = "";
 //     int runelen = 0;
+//     fz_buffer *buf = NULL;
+//     fz_output *out = NULL;
+//     fz_cookie cookie = { 0 };
+//     fz_rect pagebox;
 // 
 //     size_t text_buf_size = 0;
 //     char *text = NULL; /* utf-8 text */
@@ -734,40 +737,27 @@ void append_chars(char **buf, size_t *buf_size, const char *new_chars, size_t ne
 //         return NULL;
 //     }
 // 
-//     // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "rendering page text");
+//     #ifndef NDEBUG
+//     APV_LOG_PRINT(APV_LOG_DEBUG, "loading page %d", pageno);
+//     #endif
 //     page = fz_load_page(pdf->doc, pageno);
 //     text_sheet = fz_new_text_sheet(pdf->ctx);
-//     pagebox = get_page_box(pdf, pageno);
-//     text_page = fz_new_text_page(pdf->ctx, pagebox);
+//     text_page = fz_new_text_page(pdf->ctx, fz_bound_page(pdf->doc, page, &pagebox));
 //     dev = fz_new_text_device(pdf->ctx, text_sheet, text_page);
-//     fz_run_page(pdf->doc, page, dev, fz_identity, NULL);
-//     // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "done rendering page text");
+//     fz_run_page(pdf->doc, page, dev, &fz_identity, &cookie);
+//     fz_free_device(dev);
+//     dev = NULL;
+//     buf = fz_new_buffer(pdf->ctx, 512);
+//     out = fz_new_output_with_buffer(pdf->ctx, buf);
 // 
-//     /* for now lets just flatten */
-//     for(block_no = 0; block_no < text_page->len; ++block_no) {
-//         fz_text_block *text_block = &(text_page->blocks[block_no]);
-//         for(line_no = 0; line_no < text_block->len; ++line_no) {
-//             fz_text_line *line = &(text_block->lines[line_no]);
-//             for(span_no = 0; span_no < line->len; ++span_no) {
-//                 fz_text_span *span = &(line->spans[span_no]);
-//                 for(char_no = 0; char_no < span->len; ++char_no) {
-//                     fz_text_char *text_char = &(span->text[char_no]);
-//                     runelen = fz_runetochar(runechars, text_char->c);
-//                     append_chars(&text, &text_buf_size, runechars, runelen);
-//                 }
-//             }
-//             append_chars(&text, &text_buf_size, "\n", 1);
-//         }
-//     }
+//     fz_print_text_page_html(pdf->ctx, out, text_page);
 // 
-//     // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "done extracting text");
+//     fz_free_text_page(pdf->ctx, text_page);
+//     fz_free_text_sheet(pdf->ctx, text_sheet);
+//     fz_close_output(out);  /* frees fz_output, but not buf */
+//     text = strndup(buf->data, buf->len);
+//     fz_drop_buffer(pdf->ctx, buf);  /* free both buf->data and buf itself */
 // 
-//     // fz_free_text_page(pdf->ctx, text_page);
-//     // fz_free_text_sheet(pdf->ctx, text_sheet);
-//     // fz_free_page(pdf->doc, page);
-//     // fz_free_device(dev);
-// 
-//     // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "extracted text, len: %d, chars: %s", text_len, text);
 //     return text;
 // }
 // #endif
