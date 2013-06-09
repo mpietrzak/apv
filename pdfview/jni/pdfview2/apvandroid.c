@@ -455,7 +455,7 @@ Java_cx_hell_android_lib_pdf_PDF_find(
     jobject results = NULL;
     fz_rect pagebox;
     fz_page *page = NULL;
-    fz_text_sheet *sheet = NULL;
+    fz_text_sheet *text_sheet = NULL;
     fz_text_page *text_page = NULL;  /* contains text */
     fz_device *dev = NULL;
     wchar_t *textlinechars = NULL;
@@ -471,6 +471,7 @@ Java_cx_hell_android_lib_pdf_PDF_find(
     int block_no = 0;
     int line_no = 0;
     int char_no = 0;
+    fz_cookie cookie = { 0 };
 
     jtext = (*env)->GetStringChars(env, text, &is_copy);
 
@@ -491,18 +492,29 @@ Java_cx_hell_android_lib_pdf_PDF_find(
     pdf = get_pdf_from_this(env, this);
 
     page = fz_load_page(pdf->doc, pageno);
-    sheet = fz_new_text_sheet(pdf->ctx);
-    pagebox = get_page_box(pdf, pageno);
-    text_page = fz_new_text_page(pdf->ctx, &pagebox);
-    dev = fz_new_text_device(pdf->ctx, sheet, text_page);
+    text_sheet = fz_new_text_sheet(pdf->ctx);
+    text_page = fz_new_text_page(pdf->ctx, fz_bound_page(pdf->doc, page, &pagebox));
+    dev = fz_new_text_device(pdf->ctx, text_sheet, text_page);
+    fz_run_page(pdf->doc, page, dev, &fz_identity, &cookie);
+    fz_free_device(dev);
+    dev = NULL;
 
-    fz_run_page(pdf->doc, page, dev, &fz_identity, NULL);
+    #ifndef NDEBUG
+    APV_LOG_PRINT(APV_LOG_DEBUG, "%d blocks on page on page %d", text_page->len, pageno);
+    #endif
 
     /* search text_page by extracting wchar_t text for each line */
-    for(block_no = 0; block_no < text_page->len; ++block_no) {  /* for each block */
+    for(block_no = 0; block_no < text_page->len; ++block_no) {  /* for each page block */
         // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "checking block %d of %d", block_no, text_page->len);
         page_block = &(text_page->blocks[block_no]);
-        /* XXX */
+        if (page_block->type == FZ_PAGE_BLOCK_TEXT) {
+            text_block = page_block->u.text;
+        } else {
+            #ifndef NDEBUG
+            APV_LOG_PRINT(APV_LOG_WARN, "block %d is not text", block_no);
+            #endif
+            continue;
+        }
         for(line_no = 0; line_no < text_block->len; ++line_no) {  /* for each line */
             // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "checking line %d of %d", line_no, text_block->len);
             text_line = &(text_block->lines[line_no]);
@@ -560,14 +572,23 @@ Java_cx_hell_android_lib_pdf_PDF_find(
         }
     }
 
-    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "freeing text_page, sheet, dev");
-    // fz_free_text_page(pdf->ctx, text_page);
-    // fz_free_device(dev);
+    if (page) {
+        page = NULL;
+    }
 
-    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "freeing ctext");
+    if (text_sheet) {
+        fz_free_text_sheet(pdf->ctx, text_sheet);
+        text_sheet = NULL;
+    }
+
+    if (text_page) {
+        fz_free_text_page(pdf->ctx, text_page);
+        text_page = NULL;
+    }
+
     free(ctext);
     (*env)->ReleaseStringChars(env, text, jtext);
-    // __android_log_print(ANDROID_LOG_DEBUG, PDFVIEW_LOG_TAG, "returning results");
+    
     return results;
 }
 
