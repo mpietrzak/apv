@@ -737,9 +737,6 @@ void append_chars(char **buf, size_t *buf_size, const char *new_chars, size_t ne
 //         return NULL;
 //     }
 // 
-//     #ifndef NDEBUG
-//     APV_LOG_PRINT(APV_LOG_DEBUG, "loading page %d", pageno);
-//     #endif
 //     page = fz_load_page(pdf->doc, pageno);
 //     text_sheet = fz_new_text_sheet(pdf->ctx);
 //     text_page = fz_new_text_page(pdf->ctx, fz_bound_page(pdf->doc, page, &pagebox));
@@ -750,7 +747,7 @@ void append_chars(char **buf, size_t *buf_size, const char *new_chars, size_t ne
 //     buf = fz_new_buffer(pdf->ctx, 512);
 //     out = fz_new_output_with_buffer(pdf->ctx, buf);
 // 
-//     fz_print_text_page_html(pdf->ctx, out, text_page);
+//     fz_print_text_page(pdf->ctx, out, text_page);
 // 
 //     fz_free_text_page(pdf->ctx, text_page);
 //     fz_free_text_sheet(pdf->ctx, text_sheet);
