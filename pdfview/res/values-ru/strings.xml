@@ -193,7 +193,7 @@
 	<item>увеличить или отступить</item>
 	</string-array>
 	<string name="default_double_tap_action">2</string>
-	<string name="double_tap_action">действие при двойном нажатии</string>
+	<string name="double_tap_action">Действие при двойном нажатии</string>
 	<string-array name = "action_pairs">
 	<item>0</item>
 	<item>1</item>
