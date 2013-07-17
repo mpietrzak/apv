@@ -23,7 +23,7 @@
 	<string name="choose_file">Открыть…</string>
 	<string name="toggle_invert">Инвертировать цвета</string>
 	<string name="toggle_fine_zoom">Включить качественный зум</string>
-	<string name="set_as_home">Установить текущуюю папку как домашнюю</string>
+	<string name="set_as_home">Установить текущую папку как домашнюю</string>
 	<string name="go_home">Домой</string>
 	<string name="cancel">Отмена</string>
 	<string name="searching_for">Поиск "%1$s"</string>
@@ -193,7 +193,7 @@
 	<item>увеличить или отступить</item>
 	</string-array>
 	<string name="default_double_tap_action">2</string>
-	<string name="double_tap_action">Дейтсвие при двойном нажатии</string>
+	<string name="double_tap_action">действие при двойном нажатии</string>
 	<string-array name = "action_pairs">
 	<item>0</item>
 	<item>1</item>
@@ -228,7 +228,7 @@
 	<string name="up_down_pair">Действия кнопок вверх/вниз</string>
 	<string name="left_right_pair">Действия кнопок вправо/влево</string>
 	<string name="zoom_pair">Действия кнопок масштабирования</string>
-	<string name="long_zoom_pair">Длинное нажатие кнопок мастабирования</string>
+	<string name="long_zoom_pair">Длинное нажатие кнопок масштабирования</string>
 	<string name="right_up_down_pair">Nook Touch действия правых кнопок вверх/вниз</string>
 	<string name="top_bottom_tap_pair">Действия при нажатии внизу/вверху страницы</string>
 	<string name="default_volume_pair">1</string>
