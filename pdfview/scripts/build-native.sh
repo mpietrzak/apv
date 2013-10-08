@@ -25,6 +25,7 @@ wait
 
 echo "copying openjpeg"
 cp $OPENJPEG/src/lib/openjp2/*.[ch] ../jni/openjpeg/
+echo "#define HAVE_LIBPNG" > ../jni/openjpeg/opj_config.h
 
 echo "copying jpeg"
 cp $JPEGDIR/*.[ch] ../jni/jpeg/
