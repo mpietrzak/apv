@@ -15,7 +15,7 @@ opj_config.h
 out
 pdfview.iml
 pdfview/bin
-pdfview/deps/freetype-2.4.10
+pdfview/deps/freetype-2.5.0.1
 pdfview/deps/jbig2dec-0.11
 pdfview/deps/jpeg-8d
 pdfview/deps/mupdf
