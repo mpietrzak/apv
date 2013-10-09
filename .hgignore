@@ -17,7 +17,7 @@ pdfview.iml
 pdfview/bin
 pdfview/deps/freetype-2.5.0.1
 pdfview/deps/jbig2dec-0.11
-pdfview/deps/jpeg-8d
+pdfview/deps/jpeg-9
 pdfview/deps/mupdf
 pdfview/deps/mupdf-1.1-source
 pdfview/deps/mupdf-a242b4cf1123910c4dba18c75a77f28c5f6d8f33

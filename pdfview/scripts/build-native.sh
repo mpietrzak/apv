@@ -11,8 +11,8 @@ MUPDF=mupdf-cff6f809da556624fb1de34725935278093182e1
 FREETYPE=freetype-2.5.0.1  # .tar.bz2
 OPENJPEG=openjpeg-2.0.0
 JBIG2DEC=jbig2dec-0.11
-JPEGSRC=jpegsrc.v8d.tar.gz
-JPEGDIR=jpeg-8d
+JPEGSRC=jpegsrc.v9.tar.gz
+JPEGDIR=jpeg-9
 
 cd "$SCRIPTDIR/../deps"
 
