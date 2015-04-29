@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Module>
+        <ModulePrefs author_email="maciej@hell.cx" author="Maciej Pietrzak" author_link="http://hell.cx/" description="Paypal Donations" title="Paypal Donations" title_url="http://hell.cx/"/>
+                <Content type="html">
+ <![CDATA[
+<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+<input type="hidden" name="cmd" value="_s-xclick">
+<input type="hidden" name="hosted_button_id" value="3KDZ6YSSL623E">
+<input type="image" src="https://www.paypal.com/en_GB/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online.">
+<img alt="" border="0" src="https://www.paypal.com/pl_PL/i/scr/pixel.gif" width="1" height="1">
+</form>
+]]>
+        </Content>
+</Module>
